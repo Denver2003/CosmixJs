@@ -29,7 +29,15 @@
 - `scripts/config.js` — constants/tuning knobs (units, physics params, timings).
 - `scripts/glass.js` — playfield walls/floor construction and layout.
 - `scripts/shapes.js` — shape creation, colors, random rotation.
-- `scripts/game.js` — gameplay loop, input, spawn/drop logic, kill line checks, debug rendering.
+- `scripts/game/index.js` — gameplay wiring and orchestration.
+- `scripts/game/state.js` — game state container.
+- `scripts/game/spawn.js` — spawn, drop, scale-on-fall.
+- `scripts/game/preview.js` — next-piece preview and fade-in.
+- `scripts/game/controls.js` — keyboard input handling.
+- `scripts/game/lines.js` — spawn/kill line drawing.
+- `scripts/game/kill.js` — kill-line timer and game over.
+- `scripts/game/chains.js` — chain detection, fill effects, removal.
+- `scripts/game/utils.js` — shared clamp, scale, color helpers.
 
 ## Tuning hotspots
 

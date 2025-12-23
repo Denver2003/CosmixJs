@@ -1,5 +1,5 @@
 import { createGlass } from "./glass.js";
-import { createGame } from "./game.js";
+import { createGame } from "./game/index.js";
 
 const { Engine, Render, Runner } = Matter;
 
@@ -39,7 +39,7 @@ const game = createGame({
   getGlassRect: glass.getRect,
 });
 
-game.spawnBlock();
+game.start();
 
 window.addEventListener("resize", () => {
   render.canvas.width = window.innerWidth;
