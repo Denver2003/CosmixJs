@@ -5,6 +5,7 @@
 - **Matter.js playground** with a centered glass (10x20 units) and wireframe-style render.
 - **Spawn/kill lines** drawn as horizontal guides.
 - **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes for 5s, then auto-drops.
+- **Spawn scale**: falling piece scales from 0.5 → 1.0 while moving to spawn line.
 - **Controls** (during the 5s wait):
   - Left/Right arrows: smooth horizontal movement.
   - Down arrow: drop immediately and spawn the next piece.
@@ -18,7 +19,8 @@
 - **Colors**: 4 random stroke colors per piece; transparent fill.
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
-- **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 5+ and stays for 3s, those pieces disappear instantly.
+- **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 5+ and stays for 1.8s, those pieces disappear instantly.
+- **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in).
 
 ## File layout
 

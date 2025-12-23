@@ -9,11 +9,14 @@ import {
   GLASS_WIDTH,
   KILL_DURATION_MS,
   KILL_OFFSET,
+  PREVIEW_DELAY_MS,
+  PREVIEW_FADE_MS,
   SPAWN_OFFSET,
+  SPAWN_START_OFFSET,
   WAIT_DURATION_MS,
   WALL_THICKNESS,
 } from "./config.js";
-import { createRandomShape } from "./shapes.js";
+import { createRandomSpec, createShape } from "./shapes.js";
 
 const { Events, Body, World, Composite } = Matter;
 
@@ -29,6 +32,9 @@ export function createGame({ engine, world, render, getGlassRect }) {
   let chainStates = [];
   let debugLogMs = 0;
   let chainGraceMs = 0;
+  let nextSpec = createRandomSpec();
+  let previewBody = null;
+  let previewStartMs = 0;
 
   function getSpawnPoint() {
     const { left, top } = getGlassRect();
@@ -43,13 +49,20 @@ export function createGame({ engine, world, render, getGlassRect }) {
       return;
     }
     const spawn = getSpawnPoint();
-    const spawnY = spawn.y - SPAWN_OFFSET;
+    const spawnY = spawn.y - SPAWN_START_OFFSET;
     const spawnPoint = { x: spawn.x, y: spawnY };
-    const body = createRandomShape(spawnPoint);
+    const body = createShape(nextSpec, spawnPoint);
     body.plugin = { ...(body.plugin || {}), stopAtSpawn: true };
+    setBodyScale(body, 0.5);
+    body.plugin.scaleCurrent = 0.5;
+    body.plugin.scaleTarget = 1;
+    body.plugin.scaleStartY = spawnY;
+    body.plugin.scaleEndY = spawn.y;
     waitingBody = body;
     waitingState = "descending";
     World.add(world, body);
+    nextSpec = createRandomSpec();
+    setPreview(nextSpec);
   }
 
   function dropActiveBody() {
@@ -57,6 +70,7 @@ export function createGame({ engine, world, render, getGlassRect }) {
       return;
     }
 
+    removePreview();
     waitingBody.plugin.stopAtSpawn = false;
     Body.setStatic(waitingBody, false);
     Body.setVelocity(waitingBody, {
@@ -96,6 +110,7 @@ export function createGame({ engine, world, render, getGlassRect }) {
         waitingBody.plugin?.stopAtSpawn &&
         waitingBody.position.y >= spawnPoint.y
       ) {
+        setBodyScale(waitingBody, 1);
         Body.setPosition(waitingBody, {
           x: waitingBody.position.x,
           y: spawnPoint.y,
@@ -126,6 +141,23 @@ export function createGame({ engine, world, render, getGlassRect }) {
         }
       }
     }
+
+    if (waitingBody && waitingState === "descending") {
+      const t = Math.max(
+        0,
+        Math.min(
+          1,
+          (waitingBody.position.y - waitingBody.plugin.scaleStartY) /
+            (waitingBody.plugin.scaleEndY - waitingBody.plugin.scaleStartY)
+        )
+      );
+      const desiredScale = 0.5 + 0.5 * t;
+      if (Math.abs(desiredScale - (waitingBody.plugin.scaleCurrent || 1)) > 0.001) {
+        setBodyScale(waitingBody, desiredScale);
+      }
+    }
+
+    updatePreview(engine.timing.timestamp);
 
     const { top } = getGlassRect();
     const killY = top + KILL_OFFSET;
@@ -236,7 +268,7 @@ export function createGame({ engine, world, render, getGlassRect }) {
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
 
-  return { spawnBlock };
+  return { spawnBlock, onResize };
 
   function updateChains(deltaMs) {
     debugLogMs += deltaMs;
@@ -441,5 +473,73 @@ export function createGame({ engine, world, render, getGlassRect }) {
     const g = parseInt(value.slice(2, 4), 16);
     const b = parseInt(value.slice(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function setPreview(spec) {
+    if (previewBody) {
+      World.remove(world, previewBody);
+      previewBody = null;
+    }
+    const spawn = getSpawnPoint();
+    const previewPoint = { x: spawn.x, y: spawn.y - SPAWN_START_OFFSET };
+    previewBody = createShape(spec, previewPoint, { alpha: 0 });
+    previewBody.isSensor = true;
+    previewBody.isStatic = true;
+    previewBody.collisionFilter = { group: -1, category: 0x0002, mask: 0 };
+    setBodyScale(previewBody, 0.5);
+    previewBody.plugin.preview = true;
+    previewBody.plugin.previewAlpha = 0;
+    previewStartMs = engine.timing.timestamp;
+    World.add(world, previewBody);
+  }
+
+  function updatePreview(timestamp) {
+    if (!previewBody) {
+      return;
+    }
+    const rawElapsed = timestamp - previewStartMs - PREVIEW_DELAY_MS;
+    const elapsed = Math.min(1, Math.max(0, rawElapsed / PREVIEW_FADE_MS));
+    previewBody.plugin.previewAlpha = elapsed;
+    const color = previewBody.plugin?.color;
+    const alpha = 0.4 * elapsed;
+    const stroke = color ? hexToRgba(color, alpha) : "rgba(0,0,0,0)";
+    const parts = previewBody.parts.length > 1 ? previewBody.parts : [previewBody];
+    for (const part of parts) {
+      part.render.strokeStyle = stroke;
+      part.render.fillStyle = "rgba(0, 0, 0, 0)";
+    }
+  }
+
+  function removePreview() {
+    if (!previewBody) {
+      return;
+    }
+    World.remove(world, previewBody);
+    previewBody = null;
+    previewStartMs = 0;
+  }
+
+  function setBodyScale(body, scale) {
+    const current = body.plugin?.scaleCurrent || 1;
+    const factor = scale / current;
+    Body.scale(body, factor, factor);
+    body.plugin.scaleCurrent = scale;
+  }
+
+  function onResize() {
+    const spawn = getSpawnPoint();
+    if (waitingBody && waitingState === "armed") {
+      Body.setPosition(waitingBody, {
+        x: waitingBody.position.x,
+        y: spawn.y,
+      });
+      clampWaitingBody();
+    }
+    if (previewBody) {
+      Body.setPosition(previewBody, {
+        x: spawn.x,
+        y: spawn.y - SPAWN_START_OFFSET,
+      });
+    }
   }
 }

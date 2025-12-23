@@ -3,7 +3,8 @@ export const GLASS_WIDTH = 10 * UNIT;
 export const GLASS_HEIGHT = 20 * UNIT;
 export const WALL_THICKNESS = 24;
 export const SPAWN_OFFSET = 2 * UNIT;
-export const KILL_OFFSET = 3 * UNIT;
+export const SPAWN_START_OFFSET = 3 * UNIT;
+export const KILL_OFFSET = 3.5 * UNIT;
 
 export const BLOCK_OPTIONS = {
   friction: 0.8,
@@ -26,3 +27,5 @@ export const CHAIN_DURATION_MS = 1800;
 export const CHAIN_GRACE_MS = 250;
 export const CHAIN_BASE_ALPHA = 0.1;
 export const CHAIN_ALPHA_LERP = 0.15;
+export const PREVIEW_FADE_MS = 350;
+export const PREVIEW_DELAY_MS = 200;

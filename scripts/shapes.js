@@ -9,7 +9,14 @@ import {
 
 const { Bodies, Body } = Matter;
 
-export function createRandomShape(spawnPoint) {
+export function createRandomSpec() {
+  const type = Math.floor(Math.random() * 5);
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const rotation = (Math.random() - 0.5) * ROTATE_RANGE * 2;
+  return { type, color, rotation };
+}
+
+export function createShape(spec, spawnPoint, options = {}) {
   const shapes = [
     () =>
       Bodies.rectangle(
@@ -32,21 +39,30 @@ export function createRandomShape(spawnPoint) {
     () => createLShape(spawnPoint),
   ];
 
-  const body = shapes[Math.floor(Math.random() * shapes.length)]();
-  applyStrokeStyle(body);
-  Body.rotate(body, (Math.random() - 0.5) * ROTATE_RANGE * 2);
+  const body = shapes[spec.type]();
+  applyStrokeStyle(body, spec.color, options.alpha);
+  Body.rotate(body, spec.rotation);
   return body;
 }
 
-function applyStrokeStyle(body) {
-  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+function applyStrokeStyle(body, color, alpha) {
   body.plugin = { ...(body.plugin || {}), color };
   const parts = body.parts.length > 1 ? body.parts : [body];
+  const stroke =
+    typeof alpha === "number" ? hexToRgba(color, alpha) : color;
   for (const part of parts) {
-    part.render.strokeStyle = color;
+    part.render.strokeStyle = stroke;
     part.render.lineWidth = 2;
     part.render.fillStyle = "rgba(0, 0, 0, 0)";
   }
+}
+
+function hexToRgba(hex, alpha) {
+  const value = hex.replace("#", "");
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function createTriangle(spawn) {

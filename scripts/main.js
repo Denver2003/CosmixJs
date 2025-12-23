@@ -48,4 +48,5 @@ window.addEventListener("resize", () => {
   render.options.height = window.innerHeight;
 
   glass.build();
+  game.onResize();
 });
