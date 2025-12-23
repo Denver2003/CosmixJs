@@ -16,6 +16,7 @@ export const BLOCK_OPTIONS = {
 
 export const WAIT_DURATION_MS = 5000;
 export const CONTROL_SPEED = 220;
+export const CONTROL_DESCENT_FACTOR = 0.6;
 export const DROP_SPEED = 6;
 export const ROTATE_RANGE = Math.PI / 2;
 export const COLORS = ["#4dd0e1", "#ffd166", "#ef476f", "#06d6a0"];

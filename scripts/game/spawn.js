@@ -1,4 +1,5 @@
 import {
+  CONTROL_DESCENT_FACTOR,
   CONTROL_SPEED,
   DROP_SPEED,
   GLASS_WIDTH,
@@ -81,12 +82,16 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     dropActiveBody(state, getSpawnPoint);
   }
 
-  if (state.waitingState === "armed") {
+  if (state.waitingState === "armed" || state.waitingState === "descending") {
     const direction = (state.moveRight ? 1 : 0) - (state.moveLeft ? 1 : 0);
     if (direction !== 0) {
       const deltaSeconds = deltaMs / 1000;
+      const speed =
+        state.waitingState === "descending"
+          ? CONTROL_SPEED * CONTROL_DESCENT_FACTOR
+          : CONTROL_SPEED;
       Body.translate(state.waitingBody, {
-        x: direction * CONTROL_SPEED * deltaSeconds,
+        x: direction * speed * deltaSeconds,
         y: 0,
       });
       clampWaitingBody(

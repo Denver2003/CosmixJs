@@ -6,9 +6,10 @@
 - **Spawn/kill lines** drawn as horizontal guides.
 - **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes for 5s, then auto-drops.
 - **Spawn scale**: falling piece scales from 0.5 → 1.0 while moving to spawn line.
-- **Controls** (during the 5s wait):
+- **Controls** (during the descent and 5s wait):
   - Left/Right arrows: smooth horizontal movement.
   - Down arrow: drop immediately and spawn the next piece.
+- **Pointer controls**: drag left/right while holding; release to drop (mouse/touch).
 - **Random rotation at spawn**; no player rotation.
 - **Shapes (area ~ constant, scaled down ~20%)**:
   - Rectangle 4x1 (scaled)

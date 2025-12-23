@@ -40,7 +40,7 @@ export function createGame({ engine, world, render, getGlassRect }) {
   Events.on(engine, "afterUpdate", update);
   Events.on(render, "afterRender", draw);
 
-  const detachControls = attachControls(state, getSpawnPoint);
+  const detachControls = attachControls(state, getSpawnPoint, getGlassRect);
 
   function onResize() {
     repositionWaiting(state, getSpawnPoint, getGlassRect);
