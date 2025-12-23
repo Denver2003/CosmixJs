@@ -40,6 +40,7 @@ export function createRandomShape(spawnPoint) {
 
 function applyStrokeStyle(body) {
   const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  body.plugin = { ...(body.plugin || {}), color };
   const parts = body.parts.length > 1 ? body.parts : [body];
   for (const part of parts) {
     part.render.strokeStyle = color;

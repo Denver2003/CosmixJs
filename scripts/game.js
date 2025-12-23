@@ -1,4 +1,9 @@
 import {
+  CHAIN_ALPHA_LERP,
+  CHAIN_BASE_ALPHA,
+  CHAIN_DURATION_MS,
+  CHAIN_GRACE_MS,
+  CHAIN_MIN,
   CONTROL_SPEED,
   DROP_SPEED,
   GLASS_WIDTH,
@@ -13,6 +18,7 @@ import { createRandomShape } from "./shapes.js";
 const { Events, Body, World, Composite } = Matter;
 
 export function createGame({ engine, world, render, getGlassRect }) {
+  console.log("[game] init");
   let waitingBody = null;
   let waitingState = "none";
   let waitStartMs = 0;
@@ -20,6 +26,9 @@ export function createGame({ engine, world, render, getGlassRect }) {
   let moveRight = false;
   let gameOver = false;
   let killTouchMs = 0;
+  let chainStates = [];
+  let debugLogMs = 0;
+  let chainGraceMs = 0;
 
   function getSpawnPoint() {
     const { left, top } = getGlassRect();
@@ -37,7 +46,7 @@ export function createGame({ engine, world, render, getGlassRect }) {
     const spawnY = spawn.y - SPAWN_OFFSET;
     const spawnPoint = { x: spawn.x, y: spawnY };
     const body = createRandomShape(spawnPoint);
-    body.plugin = { stopAtSpawn: true };
+    body.plugin = { ...(body.plugin || {}), stopAtSpawn: true };
     waitingBody = body;
     waitingState = "descending";
     World.add(world, body);
@@ -76,43 +85,45 @@ export function createGame({ engine, world, render, getGlassRect }) {
   }
 
   function update() {
-    if (!waitingBody || gameOver) {
+    if (gameOver) {
       return;
     }
 
-    const spawnPoint = getSpawnPoint();
-    if (
-      waitingState === "descending" &&
-      waitingBody.plugin?.stopAtSpawn &&
-      waitingBody.position.y >= spawnPoint.y
-    ) {
-      Body.setPosition(waitingBody, {
-        x: waitingBody.position.x,
-        y: spawnPoint.y,
-      });
-      Body.setVelocity(waitingBody, { x: 0, y: 0 });
-      Body.setAngularVelocity(waitingBody, 0);
-      Body.setStatic(waitingBody, true);
-      waitingState = "armed";
-      waitStartMs = engine.timing.timestamp;
-    }
-
-    if (
-      waitingState === "armed" &&
-      engine.timing.timestamp - waitStartMs >= WAIT_DURATION_MS
-    ) {
-      dropActiveBody();
-    }
-
-    if (waitingState === "armed") {
-      const direction = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
-      if (direction !== 0) {
-        const deltaSeconds = engine.timing.lastDelta / 1000;
-        Body.translate(waitingBody, {
-          x: direction * CONTROL_SPEED * deltaSeconds,
-          y: 0,
+    if (waitingBody) {
+      const spawnPoint = getSpawnPoint();
+      if (
+        waitingState === "descending" &&
+        waitingBody.plugin?.stopAtSpawn &&
+        waitingBody.position.y >= spawnPoint.y
+      ) {
+        Body.setPosition(waitingBody, {
+          x: waitingBody.position.x,
+          y: spawnPoint.y,
         });
-        clampWaitingBody();
+        Body.setVelocity(waitingBody, { x: 0, y: 0 });
+        Body.setAngularVelocity(waitingBody, 0);
+        Body.setStatic(waitingBody, true);
+        waitingState = "armed";
+        waitStartMs = engine.timing.timestamp;
+      }
+
+      if (
+        waitingState === "armed" &&
+        engine.timing.timestamp - waitStartMs >= WAIT_DURATION_MS
+      ) {
+        dropActiveBody();
+      }
+
+      if (waitingState === "armed") {
+        const direction = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
+        if (direction !== 0) {
+          const deltaSeconds = engine.timing.lastDelta / 1000;
+          Body.translate(waitingBody, {
+            x: direction * CONTROL_SPEED * deltaSeconds,
+            y: 0,
+          });
+          clampWaitingBody();
+        }
       }
     }
 
@@ -146,6 +157,8 @@ export function createGame({ engine, world, render, getGlassRect }) {
       moveLeft = false;
       moveRight = false;
     }
+
+    updateChains(engine.timing.lastDelta);
   }
 
   function drawDebugLines() {
@@ -224,4 +237,209 @@ export function createGame({ engine, world, render, getGlassRect }) {
   window.addEventListener("keyup", onKeyUp);
 
   return { spawnBlock };
+
+  function updateChains(deltaMs) {
+    debugLogMs += deltaMs;
+    const bodies = Composite.allBodies(world).filter((body) => {
+      if (body.isStatic || body.parent !== body) {
+        return false;
+      }
+      if (waitingBody && (body === waitingBody || body.parent === waitingBody)) {
+        return false;
+      }
+      return true;
+    });
+    const bodyById = new Map(bodies.map((body) => [body.id, body]));
+
+    const adjacency = new Map();
+    for (const body of bodies) {
+      adjacency.set(body.id, new Set());
+    }
+
+    for (const pair of engine.pairs.list) {
+      const bodyA = pair.bodyA.parent || pair.bodyA;
+      const bodyB = pair.bodyB.parent || pair.bodyB;
+      if (bodyA === bodyB) {
+        continue;
+      }
+      if (!adjacency.has(bodyA.id) || !adjacency.has(bodyB.id)) {
+        continue;
+      }
+      const colorA = bodyA.plugin?.color;
+      const colorB = bodyB.plugin?.color;
+      if (!colorA || colorA !== colorB) {
+        continue;
+      }
+      adjacency.get(bodyA.id).add(bodyB.id);
+      adjacency.get(bodyB.id).add(bodyA.id);
+    }
+
+    const visited = new Set();
+    const components = [];
+    for (const body of bodies) {
+      if (visited.has(body.id)) {
+        continue;
+      }
+      const color = body.plugin?.color;
+      if (!color) {
+        visited.add(body.id);
+        continue;
+      }
+      const stack = [body];
+      const ids = new Set();
+      visited.add(body.id);
+      while (stack.length) {
+        const current = stack.pop();
+        ids.add(current.id);
+        for (const neighborId of adjacency.get(current.id) || []) {
+          if (visited.has(neighborId)) {
+            continue;
+          }
+          const neighbor = bodyById.get(neighborId);
+          if (!neighbor) {
+            continue;
+          }
+          if (neighbor.plugin?.color !== color) {
+            continue;
+          }
+          visited.add(neighborId);
+          stack.push(neighbor);
+        }
+      }
+      components.push({ color, ids });
+    }
+
+    const hasAnyContact = adjacencyHasAny(adjacency);
+    if (!hasAnyContact) {
+      chainGraceMs += deltaMs;
+    } else {
+      chainGraceMs = 0;
+    }
+    const allowReset = chainGraceMs >= CHAIN_GRACE_MS;
+
+    applyChainFillStyles(bodies, components, deltaMs);
+
+    if (debugLogMs >= 1000) {
+      const counts = components.map((component) => component.ids.size);
+      const totalPairs = engine.pairs.list.length;
+      console.log(
+        "[chains]",
+        "bodies:",
+        bodies.length,
+        "pairs:",
+        totalPairs,
+        "components:",
+        counts
+      );
+      debugLogMs = 0;
+    }
+
+    const matched = new Set();
+    const nextStates = [];
+    for (const component of components) {
+      let bestMatch = null;
+      let bestOverlap = 0;
+      for (const prev of chainStates) {
+        if (prev.color !== component.color || matched.has(prev.id)) {
+          continue;
+        }
+        let overlap = 0;
+        for (const id of component.ids) {
+          if (prev.ids.has(id)) {
+            overlap += 1;
+          }
+        }
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          bestMatch = prev;
+        }
+      }
+
+      let timerMs = bestMatch ? bestMatch.timerMs : 0;
+      if (component.ids.size >= CHAIN_MIN) {
+        timerMs += deltaMs;
+      } else if (allowReset) {
+        timerMs = 0;
+      }
+
+      const id = bestMatch ? bestMatch.id : Math.random().toString(36).slice(2);
+      if (bestMatch) {
+        matched.add(bestMatch.id);
+      }
+      nextStates.push({ id, color: component.color, ids: component.ids, timerMs });
+    }
+
+    const removeIds = new Set();
+    for (const state of nextStates) {
+      if (state.timerMs >= CHAIN_DURATION_MS && state.ids.size >= CHAIN_MIN) {
+        for (const id of state.ids) {
+          removeIds.add(id);
+        }
+      }
+    }
+
+    if (removeIds.size) {
+      const toRemove = bodies.filter((body) => removeIds.has(body.id));
+      for (const body of toRemove) {
+        World.remove(world, body);
+      }
+      chainStates = [];
+    } else {
+      chainStates = nextStates;
+    }
+  }
+
+  function applyChainFillStyles(bodies, components, deltaMs) {
+    const sizeById = new Map();
+    for (const component of components) {
+      for (const id of component.ids) {
+        sizeById.set(id, component.ids.size);
+      }
+    }
+
+    for (const body of bodies) {
+      const size = sizeById.get(body.id) || 1;
+      const color = body.plugin?.color;
+      const parts = body.parts.length > 1 ? body.parts : [body];
+      let targetAlpha = CHAIN_BASE_ALPHA;
+      if (size >= 5) {
+        const pulse = 0.5 + 0.5 * Math.sin(engine.timing.timestamp / 90);
+        targetAlpha = 1.0 * pulse;
+      } else if (size === 4) {
+        targetAlpha = 0.35;
+      } else if (size === 3) {
+        targetAlpha = 0.25;
+      } else if (size === 2) {
+        targetAlpha = 0.18;
+      }
+      if (!body.plugin) {
+        body.plugin = {};
+      }
+      const currentAlpha = body.plugin.fillAlpha || CHAIN_BASE_ALPHA;
+      const lerp = 1 - Math.pow(1 - CHAIN_ALPHA_LERP, deltaMs / 16.67);
+      const nextAlpha = currentAlpha + (targetAlpha - currentAlpha) * lerp;
+      body.plugin.fillAlpha = nextAlpha;
+      const fill = color ? hexToRgba(color, nextAlpha) : "rgba(0, 0, 0, 0)";
+      for (const part of parts) {
+        part.render.fillStyle = fill;
+      }
+    }
+  }
+
+  function adjacencyHasAny(adjacency) {
+    for (const neighbors of adjacency.values()) {
+      if (neighbors.size > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function hexToRgba(hex, alpha) {
+    const value = hex.replace("#", "");
+    const r = parseInt(value.slice(0, 2), 16);
+    const g = parseInt(value.slice(2, 4), 16);
+    const b = parseInt(value.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 }

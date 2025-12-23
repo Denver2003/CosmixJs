@@ -3,6 +3,8 @@ import { createGame } from "./game.js";
 
 const { Engine, Render, Runner } = Matter;
 
+console.log("[main] init");
+
 const engine = Engine.create();
 const world = engine.world;
 

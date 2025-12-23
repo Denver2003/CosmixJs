@@ -18,6 +18,7 @@
 - **Colors**: 4 random stroke colors per piece; transparent fill.
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
+- **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 5+ and stays for 3s, those pieces disappear instantly.
 
 ## File layout
 
