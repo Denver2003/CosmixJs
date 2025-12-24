@@ -24,11 +24,8 @@ Communication Rules (from this chat)
 - Keep edits minimal and focused; clarify formulas and parameters when ambiguous.
 - Use consistent project wording and keep docs synced with code.
 
-Current Agreements / Canon (from this chat)
-- Level progression: L1 = 10, then ToNextLevel = floor(prev * 1.2).
-- Colors: start 4, +1 every 5 levels, max 7; neon palette.
-- Rotation: random range 0 for L1–5; ramps to max by L10; discrete 0/90/180/-90 always applied.
-- Chains: CHAIN_MIN = 4; stability 1.8s; grace 250ms; fill pulse max alpha 0.8.
-- Spawn wait: L1 = 4.0s, -0.16s per level, min 1.0s.
-- Shapes: rectangle 4Lx1L, square 2Lx2L, triangle (side 3L), circle (r=1.128L), diamond (diag 2L/4L), oval (area 4L^2, ratio 1.6), pentagon (area 4L^2).
-- Wait indicator: active piece fills top-to-bottom while waiting.
+General Collaboration Notes
+- Keep AGENTS.md project-agnostic; put project facts in PROJECT.md or PROJECT_OVERVIEW.md.
+- Ask for confirmation before important steps and large changes.
+- Use step-by-step plans with checkboxes for epics; confirm each step before execution.
+- Update PROJECT.md when behavior changes; update PROJECT_OVERVIEW.md only with approval.
