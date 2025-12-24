@@ -19,7 +19,15 @@ export const CONTROL_SPEED = 220;
 export const CONTROL_DESCENT_FACTOR = 0.6;
 export const DROP_SPEED = 6;
 export const ROTATE_RANGE = Math.PI / 2;
-export const COLORS = ["#4dd0e1", "#ffd166", "#ef476f", "#06d6a0"];
+export const COLORS = [
+  "#00e5ff",
+  "#00ff85",
+  "#ffe600",
+  "#ff3b3b",
+  "#b600ff",
+  "#ff5bd8",
+  "#ff7a00",
+];
 export const TARGET_AREA = 0.8 * 4 * UNIT * UNIT;
 export const SHAPE_SCALE = Math.sqrt(0.8);
 export const KILL_DURATION_MS = 10000;
@@ -30,3 +38,4 @@ export const CHAIN_BASE_ALPHA = 0.1;
 export const CHAIN_ALPHA_LERP = 0.15;
 export const PREVIEW_FADE_MS = 350;
 export const PREVIEW_DELAY_MS = 200;
+export const DEBUG_OVERLAY = true;

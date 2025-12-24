@@ -30,7 +30,7 @@ export function spawnBlock(state, getSpawnPoint) {
   state.waitingBody = body;
   state.waitingState = "descending";
   World.add(state.world, body);
-  state.nextSpec = createRandomSpec();
+  state.nextSpec = createRandomSpec(state.colorsCount, state.rotationRange);
   setPreview(state, state.nextSpec, getSpawnPoint);
 }
 
@@ -39,6 +39,7 @@ export function dropActiveBody(state, getSpawnPoint) {
     return;
   }
 
+  setBodyScale(state.waitingBody, 1);
   removePreview(state);
   state.waitingBody.plugin.stopAtSpawn = false;
   Body.setStatic(state.waitingBody, false);

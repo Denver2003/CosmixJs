@@ -1,4 +1,9 @@
-import { GLASS_WIDTH, KILL_OFFSET, SPAWN_OFFSET } from "../config.js";
+import {
+  DEBUG_OVERLAY,
+  GLASS_WIDTH,
+  KILL_OFFSET,
+  SPAWN_OFFSET,
+} from "../config.js";
 import { hexToRgba } from "./utils.js";
 
 export function drawLines(state, render, getGlassRect) {
@@ -34,6 +39,23 @@ export function drawLines(state, render, getGlassRect) {
     ctx.fillStyle = "#f55a5a";
     ctx.font = "20px sans-serif";
     ctx.fillText("GAME OVER", left + 10, top + 30);
+  }
+
+  if (DEBUG_OVERLAY) {
+    const right = left + GLASS_WIDTH;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(`LVL ${state.level}`, right - 6, top + 14);
+    ctx.fillText(
+      `CLEARED ${state.clearedThisLevel}/${state.toNextLevel}`,
+      right - 6,
+      top + 28
+    );
+    const angleDeg = Math.round((state.rotationRange * 180) / Math.PI);
+    ctx.fillText(`ANGLE ${angleDeg}°`, right - 6, top + 42);
+    ctx.fillText(`COLORS ${state.colorsCount}`, right - 6, top + 56);
+    ctx.textAlign = "start";
   }
   ctx.restore();
 }

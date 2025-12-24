@@ -1,4 +1,4 @@
-import { createGameState } from "./state.js";
+import { applyLevelProgress, createGameState } from "./state.js";
 import { attachControls } from "./controls.js";
 import { drawLines } from "./lines.js";
 import { updateChains } from "./chains.js";
@@ -29,7 +29,17 @@ export function createGame({ engine, world, render, getGlassRect }) {
     const deltaMs = engine.timing.lastDelta;
     updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs);
     updateKillLine(state, getGlassRect, deltaMs);
-    updateChains(state, deltaMs);
+    const removedCount = updateChains(state, deltaMs);
+    if (removedCount) {
+      console.log(
+        "[level]",
+        "cleared:",
+        state.clearedThisLevel + removedCount,
+        "/",
+        state.toNextLevel
+      );
+      applyLevelProgress(state, removedCount);
+    }
     updatePreview(state, engine.timing.timestamp);
   }
 

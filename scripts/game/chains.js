@@ -140,6 +140,7 @@ export function updateChains(state, deltaMs) {
       World.remove(state.world, body);
     }
     state.chainStates = [];
+    return removeIds.size;
   } else {
     state.chainStates = nextStates;
   }
@@ -158,6 +159,8 @@ export function updateChains(state, deltaMs) {
     );
     state.debugLogMs = 0;
   }
+
+  return 0;
 }
 
 function applyChainFillStyles(state, bodies, components, deltaMs) {

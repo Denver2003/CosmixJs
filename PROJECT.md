@@ -22,6 +22,10 @@
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 5+ and stays for 1.8s, those pieces disappear instantly.
 - **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in).
+- **Levels**: L1=20 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
+- **Colors**: start 4, +1 per 5 levels, max 7; palette updated to neon, high-contrast colors.
+- **Rotation**: no rotation for L1-5; L6-9 ramps to max; L10+ capped.
+- **Debug overlay**: optional top-right telemetry (level, cleared, angle, colors).
 
 ## File layout
 
@@ -39,6 +43,7 @@
 - `scripts/game/kill.js` — kill-line timer and game over.
 - `scripts/game/chains.js` — chain detection, fill effects, removal.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
+- `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
 
 ## Tuning hotspots
 

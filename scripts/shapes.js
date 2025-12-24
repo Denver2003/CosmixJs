@@ -9,10 +9,12 @@ import {
 
 const { Bodies, Body } = Matter;
 
-export function createRandomSpec() {
+export function createRandomSpec(colorsCount, rotationRange) {
   const type = Math.floor(Math.random() * 5);
-  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-  const rotation = (Math.random() - 0.5) * ROTATE_RANGE * 2;
+  const clampedColors = Math.max(1, Math.min(colorsCount || COLORS.length, COLORS.length));
+  const color = COLORS[Math.floor(Math.random() * clampedColors)];
+  const range = typeof rotationRange === "number" ? rotationRange : ROTATE_RANGE;
+  const rotation = (Math.random() - 0.5) * range * 2;
   return { type, color, rotation };
 }
 
