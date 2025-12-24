@@ -4,27 +4,30 @@
 
 - **Matter.js playground** with a centered glass (10x20 units) and wireframe-style render.
 - **Spawn/kill lines** drawn as horizontal guides.
-- **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes for 5s, then auto-drops.
+- **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes (L1=4.0s; -0.16s per level; min 1.0s), then auto-drops.
 - **Spawn scale**: falling piece scales from 0.5 → 1.0 while moving to spawn line.
 - **Controls** (during the descent and 5s wait):
   - Left/Right arrows: smooth horizontal movement.
   - Down arrow: drop immediately and spawn the next piece.
 - **Pointer controls**: drag left/right while holding; release to drop (mouse/touch).
 - **Random rotation at spawn**; no player rotation.
-- **Shapes (area ~ constant, scaled down ~20%)**:
+- **Shapes (area ~ constant, scaled down ~24%)**:
   - Rectangle 4x1 (scaled)
   - Square 2x2 (scaled)
   - Triangle
   - Circle
   - L-shape (composite)
+  - Diamond
+  - T-shape (composite)
 - **Colors**: 4 random stroke colors per piece; transparent fill.
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
-- **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 5+ and stays for 1.8s, those pieces disappear instantly.
+- **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
 - **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in).
-- **Levels**: L1=20 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
+- **Levels**: L1=10 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
 - **Colors**: start 4, +1 per 5 levels, max 7; palette updated to neon, high-contrast colors.
-- **Rotation**: no rotation for L1-5; L6-9 ramps to max; L10+ capped.
+- **Rotation**: no random rotation for L1-5; L6-9 ramps to max; L10+ capped; a discrete 0/90/180/‑90 offset is always added.
+- **Diamond**: one diagonal ~40% shorter than the other.
 - **Debug overlay**: optional top-right telemetry (level, cleared, angle, colors).
 
 ## File layout

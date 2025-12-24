@@ -12,7 +12,7 @@
 ### State
 - `level`: старт 1
 - `clearedThisLevel`: 0
-- `toNextLevel`: L1 = 20, далее `floor(prev * 1.2)`
+- `toNextLevel`: L1 = 10, далее `floor(prev * 1.2)`
 - `colorsCount` (derived): `min(4 + floor((level - 1) / 5), 7)`
 - `rotationRange` (derived): `level <= 5 ? 0 : ramped range`
 

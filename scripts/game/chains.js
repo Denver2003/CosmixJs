@@ -176,15 +176,14 @@ function applyChainFillStyles(state, bodies, components, deltaMs) {
     const color = body.plugin?.color;
     const parts = body.parts.length > 1 ? body.parts : [body];
     let targetAlpha = CHAIN_BASE_ALPHA;
-    if (size >= 5) {
+    if (size >= CHAIN_MIN) {
       const pulse = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 90);
-      targetAlpha = 1.0 * pulse;
-    } else if (size === 4) {
-      targetAlpha = 0.35;
-    } else if (size === 3) {
-      targetAlpha = 0.25;
-    } else if (size === 2) {
-      targetAlpha = 0.18;
+      targetAlpha = 0.8 * pulse;
+    } else {
+      const denom = Math.max(1, CHAIN_MIN - 1);
+      const t = Math.max(0, Math.min(1, (size - 1) / denom));
+      const maxAlpha = 0.35;
+      targetAlpha = CHAIN_BASE_ALPHA + (maxAlpha - CHAIN_BASE_ALPHA) * t;
     }
     if (!body.plugin) {
       body.plugin = {};

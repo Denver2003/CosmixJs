@@ -28,10 +28,10 @@ export const COLORS = [
   "#ff5bd8",
   "#ff7a00",
 ];
-export const TARGET_AREA = 0.8 * 4 * UNIT * UNIT;
-export const SHAPE_SCALE = Math.sqrt(0.8);
+export const SHAPE_SCALE = Math.sqrt(0.8) * 0.9;
+export const TARGET_AREA = 4 * UNIT * UNIT * SHAPE_SCALE * SHAPE_SCALE;
 export const KILL_DURATION_MS = 10000;
-export const CHAIN_MIN = 5;
+export const CHAIN_MIN = 4;
 export const CHAIN_DURATION_MS = 1800;
 export const CHAIN_GRACE_MS = 250;
 export const CHAIN_BASE_ALPHA = 0.1;

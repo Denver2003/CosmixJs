@@ -16,9 +16,15 @@ export function getRotationRange(level) {
   return ROTATE_RANGE * t;
 }
 
+export function getSpawnWaitMs(level) {
+  const base = 4000;
+  const step = 160;
+  return Math.max(1000, Math.round(base - (level - 1) * step));
+}
+
 export function createGameState() {
   const level = 1;
-  const toNextLevel = 20;
+  const toNextLevel = 10;
   return {
     waitingBody: null,
     waitingState: "none",

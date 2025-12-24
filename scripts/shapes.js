@@ -10,11 +10,15 @@ import {
 const { Bodies, Body } = Matter;
 
 export function createRandomSpec(colorsCount, rotationRange) {
-  const type = Math.floor(Math.random() * 5);
+  const type = Math.floor(Math.random() * 7);
   const clampedColors = Math.max(1, Math.min(colorsCount || COLORS.length, COLORS.length));
   const color = COLORS[Math.floor(Math.random() * clampedColors)];
   const range = typeof rotationRange === "number" ? rotationRange : ROTATE_RANGE;
-  const rotation = (Math.random() - 0.5) * range * 2;
+  const baseRotation = (Math.random() - 0.5) * range * 2;
+  const discreteAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+  const discreteRotation =
+    discreteAngles[Math.floor(Math.random() * discreteAngles.length)];
+  const rotation = baseRotation + discreteRotation;
   return { type, color, rotation };
 }
 
@@ -39,6 +43,8 @@ export function createShape(spec, spawnPoint, options = {}) {
     () => createTriangle(spawnPoint),
     () => createCircle(spawnPoint),
     () => createLShape(spawnPoint),
+    () => createDiamond(spawnPoint),
+    () => createTShape(spawnPoint),
   ];
 
   const body = shapes[spec.type]();
@@ -94,6 +100,41 @@ function createLShape(spawn) {
   );
   const body = Body.create({
     parts: [vertical, horizontal],
+    ...BLOCK_OPTIONS,
+  });
+  Body.setPosition(body, spawn);
+  return body;
+}
+
+function createDiamond(spawn) {
+  const a = Math.sqrt(TARGET_AREA / 1.2);
+  const b = a * 0.6;
+  const vertices = [
+    { x: 0, y: -a },
+    { x: b, y: 0 },
+    { x: 0, y: a },
+    { x: -b, y: 0 },
+  ];
+  return Bodies.fromVertices(spawn.x, spawn.y, vertices, BLOCK_OPTIONS, true);
+}
+
+function createTShape(spawn) {
+  const bar = Bodies.rectangle(
+    spawn.x,
+    spawn.y - (UNIT * SHAPE_SCALE) / 2,
+    3 * UNIT * SHAPE_SCALE,
+    UNIT * SHAPE_SCALE,
+    BLOCK_OPTIONS
+  );
+  const stem = Bodies.rectangle(
+    spawn.x,
+    spawn.y + (UNIT * SHAPE_SCALE) / 2,
+    UNIT * SHAPE_SCALE,
+    2 * UNIT * SHAPE_SCALE,
+    BLOCK_OPTIONS
+  );
+  const body = Body.create({
+    parts: [bar, stem],
     ...BLOCK_OPTIONS,
   });
   Body.setPosition(body, spawn);

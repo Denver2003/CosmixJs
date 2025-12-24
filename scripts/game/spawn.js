@@ -5,10 +5,10 @@ import {
   GLASS_WIDTH,
   SPAWN_OFFSET,
   SPAWN_START_OFFSET,
-  WAIT_DURATION_MS,
   WALL_THICKNESS,
 } from "../config.js";
 import { createRandomSpec, createShape } from "../shapes.js";
+import { getSpawnWaitMs } from "./state.js";
 import { clampWaitingBody, setBodyScale } from "./utils.js";
 import { removePreview, setPreview } from "./preview.js";
 
@@ -78,7 +78,7 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
 
   if (
     state.waitingState === "armed" &&
-    state.engine.timing.timestamp - state.waitStartMs >= WAIT_DURATION_MS
+    state.engine.timing.timestamp - state.waitStartMs >= getSpawnWaitMs(state.level)
   ) {
     dropActiveBody(state, getSpawnPoint);
   }
