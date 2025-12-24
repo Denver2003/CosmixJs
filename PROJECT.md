@@ -42,6 +42,8 @@
 - `scripts/config.js` — constants/tuning knobs (units, physics params, timings).
 - `scripts/glass.js` — playfield walls/floor construction and layout.
 - `scripts/shapes.js` — shape creation, colors, random rotation.
+- `scripts/view/viewport.js` — viewport sizing + fit-to-height canvas setup.
+- `scripts/view/fit.js` — view sizing helpers (fit height/reserves).
 - `scripts/game/index.js` — gameplay wiring and orchestration.
 - `scripts/game/state.js` — game state container.
 - `scripts/game/spawn.js` — spawn, drop, scale-on-fall.
@@ -49,7 +51,10 @@
 - `scripts/game/controls.js` — keyboard input handling.
 - `scripts/game/lines.js` — spawn/kill line drawing.
 - `scripts/game/kill.js` — kill-line timer and game over.
-- `scripts/game/chains.js` — chain detection, fill effects, removal.
+- `scripts/game/pause.js` — pause/auto-pause controller.
+- `scripts/game/chains/index.js` — chain detection + effects orchestration.
+- `scripts/game/chains/detect.js` — chain detection logic.
+- `scripts/game/chains/effects.js` — chain fill/burst/flash effects.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
 

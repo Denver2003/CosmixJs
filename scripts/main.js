@@ -1,6 +1,7 @@
 import { createGlass } from "./glass.js";
 import { createGame } from "./game/index.js";
-import { GLASS_HEIGHT, HUD_BOTTOM_RESERVE, HUD_TOP_RESERVE } from "./config.js";
+import { createViewport } from "./view/viewport.js";
+import { getFitViewHeight } from "./view/fit.js";
 
 const { Engine, Render, Runner } = Matter;
 
@@ -10,84 +11,14 @@ const engine = Engine.create();
 const world = engine.world;
 
 const canvas = document.getElementById("world");
-
-function getViewportRect() {
-  const viewport = window.visualViewport;
-  if (viewport) {
-    return {
-      width: Math.round(viewport.width),
-      height: Math.round(viewport.height),
-      offsetLeft: Math.round(viewport.offsetLeft || 0),
-      offsetTop: Math.round(viewport.offsetTop || 0),
-    };
-  }
-  return {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    offsetLeft: 0,
-    offsetTop: 0,
-  };
-}
-
-const viewState = {
-  width: 0,
-  height: 0,
-  scale: 1,
-  pixelRatio: 1,
-};
-
-function computeView() {
-  const {
-    width: viewportWidth,
-    height: viewportHeight,
-    offsetLeft,
-    offsetTop,
-  } = getViewportRect();
-  const viewHeight = GLASS_HEIGHT + HUD_TOP_RESERVE + HUD_BOTTOM_RESERVE;
-  const scale = viewportHeight / viewHeight;
-  const viewWidth = viewportWidth / scale;
-  return {
-    viewWidth,
-    viewHeight,
-    scale,
-    viewportWidth,
-    viewportHeight,
-    offsetLeft,
-    offsetTop,
-  };
-}
-
-function applyViewSizing() {
-  const {
-    viewWidth,
-    viewHeight,
-    scale,
-    viewportWidth,
-    viewportHeight,
-    offsetLeft,
-    offsetTop,
-  } =
-    computeView();
-  viewState.width = viewWidth;
-  viewState.height = viewHeight;
-  viewState.scale = scale;
-  viewState.pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-  canvas.style.left = `${offsetLeft}px`;
-  canvas.style.top = `${offsetTop}px`;
-  canvas.style.position = "absolute";
-  canvas.style.width = `${viewportWidth}px`;
-  canvas.style.height = `${viewportHeight}px`;
-  canvas.width = Math.round(viewportWidth * viewState.pixelRatio);
-  canvas.height = Math.round(viewportHeight * viewState.pixelRatio);
-  return { viewWidth, viewHeight, viewportWidth, viewportHeight };
-}
-
+const viewport = createViewport(canvas);
+const fitHeight = getFitViewHeight();
 const {
   viewWidth: canvasWidth,
   viewHeight: canvasHeight,
   viewportWidth,
   viewportHeight,
-} = applyViewSizing();
+} = viewport.applyFitView(fitHeight);
 
 const render = Render.create({
   canvas,
@@ -95,7 +26,7 @@ const render = Render.create({
   options: {
     width: viewportWidth,
     height: viewportHeight,
-    pixelRatio: viewState.pixelRatio,
+    pixelRatio: viewport.getState().pixelRatio,
     wireframes: false,
     background: "#0f1115",
     wireframeBackground: "#0f1115",
@@ -106,10 +37,10 @@ Render.lookAt(render, {
   max: { x: canvasWidth, y: canvasHeight },
 });
 
-const glass = createGlass(world, () => ({
-  width: viewState.width,
-  height: viewState.height,
-}));
+const glass = createGlass(world, () => {
+  const { width, height } = viewport.getState();
+  return { width, height };
+});
 glass.build();
 
 Render.run(render);
@@ -124,8 +55,8 @@ const game = createGame({
   runner,
   getGlassRect: glass.getRect,
 });
-game.setViewScale(viewState.scale);
-game.setViewSize(viewState.width, viewState.height);
+game.setViewScale(viewport.getState().scale);
+game.setViewSize(viewport.getState().width, viewport.getState().height);
 
 game.start();
 
@@ -136,13 +67,14 @@ Matter.Events.on(engine, "afterUpdate", () => {
 function handleResize() {
   const prevRect = glass.getRect();
   const { viewWidth, viewHeight, viewportWidth, viewportHeight } =
-    applyViewSizing();
+    viewport.applyFitView(fitHeight);
   scheduleAutoPause();
-  render.canvas.width = Math.round(viewportWidth * viewState.pixelRatio);
-  render.canvas.height = Math.round(viewportHeight * viewState.pixelRatio);
+  const { pixelRatio, scale, width, height } = viewport.getState();
+  render.canvas.width = Math.round(viewportWidth * pixelRatio);
+  render.canvas.height = Math.round(viewportHeight * pixelRatio);
   render.options.width = Math.round(viewportWidth);
   render.options.height = Math.round(viewportHeight);
-  Render.setPixelRatio(render, viewState.pixelRatio);
+  Render.setPixelRatio(render, pixelRatio);
   Render.lookAt(render, {
     min: { x: 0, y: 0 },
     max: { x: viewWidth, y: viewHeight },
@@ -152,8 +84,8 @@ function handleResize() {
   const nextRect = glass.getRect();
   shiftBodies(prevRect, nextRect);
   game.onResize();
-  game.setViewScale(viewState.scale);
-  game.setViewSize(viewState.width, viewState.height);
+  game.setViewScale(scale);
+  game.setViewSize(width, height);
 }
 
 function shiftBodies(prevRect, nextRect) {
@@ -198,9 +130,6 @@ function scheduleAutoPause() {
 }
 
 function scheduleAutoResume() {
-  if (!game) {
-    return;
-  }
   const pauseInfo = game.getPauseInfo?.();
   if (!pauseInfo?.paused || pauseInfo.reason !== "focus") {
     return;
