@@ -192,9 +192,15 @@ function applyChainFillStyles(state, bodies, components, deltaMs) {
     const lerp = 1 - Math.pow(1 - CHAIN_ALPHA_LERP, deltaMs / 16.67);
     const nextAlpha = currentAlpha + (targetAlpha - currentAlpha) * lerp;
     body.plugin.fillAlpha = nextAlpha;
-    const fill = color ? hexToRgba(color, nextAlpha) : "rgba(0, 0, 0, 0)";
-    for (const part of parts) {
-      part.render.fillStyle = fill;
+    if (body.plugin.customOutline) {
+      for (const part of parts) {
+        part.render.fillStyle = "rgba(0, 0, 0, 0)";
+      }
+    } else {
+      const fill = color ? hexToRgba(color, nextAlpha) : "rgba(0, 0, 0, 0)";
+      for (const part of parts) {
+        part.render.fillStyle = fill;
+      }
     }
   }
 }

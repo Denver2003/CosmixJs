@@ -3,7 +3,6 @@ import {
   COLORS,
   ROTATE_RANGE,
   SHAPE_SCALE,
-  TARGET_AREA,
   UNIT,
 } from "./config.js";
 
@@ -23,28 +22,29 @@ export function createRandomSpec(colorsCount, rotationRange) {
 }
 
 export function createShape(spec, spawnPoint, options = {}) {
+  const cellSize = UNIT * SHAPE_SCALE;
   const shapes = [
     () =>
       Bodies.rectangle(
         spawnPoint.x,
         spawnPoint.y,
-        4 * UNIT * SHAPE_SCALE,
-        UNIT * SHAPE_SCALE,
+        4 * cellSize,
+        cellSize,
         BLOCK_OPTIONS
       ),
     () =>
       Bodies.rectangle(
         spawnPoint.x,
         spawnPoint.y,
-        2 * UNIT * SHAPE_SCALE,
-        2 * UNIT * SHAPE_SCALE,
+        2 * cellSize,
+        2 * cellSize,
         BLOCK_OPTIONS
       ),
-    () => createTriangle(spawnPoint),
-    () => createCircle(spawnPoint),
-    () => createLShape(spawnPoint),
-    () => createDiamond(spawnPoint),
-    () => createTShape(spawnPoint),
+    () => createTriangle(spawnPoint, cellSize),
+    () => createCircle(spawnPoint, cellSize),
+    () => createDiamond(spawnPoint, cellSize),
+    () => createOval(spawnPoint, cellSize),
+    () => createPentagon(spawnPoint, cellSize),
   ];
 
   const body = shapes[spec.type]();
@@ -54,12 +54,13 @@ export function createShape(spec, spawnPoint, options = {}) {
 }
 
 function applyStrokeStyle(body, color, alpha) {
-  body.plugin = { ...(body.plugin || {}), color };
+  const customOutline = body.plugin?.customOutline;
+  body.plugin = { ...(body.plugin || {}), color, customOutline };
   const parts = body.parts.length > 1 ? body.parts : [body];
   const stroke =
     typeof alpha === "number" ? hexToRgba(color, alpha) : color;
   for (const part of parts) {
-    part.render.strokeStyle = stroke;
+    part.render.strokeStyle = customOutline ? "rgba(0, 0, 0, 0)" : stroke;
     part.render.lineWidth = 2;
     part.render.fillStyle = "rgba(0, 0, 0, 0)";
   }
@@ -73,42 +74,20 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function createTriangle(spawn) {
-  const radius = Math.sqrt((4 * TARGET_AREA) / (3 * Math.sqrt(3)));
+function createTriangle(spawn, cellSize) {
+  const side = 3 * cellSize;
+  const radius = side / Math.sqrt(3);
   return Bodies.polygon(spawn.x, spawn.y, 3, radius, BLOCK_OPTIONS);
 }
 
-function createCircle(spawn) {
-  const radius = Math.sqrt(TARGET_AREA / Math.PI);
+function createCircle(spawn, cellSize) {
+  const radius = 1.128 * cellSize;
   return Bodies.circle(spawn.x, spawn.y, radius, BLOCK_OPTIONS);
 }
 
-function createLShape(spawn) {
-  const vertical = Bodies.rectangle(
-    spawn.x - (UNIT * SHAPE_SCALE) / 2,
-    spawn.y,
-    UNIT * SHAPE_SCALE,
-    3 * UNIT * SHAPE_SCALE,
-    BLOCK_OPTIONS
-  );
-  const horizontal = Bodies.rectangle(
-    spawn.x + (UNIT * SHAPE_SCALE) / 2,
-    spawn.y + UNIT * SHAPE_SCALE,
-    2 * UNIT * SHAPE_SCALE,
-    UNIT * SHAPE_SCALE,
-    BLOCK_OPTIONS
-  );
-  const body = Body.create({
-    parts: [vertical, horizontal],
-    ...BLOCK_OPTIONS,
-  });
-  Body.setPosition(body, spawn);
-  return body;
-}
-
-function createDiamond(spawn) {
-  const a = Math.sqrt(TARGET_AREA / 1.2);
-  const b = a * 0.6;
+function createDiamond(spawn, cellSize) {
+  const a = 2 * cellSize;
+  const b = 1 * cellSize;
   const vertices = [
     { x: 0, y: -a },
     { x: b, y: 0 },
@@ -118,25 +97,23 @@ function createDiamond(spawn) {
   return Bodies.fromVertices(spawn.x, spawn.y, vertices, BLOCK_OPTIONS, true);
 }
 
-function createTShape(spawn) {
-  const bar = Bodies.rectangle(
-    spawn.x,
-    spawn.y - (UNIT * SHAPE_SCALE) / 2,
-    3 * UNIT * SHAPE_SCALE,
-    UNIT * SHAPE_SCALE,
-    BLOCK_OPTIONS
-  );
-  const stem = Bodies.rectangle(
-    spawn.x,
-    spawn.y + (UNIT * SHAPE_SCALE) / 2,
-    UNIT * SHAPE_SCALE,
-    2 * UNIT * SHAPE_SCALE,
-    BLOCK_OPTIONS
-  );
-  const body = Body.create({
-    parts: [bar, stem],
-    ...BLOCK_OPTIONS,
-  });
-  Body.setPosition(body, spawn);
-  return body;
+function createOval(spawn, cellSize) {
+  const ratio = 1.6;
+  const targetArea = 4 * cellSize * cellSize;
+  const a = Math.sqrt((targetArea * ratio) / Math.PI);
+  const b = a / ratio;
+  const steps = 20;
+  const vertices = [];
+  for (let i = 0; i < steps; i += 1) {
+    const t = (i / steps) * Math.PI * 2;
+    vertices.push({ x: Math.cos(t) * a, y: Math.sin(t) * b });
+  }
+  return Bodies.fromVertices(spawn.x, spawn.y, vertices, BLOCK_OPTIONS, true);
+}
+
+function createPentagon(spawn, cellSize) {
+  const targetArea = 4 * cellSize * cellSize;
+  const sideSin = Math.sin((2 * Math.PI) / 5);
+  const radius = Math.sqrt((2 * targetArea) / (5 * sideSin));
+  return Bodies.polygon(spawn.x, spawn.y, 5, radius, BLOCK_OPTIONS);
 }

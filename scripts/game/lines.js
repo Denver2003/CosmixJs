@@ -6,6 +6,8 @@ import {
 } from "../config.js";
 import { hexToRgba } from "./utils.js";
 
+const { Composite } = Matter;
+
 export function drawLines(state, render, getGlassRect) {
   const { left, top } = getGlassRect();
   const spawnY = top + SPAWN_OFFSET;
@@ -56,6 +58,49 @@ export function drawLines(state, render, getGlassRect) {
     ctx.fillText(`ANGLE ${angleDeg}°`, right - 6, top + 42);
     ctx.fillText(`COLORS ${state.colorsCount}`, right - 6, top + 56);
     ctx.textAlign = "start";
+  }
+
+  drawCustomOutlines(state, ctx);
+  ctx.restore();
+}
+
+function drawCustomOutlines(state, ctx) {
+  const bodies = Composite.allBodies(state.world);
+  ctx.save();
+  ctx.lineWidth = 2;
+  for (const body of bodies) {
+    const outlineEdges = body.plugin?.outlineEdges;
+    const cellRects = body.plugin?.cellRects;
+    const color = body.plugin?.color;
+    if (!outlineEdges || !color) {
+      continue;
+    }
+    const scale = body.plugin?.scaleCurrent || 1;
+    const alpha = body.plugin?.preview ? body.plugin?.previewAlpha ?? 0.4 : null;
+    const stroke = alpha === null ? color : hexToRgba(color, alpha);
+    const fillAlpha = body.plugin?.fillAlpha ?? 0;
+    const fill =
+      fillAlpha > 0 ? hexToRgba(color, Math.min(fillAlpha, 1)) : null;
+    ctx.save();
+    ctx.translate(body.position.x, body.position.y);
+    ctx.rotate(body.angle);
+    ctx.scale(scale, scale);
+
+    if (fill && cellRects) {
+      ctx.fillStyle = fill;
+      for (const rect of cellRects) {
+        ctx.fillRect(rect.x, rect.y, rect.size, rect.size);
+      }
+    }
+
+    ctx.beginPath();
+    for (const edge of outlineEdges) {
+      ctx.moveTo(edge.x1, edge.y1);
+      ctx.lineTo(edge.x2, edge.y2);
+    }
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+    ctx.restore();
   }
   ctx.restore();
 }

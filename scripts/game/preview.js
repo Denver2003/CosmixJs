@@ -39,12 +39,18 @@ export function updatePreview(state, timestamp) {
   const color = state.previewBody.plugin?.color;
   const alpha = 0.4 * elapsed;
   const stroke = color ? hexToRgba(color, alpha) : "rgba(0,0,0,0)";
+  state.previewBody.plugin = {
+    ...(state.previewBody.plugin || {}),
+    previewAlpha: alpha,
+  };
   const parts =
     state.previewBody.parts.length > 1
       ? state.previewBody.parts
       : [state.previewBody];
   for (const part of parts) {
-    part.render.strokeStyle = stroke;
+    part.render.strokeStyle = state.previewBody.plugin?.customOutline
+      ? "rgba(0, 0, 0, 0)"
+      : stroke;
     part.render.fillStyle = "rgba(0, 0, 0, 0)";
   }
 }

@@ -45,10 +45,12 @@ Zones
 
 Types
 	•	Circle
+	•	Oval
+	•	Pentagon
 	•	Square
 	•	Rectangle
 	•	Triangle
-	•	L-shape
+	•	Diamond
 
 Properties (Fixed)
 	•	Размер — фиксированный на тип фигуры

@@ -5,8 +5,8 @@ export function clampWaitingBody(body, getGlassRect, glassWidth, wallThickness) 
     return;
   }
   const { left } = getGlassRect();
-  const minX = left + wallThickness / 2;
-  const maxX = left + glassWidth - wallThickness / 2;
+  const minX = left;
+  const maxX = left + glassWidth;
   const { min, max } = body.bounds;
   if (min.x < minX) {
     Body.translate(body, { x: minX - min.x, y: 0 });

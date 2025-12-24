@@ -11,14 +11,14 @@
   - Down arrow: drop immediately and spawn the next piece.
 - **Pointer controls**: drag left/right while holding; release to drop (mouse/touch).
 - **Random rotation at spawn**; no player rotation.
-- **Shapes (area ~ constant, scaled down ~24%)**:
-  - Rectangle 4x1 (scaled)
-  - Square 2x2 (scaled)
-  - Triangle
-  - Circle
-  - L-shape (composite)
-  - Diamond
-  - T-shape (composite)
+- **Shapes (grid-based, size by L = UNIT * SHAPE_SCALE)**:
+  - Rectangle: 4L x 1L
+  - Square: 2L x 2L
+  - Triangle: equilateral, side 3L
+  - Circle: radius 1.128L
+  - Diamond: diagonals 2L and 4L
+  - Oval: ellipse area = 4L^2, aspect ratio 1.6
+  - Pentagon: regular, area = 4L^2
 - **Colors**: 4 random stroke colors per piece; transparent fill.
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
