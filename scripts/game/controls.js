@@ -2,12 +2,20 @@ import { CONTROL_DESCENT_FACTOR, GLASS_WIDTH, WALL_THICKNESS } from "../config.j
 import { dropActiveBody } from "./spawn.js";
 import { clampWaitingBody } from "./utils.js";
 
-export function attachControls(state, getSpawnPoint, getGlassRect) {
+export function attachControls(state, getSpawnPoint, getGlassRect, togglePause) {
   let pointerActive = false;
   let lastX = 0;
 
   function onKeyDown(event) {
+    if (event.key === "p" || event.key === "P") {
+      togglePause?.();
+      event.preventDefault();
+      return;
+    }
     if (!state.waitingBody || state.gameOver) {
+      return;
+    }
+    if (state.paused) {
       return;
     }
 
@@ -43,6 +51,9 @@ export function attachControls(state, getSpawnPoint, getGlassRect) {
     if (!state.waitingBody || state.gameOver) {
       return;
     }
+    if (state.paused) {
+      return;
+    }
     pointerActive = true;
     lastX = event.clientX;
     state.moveLeft = false;
@@ -55,11 +66,15 @@ export function attachControls(state, getSpawnPoint, getGlassRect) {
     if (!pointerActive || !state.waitingBody) {
       return;
     }
+    if (state.paused) {
+      return;
+    }
     const dx = event.clientX - lastX;
     lastX = event.clientX;
     if (Math.abs(dx) > 0) {
       const factor = state.waitingState === "descending" ? CONTROL_DESCENT_FACTOR : 1;
-      Matter.Body.translate(state.waitingBody, { x: dx * factor, y: 0 });
+      const scale = state.viewScale || 1;
+      Matter.Body.translate(state.waitingBody, { x: (dx / scale) * factor, y: 0 });
       clampWaitingBody(
         state.waitingBody,
         getGlassRect,
@@ -72,6 +87,10 @@ export function attachControls(state, getSpawnPoint, getGlassRect) {
 
   function onPointerUp(event) {
     if (!pointerActive) {
+      return;
+    }
+    if (state.paused) {
+      pointerActive = false;
       return;
     }
     pointerActive = false;

@@ -1,18 +1,20 @@
 import {
   GLASS_HEIGHT,
   GLASS_WIDTH,
+  HUD_TOP_RESERVE,
   WALL_THICKNESS,
 } from "./config.js";
 
 const { World, Bodies } = Matter;
 
-export function createGlass(world) {
+export function createGlass(world, getViewRect) {
   let glassBodies = [];
   let glassRect = getGlassRect();
 
   function getGlassRect() {
-    const left = Math.round((window.innerWidth - GLASS_WIDTH) / 2);
-    const top = Math.round((window.innerHeight - GLASS_HEIGHT) / 2);
+    const { width } = getViewRect();
+    const left = Math.round((width - GLASS_WIDTH) / 2);
+    const top = Math.round(HUD_TOP_RESERVE);
     return { left, top };
   }
 
@@ -27,6 +29,7 @@ export function createGlass(world) {
       isStatic: true,
       friction: 0.95,
       restitution: 0.02,
+      plugin: { isGlass: true },
       render: {
         fillStyle: "rgba(0, 0, 0, 0)",
         strokeStyle: "#cfd8dc",

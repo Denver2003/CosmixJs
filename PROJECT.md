@@ -32,6 +32,8 @@
 - **Diamond**: one diagonal ~40% shorter than the other.
 - **Debug overlay**: optional top-right telemetry (level, cleared, angle, colors).
 - **Impact flash**: first collision after a drop triggers a fast full-body fill blink.
+- **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
+- **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 
 ## File layout
 
