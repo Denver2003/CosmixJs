@@ -5,6 +5,7 @@ import {
   SPAWN_OFFSET,
 } from "../config.js";
 import { hexToRgba } from "./utils.js";
+import { getSpawnWaitMs } from "./state.js";
 
 const { Composite } = Matter;
 
@@ -60,6 +61,7 @@ export function drawLines(state, render, getGlassRect) {
     ctx.textAlign = "start";
   }
 
+  drawWaitFill(state, ctx);
   drawCustomOutlines(state, ctx);
   ctx.restore();
 }
@@ -102,5 +104,35 @@ function drawCustomOutlines(state, ctx) {
     ctx.stroke();
     ctx.restore();
   }
+  ctx.restore();
+}
+
+function drawWaitFill(state, ctx) {
+  const body = state.waitingBody;
+  if (!body || state.waitingState !== "armed") {
+    return;
+  }
+  const elapsedMs = state.engine.timing.timestamp - state.waitStartMs;
+  const waitMs = getSpawnWaitMs(state.level);
+  const progress = Math.max(0, Math.min(1, elapsedMs / waitMs));
+  const bounds = body.bounds;
+  const height = bounds.max.y - bounds.min.y;
+  const fillHeight = height * progress;
+  const color = body.plugin?.color || "#ffffff";
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(body.vertices[0].x, body.vertices[0].y);
+  for (let i = 1; i < body.vertices.length; i += 1) {
+    ctx.lineTo(body.vertices[i].x, body.vertices[i].y);
+  }
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = hexToRgba(color, 0.25);
+  ctx.fillRect(
+    bounds.min.x,
+    bounds.min.y,
+    bounds.max.x - bounds.min.x,
+    fillHeight
+  );
   ctx.restore();
 }
