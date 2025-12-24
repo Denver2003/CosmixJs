@@ -5,6 +5,7 @@
 - **Matter.js playground** with a centered glass (10x20 units) and wireframe-style render.
 - **Spawn/kill lines** drawn as horizontal guides.
 - **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes (L1=4.0s; -0.16s per level; min 1.0s), then auto-drops.
+- **Spawn wait indicator**: active piece fills from top to bottom while waiting on the control line.
 - **Spawn scale**: falling piece scales from 0.5 → 1.0 while moving to spawn line.
 - **Controls** (during the descent and 5s wait):
   - Left/Right arrows: smooth horizontal movement.
