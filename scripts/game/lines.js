@@ -16,12 +16,7 @@ export function drawLines(state, render, getGlassRect) {
 
   const ctx = render.context;
   ctx.save();
-  ctx.strokeStyle = "#3fa9f5";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(left, spawnY);
-  ctx.lineTo(left + GLASS_WIDTH, spawnY);
-  ctx.stroke();
+  // Control line rendering intentionally hidden; logic remains.
 
   const killPhaseMs = state.killTouchMs;
   let alpha = 0.25;

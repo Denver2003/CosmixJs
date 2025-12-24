@@ -47,6 +47,10 @@ export function dropActiveBody(state, getSpawnPoint) {
     x: state.waitingBody.velocity.x,
     y: DROP_SPEED,
   });
+  state.waitingBody.plugin = {
+    ...(state.waitingBody.plugin || {}),
+    impactArmed: true,
+  };
   state.waitingBody = null;
   state.waitingState = "none";
   state.waitStartMs = 0;

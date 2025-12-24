@@ -11,6 +11,9 @@ export function updateKillLine(state, getGlassRect, deltaMs) {
     if (body.isStatic) {
       continue;
     }
+    if (body.plugin?.burst?.active) {
+      continue;
+    }
     if (state.waitingState === "armed" && body === state.waitingBody) {
       continue;
     }

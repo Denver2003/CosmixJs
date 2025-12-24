@@ -24,12 +24,14 @@
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
+- **Chain burst**: matched chains now play a 0.5s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst.
 - **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in).
 - **Levels**: L1=10 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
 - **Colors**: start 4, +1 per 5 levels, max 7; palette updated to neon, high-contrast colors.
 - **Rotation**: no random rotation for L1-5; L6-9 ramps to max; L10+ capped; a discrete 0/90/180/‑90 offset is always added.
 - **Diamond**: one diagonal ~40% shorter than the other.
 - **Debug overlay**: optional top-right telemetry (level, cleared, angle, colors).
+- **Impact flash**: first collision after a drop triggers a fast full-body fill blink.
 
 ## File layout
 

@@ -5,7 +5,7 @@ import { updateChains } from "./chains.js";
 import { updateKillLine } from "./kill.js";
 import { updatePreview, repositionPreview } from "./preview.js";
 import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
-import { GLASS_WIDTH, SPAWN_OFFSET } from "../config.js";
+import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
 
@@ -49,6 +49,18 @@ export function createGame({ engine, world, render, getGlassRect }) {
 
   Events.on(engine, "afterUpdate", update);
   Events.on(render, "afterRender", draw);
+  Events.on(engine, "collisionStart", (event) => {
+    const now = engine.timing.timestamp;
+    for (const pair of event.pairs) {
+      const bodyA = pair.bodyA.parent || pair.bodyA;
+      const bodyB = pair.bodyB.parent || pair.bodyB;
+      if (bodyA === bodyB) {
+        continue;
+      }
+      armFlash(bodyA, now);
+      armFlash(bodyB, now);
+    }
+  });
 
   const detachControls = attachControls(state, getSpawnPoint, getGlassRect);
 
@@ -62,4 +74,16 @@ export function createGame({ engine, world, render, getGlassRect }) {
   }
 
   return { start, onResize, detachControls };
+}
+
+function armFlash(body, nowMs) {
+  if (!body || !body.plugin?.impactArmed) {
+    return;
+  }
+  body.plugin = {
+    ...(body.plugin || {}),
+    impactArmed: false,
+    flashStartMs: nowMs,
+    flashDurationMs: IMPACT_FLASH_DURATION_MS,
+  };
 }

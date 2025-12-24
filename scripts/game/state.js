@@ -36,6 +36,7 @@ export function createGameState() {
     chainStates: [],
     debugLogMs: 0,
     chainGraceMs: 0,
+    burstBodies: new Set(),
     nextSpec: createRandomSpec(getColorsCount(level), getRotationRange(level)),
     previewBody: null,
     previewStartMs: 0,
