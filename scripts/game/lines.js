@@ -9,6 +9,7 @@ import {
 import { getTopHudLayout } from "../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../ui/layout.js";
 import { drawScoreParticles, updateScoreParticles } from "./score_particles.js";
+import { drawComboPopups, updateComboPopups } from "./combo_popup.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 
@@ -58,6 +59,8 @@ export function drawLines(state, render, getGlassRect) {
   Render.endViewTransform(render);
   updateScoreParticles(state, render, getGlassRect);
   drawScoreParticles(state, ctx);
+  updateComboPopups(state);
+  drawComboPopups(state, ctx);
   drawTopHud(state, ctx, render, getGlassRect);
   drawPauseOverlay(state, ctx, render);
   ctx.restore();

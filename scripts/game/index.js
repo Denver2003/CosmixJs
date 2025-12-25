@@ -9,6 +9,8 @@ import { createPauseController } from "./pause.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
 import { saveCoins } from "./storage.js";
 import { spawnScoreParticles } from "./score_particles.js";
+import { recordCombo } from "./combo.js";
+import { spawnComboPopup } from "./combo_popup.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -44,7 +46,27 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     const { removedCount, removedComponents, removedComponentBodies } =
       updateChains(state, deltaMs);
     if (removedCount) {
+      const comboInfo = recordCombo(state, engine.timing.timestamp);
+      if (comboInfo?.multiplier > 1) {
+        const allBodies = [];
+        for (const group of removedComponentBodies) {
+          for (const body of group) {
+            allBodies.push(body);
+          }
+        }
+        spawnComboPopup(state, getGlassRect, allBodies, comboInfo.multiplier);
+      }
       const { breakdown } = applyChainRewards(state, removedComponents);
+      if (comboInfo && comboInfo.multiplier > 1) {
+        console.log(
+          "[combo]",
+          `x${comboInfo.multiplier}`,
+          "chains:",
+          comboInfo.chainCount,
+          "windowMs:",
+          comboInfo.windowMs
+        );
+      }
       spawnScoreParticles(
         state,
         render,

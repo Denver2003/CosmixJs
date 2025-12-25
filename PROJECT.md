@@ -34,6 +34,8 @@
 - **Diamond**: one diagonal ~40% shorter than the other.
 - **Debug overlay**: optional top-right telemetry (level, cleared, angle, colors).
 - **Impact flash**: first collision after a drop triggers a fast full-body fill blink.
+- **Combo system**: each collapse opens a 4s window for the next; streak-based multiplier capped at x5 (Combo/Super/Mega/Cosmo).
+- **Combo popup**: combo label bursts from collapse center to glass center, blinks on peak (1–4), then floats up and fades; stacked vertically when overlapping.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.

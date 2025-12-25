@@ -229,7 +229,11 @@ Variables
 
 Score on Collapse
 
-NR = base × Level × Multiply × Count × PointCoef × Combo
+NR = base × Level × Multiply × Count × PointCoef × Combo × ChainBonus
+
+ChainBonus
+	•	Count = 4 → 1.0
+	•	Count > 4 → 1 + 0.1 × (Count − 4)
 
 Bubble Score
 
