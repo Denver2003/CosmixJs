@@ -50,3 +50,11 @@ export const IMPACT_FLASH_ALPHA = 0.85;
 export const PREVIEW_FADE_MS = 350;
 export const PREVIEW_DELAY_MS = 200;
 export const DEBUG_OVERLAY = true;
+
+export const COSMO_ENERGY_GAIN = 4;
+export const COSMO_ENERGY_DECAY = 2;
+export const COSMO_ENERGY_MAX = 100;
+export const COSMO_ENERGY_MAX_INTERNAL = 125;
+export const COSMO_ENERGY_L2 = 35;
+export const COSMO_ENERGY_L3 = 70;
+export const COSMO_ENERGY_L5 = 100;

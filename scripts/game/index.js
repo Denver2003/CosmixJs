@@ -11,6 +11,7 @@ import { saveCoins } from "./storage.js";
 import { spawnScoreParticles } from "./score_particles.js";
 import { recordCombo } from "./combo.js";
 import { spawnComboPopup } from "./combo_popup.js";
+import { updateCosmometer, updateCosmometerMultiplier } from "./cosmometer.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -41,6 +42,9 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       return;
     }
     const deltaMs = engine.timing.lastDelta;
+    updateCosmometer(state, deltaMs);
+    const prevMultiplier = state.gameMultiplier;
+    updateCosmometerMultiplier(state, engine.timing.timestamp);
     updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs);
     updateKillLine(state, getGlassRect, deltaMs);
     const { removedCount, removedComponents, removedComponentBodies } =
@@ -89,6 +93,16 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       }
     }
     updatePreview(state, engine.timing.timestamp);
+
+    if (state.gameMultiplier !== prevMultiplier) {
+      console.log(
+        "[cosmo]",
+        "energy:",
+        state.energy.toFixed(1),
+        "x",
+        state.gameMultiplier
+      );
+    }
   }
 
   function draw() {

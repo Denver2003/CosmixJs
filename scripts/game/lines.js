@@ -1,4 +1,8 @@
 import {
+  COSMO_ENERGY_L2,
+  COSMO_ENERGY_L3,
+  COSMO_ENERGY_L5,
+  COSMO_ENERGY_MAX,
   DEBUG_OVERLAY,
   GLASS_HEIGHT,
   GLASS_WIDTH,
@@ -10,6 +14,7 @@ import { getTopHudLayout } from "../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../ui/layout.js";
 import { drawScoreParticles, updateScoreParticles } from "./score_particles.js";
 import { drawComboPopups, updateComboPopups } from "./combo_popup.js";
+import { getCosmoBaseColor } from "./cosmometer.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 
@@ -245,22 +250,60 @@ function drawCosmometer(state, ctx, getGlassRect) {
   ctx.fillRect(x, y, width, height);
   ctx.strokeRect(x, y, width, height);
 
+  const energy = Math.max(0, Math.min(COSMO_ENERGY_MAX, state.energy || 0));
+  const fillRatio = COSMO_ENERGY_MAX ? energy / COSMO_ENERGY_MAX : 0;
+  const fillHeight = Math.max(0, Math.min(1, fillRatio)) * height;
+  const fillY = y + height - fillHeight;
+
+  const now = state.engine.timing.timestamp;
+  const baseLevel = getEnergyLevel(energy);
+  let fillColor = getCosmoBaseColor(baseLevel);
+  if (state.cosmoColorBlendStartMs) {
+    const blendMs = 500;
+    const t = Math.max(0, Math.min(1, (now - state.cosmoColorBlendStartMs) / blendMs));
+    if (t < 1 && state.cosmoColorFrom && state.cosmoColorTo) {
+      fillColor = blendHex(state.cosmoColorFrom, state.cosmoColorTo, t);
+    }
+  }
+  if (fillHeight > 0) {
+    ctx.fillStyle = fillColor;
+    ctx.fillRect(x, fillY, width, fillHeight);
+  }
+
   const markerDiameter = (WALL_THICKNESS * 2) / 3;
   const markerX = x + width / 2;
-  const markerYs = [
-    y,
-    y + height / 3,
-    y + (height * 2) / 3,
-    y + height,
+  const markerDefs = [
+    { threshold: 0, y: y + height, scale: 1 },
+    {
+      threshold: COSMO_ENERGY_L2,
+      y: y + height - height * (COSMO_ENERGY_L2 / COSMO_ENERGY_MAX),
+      scale: 1.1,
+    },
+    {
+      threshold: COSMO_ENERGY_L3,
+      y: y + height - height * (COSMO_ENERGY_L3 / COSMO_ENERGY_MAX),
+      scale: 1.2,
+    },
+    {
+      threshold: COSMO_ENERGY_L5,
+      y: y + height - height * (COSMO_ENERGY_L5 / COSMO_ENERGY_MAX),
+      scale: 1.3,
+    },
   ];
-  ctx.fillStyle = "#000000";
-  for (const markerY of markerYs) {
-    const radius = markerDiameter / 2;
+  ctx.fillStyle = fillColor;
+  for (const marker of markerDefs) {
+    if (energy < marker.threshold) {
+      continue;
+    }
+    const radius = (markerDiameter / 2) * (marker.scale || 1);
     ctx.beginPath();
-    ctx.arc(markerX, markerY, radius, 0, Math.PI * 2);
+    ctx.arc(markerX, marker.y, radius, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
+
+  updateCosmoPopups(state);
+  drawCosmoPopups(state, ctx, { x, y, width, height });
 }
 
 function drawBonusButtons(state, ctx, getGlassRect) {
@@ -350,5 +393,119 @@ function drawGlassCaps(ctx, getGlassRect) {
   ctx.arc(leftX, y, radius, 0, Math.PI * 2);
   ctx.arc(rightX, y, radius, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function getEnergyLevel(energy) {
+  if (energy >= COSMO_ENERGY_L5) {
+    return 5;
+  }
+  if (energy >= COSMO_ENERGY_L3) {
+    return 3;
+  }
+  if (energy >= COSMO_ENERGY_L2) {
+    return 2;
+  }
+  return 1;
+}
+
+function blendHex(fromHex, toHex, t) {
+  const from = parseHex(fromHex);
+  const to = parseHex(toHex);
+  if (!from || !to) {
+    return fromHex || toHex || "#ffffff";
+  }
+  const r = Math.round(from.r + (to.r - from.r) * t);
+  const g = Math.round(from.g + (to.g - from.g) * t);
+  const b = Math.round(from.b + (to.b - from.b) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function parseHex(hex) {
+  if (!hex || !hex.startsWith("#")) {
+    return null;
+  }
+  const value = hex.slice(1);
+  const expanded =
+    value.length === 3
+      ? value
+          .split("")
+          .map((ch) => ch + ch)
+          .join("")
+      : value;
+  const r = Number.parseInt(expanded.slice(0, 2), 16);
+  const g = Number.parseInt(expanded.slice(2, 4), 16);
+  const b = Number.parseInt(expanded.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) {
+    return null;
+  }
+  return { r, g, b };
+}
+
+function updateCosmoPopups(state) {
+  const popups = state.cosmoPopups;
+  if (!popups || popups.length === 0) {
+    return;
+  }
+  const now = state.engine.timing.timestamp;
+  const next = [];
+  for (const popup of popups) {
+    const elapsed = now - popup.startMs;
+    if (elapsed <= 2300) {
+      next.push(popup);
+    }
+  }
+  state.cosmoPopups = next;
+}
+
+function drawCosmoPopups(state, ctx, bar) {
+  const popups = state.cosmoPopups;
+  if (!popups || popups.length === 0) {
+    return;
+  }
+  const now = state.engine.timing.timestamp;
+  const phase1 = 300;
+  const phase2 = 2000;
+  const moveX = bar.width * 2 + 12;
+  const lift = bar.height * 0.1;
+  ctx.save();
+  ctx.font = "16px sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  for (const popup of popups) {
+    const elapsed = now - popup.startMs;
+    if (elapsed < 0) {
+      continue;
+    }
+    const ratio =
+      COSMO_ENERGY_MAX > 0 ? popup.threshold / COSMO_ENERGY_MAX : 0;
+    const startX = bar.x + bar.width / 2;
+    const startY = bar.y + bar.height - bar.height * ratio;
+    let x = startX;
+    let y = startY;
+    let scale = 1;
+    let alpha = 1;
+    if (elapsed <= phase1) {
+      const t = Math.max(0, Math.min(1, elapsed / phase1));
+      const ease = 1 - Math.pow(1 - t, 3);
+      x = startX + moveX * ease;
+      y = startY;
+      scale = 1 + (2 - 1) * ease;
+      alpha = 1;
+    } else {
+      const t = Math.max(0, Math.min(1, (elapsed - phase1) / phase2));
+      const ease = 1 - Math.pow(1 - t, 2);
+      x = startX + moveX;
+      y = startY - lift * ease;
+      scale = 2;
+      alpha = Math.max(0, 1 - t);
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = hexToRgba(popup.color || "#ffffff", alpha);
+    ctx.fillText(`${popup.multiplier}x`, 0, 0);
+    ctx.restore();
+  }
   ctx.restore();
 }

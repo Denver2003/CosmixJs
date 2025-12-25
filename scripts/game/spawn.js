@@ -9,6 +9,7 @@ import {
 } from "../config.js";
 import { createRandomSpec, createShape } from "../shapes.js";
 import { getSpawnWaitMs } from "./state.js";
+import { addEnergyOnDrop, updateCosmometerMultiplier } from "./cosmometer.js";
 import { clampWaitingBody, setBodyScale } from "./utils.js";
 import { removePreview, setPreview } from "./preview.js";
 
@@ -38,6 +39,8 @@ export function dropActiveBody(state, getSpawnPoint) {
   if (!state.waitingBody || state.gameOver) {
     return;
   }
+  addEnergyOnDrop(state);
+  updateCosmometerMultiplier(state, state.engine.timing.timestamp);
 
   setBodyScale(state.waitingBody, 1);
   removePreview(state);
