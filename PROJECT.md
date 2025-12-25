@@ -25,6 +25,8 @@
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
 - **Chain burst**: matched chains now play a 0.5s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst.
+- **Scoring**: collapse score uses NR formula with a chain-size bonus (+10% per piece above 4); level-up grants NLR bonus.
+- **Score particles**: per-figure `+N` texts spawn on collapse, burst outward, then magnetize to the SCORE HUD and fade; color matches the collapsed figure.
 - **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in).
 - **Levels**: L1=10 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
 - **Colors**: start 4, +1 per 5 levels, max 7; palette updated to neon, high-contrast colors.
@@ -35,6 +37,7 @@
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.
+- **Score/Coins HUD**: live score display; coins persist between sessions (saved on game over).
 
 ## File layout
 

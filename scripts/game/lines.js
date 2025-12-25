@@ -8,6 +8,7 @@ import {
 } from "../config.js";
 import { getTopHudLayout } from "../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../ui/layout.js";
+import { drawScoreParticles, updateScoreParticles } from "./score_particles.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 
@@ -55,6 +56,8 @@ export function drawLines(state, render, getGlassRect) {
   drawBottomProgress(state, ctx, getGlassRect);
   drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
+  updateScoreParticles(state, render, getGlassRect);
+  drawScoreParticles(state, ctx);
   drawTopHud(state, ctx, render, getGlassRect);
   drawPauseOverlay(state, ctx, render);
   ctx.restore();
@@ -146,7 +149,8 @@ function drawTopHud(state, ctx, render, getGlassRect) {
   ctx.fillText("SCORE", leftX, labelY);
   ctx.fillStyle = "#e0e4e8";
   ctx.font = "20px sans-serif";
-  ctx.fillText("00000", leftX, valueY);
+  const scoreText = Math.floor(state.score || 0).toString().padStart(5, "0");
+  ctx.fillText(scoreText, leftX, valueY);
 
   ctx.strokeStyle = "#cfd8dc";
   ctx.lineWidth = 2;
@@ -168,7 +172,8 @@ function drawTopHud(state, ctx, render, getGlassRect) {
   ctx.fillText("COINS", pause.x - coinsGap, labelY);
   ctx.fillStyle = "#f0c74a";
   ctx.font = "18px sans-serif";
-  ctx.fillText("000", pause.x - coinsGap, valueY);
+  const coinsText = Math.floor(state.coins || 0).toString().padStart(3, "0");
+  ctx.fillText(coinsText, pause.x - coinsGap, valueY);
   ctx.restore();
 }
 

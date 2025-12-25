@@ -1,5 +1,6 @@
 import { ROTATE_RANGE } from "../config.js";
 import { createRandomSpec } from "../shapes.js";
+import { loadCoins } from "./storage.js";
 
 export function getColorsCount(level) {
   return Math.min(4 + Math.floor((level - 1) / 5), 7);
@@ -44,9 +45,17 @@ export function createGameState() {
     pausedReason: null,
     pausedAtMs: 0,
     pausedResumeMs: 0,
+    gameOverHandled: false,
     nextSpec: createRandomSpec(getColorsCount(level), getRotationRange(level)),
     previewBody: null,
     previewStartMs: 0,
+    score: 0,
+    coins: loadCoins(),
+    scoreCoef: 1,
+    moneyCoef: 1,
+    gameMultiplier: 1,
+    comboMultiplier: 1,
+    scoreParticles: [],
     level,
     clearedThisLevel: 0,
     toNextLevel,
@@ -57,17 +66,18 @@ export function createGameState() {
 
 export function applyLevelProgress(state, removedCount) {
   if (!removedCount) {
-    return false;
+    return { leveledUp: false, prevToNextLevel: state.toNextLevel };
   }
   state.clearedThisLevel += removedCount;
   if (state.clearedThisLevel < state.toNextLevel) {
-    return false;
+    return { leveledUp: false, prevToNextLevel: state.toNextLevel };
   }
+  const prevToNextLevel = state.toNextLevel;
   state.level += 1;
   state.clearedThisLevel = 0;
-  state.toNextLevel = Math.floor(state.toNextLevel * 1.2);
+  state.toNextLevel = Math.floor(prevToNextLevel * 1.2);
   state.colorsCount = getColorsCount(state.level);
   state.rotationRange = getRotationRange(state.level);
   console.log("[level] up:", state.level);
-  return true;
+  return { leveledUp: true, prevToNextLevel };
 }

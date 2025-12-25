@@ -6,6 +6,9 @@ import { updateKillLine } from "./kill.js";
 import { updatePreview, repositionPreview } from "./preview.js";
 import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
 import { createPauseController } from "./pause.js";
+import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
+import { saveCoins } from "./storage.js";
+import { spawnScoreParticles } from "./score_particles.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -25,14 +28,29 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function update() {
-    if (state.gameOver || state.paused) {
+    if (state.gameOver) {
+      if (!state.gameOverHandled) {
+        saveCoins(state.coins);
+        state.gameOverHandled = true;
+      }
+      return;
+    }
+    if (state.paused) {
       return;
     }
     const deltaMs = engine.timing.lastDelta;
     updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs);
     updateKillLine(state, getGlassRect, deltaMs);
-    const removedCount = updateChains(state, deltaMs);
+    const { removedCount, removedComponents, removedComponentBodies } =
+      updateChains(state, deltaMs);
     if (removedCount) {
+      const { breakdown } = applyChainRewards(state, removedComponents);
+      spawnScoreParticles(
+        state,
+        render,
+        removedComponentBodies,
+        breakdown
+      );
       console.log(
         "[level]",
         "cleared:",
@@ -40,7 +58,13 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
         "/",
         state.toNextLevel
       );
-      applyLevelProgress(state, removedCount);
+      const { leveledUp, prevToNextLevel } = applyLevelProgress(
+        state,
+        removedCount
+      );
+      if (leveledUp) {
+        applyLevelUpReward(state, prevToNextLevel);
+      }
     }
     updatePreview(state, engine.timing.timestamp);
   }

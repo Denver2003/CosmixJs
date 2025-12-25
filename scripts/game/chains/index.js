@@ -15,6 +15,7 @@ export function updateChains(state, deltaMs) {
 
   applyChainFillStyles(state, bodies, components, deltaMs);
 
+  const removedComponentBodies = [];
   if (removedCount) {
     for (const component of removeComponents) {
       const componentBodies = [];
@@ -25,8 +26,13 @@ export function updateChains(state, deltaMs) {
         }
       }
       startBurst(state, componentBodies);
+      removedComponentBodies.push(componentBodies);
     }
   }
 
-  return removedCount;
+  return {
+    removedCount,
+    removedComponents: removeComponents,
+    removedComponentBodies,
+  };
 }
