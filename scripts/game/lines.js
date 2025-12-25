@@ -1,9 +1,13 @@
 import {
   DEBUG_OVERLAY,
+  GLASS_HEIGHT,
   GLASS_WIDTH,
   KILL_OFFSET,
   SPAWN_OFFSET,
+  WALL_THICKNESS,
 } from "../config.js";
+import { getTopHudLayout } from "../ui/hud.js";
+import { getGlassBorderRects, getGlassFrame } from "../ui/layout.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 
@@ -41,26 +45,18 @@ export function drawLines(state, render, getGlassRect) {
   }
 
   if (DEBUG_OVERLAY) {
-    const right = left + GLASS_WIDTH;
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText(`LVL ${state.level}`, right - 6, top + 14);
-    ctx.fillText(
-      `CLEARED ${state.clearedThisLevel}/${state.toNextLevel}`,
-      right - 6,
-      top + 28
-    );
-    const angleDeg = Math.round((state.rotationRange * 180) / Math.PI);
-    ctx.fillText(`ANGLE ${angleDeg}°`, right - 6, top + 42);
-    ctx.fillText(`COLORS ${state.colorsCount}`, right - 6, top + 56);
-    ctx.textAlign = "start";
+    // Reserved for future debug visuals.
   }
 
   drawWaitFill(state, ctx);
   drawCustomOutlines(state, ctx);
-  drawPauseOverlay(state, ctx, render);
+  drawCosmometer(state, ctx, getGlassRect);
+  drawBonusButtons(state, ctx, getGlassRect);
+  drawBottomProgress(state, ctx, getGlassRect);
+  drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
+  drawTopHud(state, ctx, render, getGlassRect);
+  drawPauseOverlay(state, ctx, render);
   ctx.restore();
 }
 
@@ -135,15 +131,53 @@ function drawWaitFill(state, ctx) {
   ctx.restore();
 }
 
+function drawTopHud(state, ctx, render, getGlassRect) {
+  const { leftX, labelY, valueY, coinsGap, pause, rightX } = getTopHudLayout(
+    state,
+    render,
+    getGlassRect
+  );
+
+  ctx.save();
+
+  ctx.fillStyle = "#b8c0c6";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("SCORE", leftX, labelY);
+  ctx.fillStyle = "#e0e4e8";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("00000", leftX, valueY);
+
+  ctx.strokeStyle = "#cfd8dc";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(pause.centerX, pause.centerY, pause.radius, 0, Math.PI * 2);
+  ctx.stroke();
+  const barWidth = 4;
+  const barHeight = 16;
+  const barGap = 4;
+  const barX = pause.centerX - (barWidth * 2 + barGap) / 2;
+  const barY = pause.centerY - barHeight / 2;
+  ctx.fillStyle = "#cfd8dc";
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+  ctx.fillRect(barX + barWidth + barGap, barY, barWidth, barHeight);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#d2b65a";
+  ctx.font = "12px sans-serif";
+  ctx.fillText("COINS", pause.x - coinsGap, labelY);
+  ctx.fillStyle = "#f0c74a";
+  ctx.font = "18px sans-serif";
+  ctx.fillText("000", pause.x - coinsGap, valueY);
+  ctx.restore();
+}
+
 function drawPauseOverlay(state, ctx, render) {
   if (!state.paused) {
     return;
   }
-  const viewWidth =
-    state.viewWidth || render.options.width / Math.max(1, state.viewScale || 1);
-  const viewHeight =
-    state.viewHeight ||
-    render.options.height / Math.max(1, state.viewScale || 1);
+  const viewWidth = render.options.width;
+  const viewHeight = render.options.height;
   const centerX = viewWidth / 2;
   const centerY = viewHeight / 2;
   const boxWidth = Math.min(320, viewWidth * 0.7);
@@ -180,5 +214,133 @@ function drawPauseOverlay(state, ctx, render) {
     ctx.font = "12px sans-serif";
     ctx.fillText("PRESS P TO RESUME", centerX, centerY + 12);
   }
+  ctx.restore();
+}
+
+function drawCosmometer(state, ctx, getGlassRect) {
+  const glassRect = getGlassRect();
+  const glassFrame = getGlassFrame(glassRect);
+  const { leftBorderRect } = getGlassBorderRects(glassFrame);
+  const width = WALL_THICKNESS / 3;
+  const x = leftBorderRect.x + (leftBorderRect.width - width) / 2;
+  const bottomY = glassRect.top + GLASS_HEIGHT - WALL_THICKNESS;
+  const topY = glassRect.top + KILL_OFFSET - WALL_THICKNESS;
+  const yTop = Math.min(topY, bottomY);
+  const yBottom = Math.max(topY, bottomY);
+  const height = Math.max(0, yBottom - yTop);
+  const y = yTop;
+
+  ctx.save();
+  ctx.strokeStyle = "#cfd8dc";
+  ctx.lineWidth = 2;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(x, y, width, height);
+  ctx.strokeRect(x, y, width, height);
+
+  const markerDiameter = (WALL_THICKNESS * 2) / 3;
+  const markerX = x + width / 2;
+  const markerYs = [
+    y,
+    y + height / 3,
+    y + (height * 2) / 3,
+    y + height,
+  ];
+  ctx.fillStyle = "#000000";
+  for (const markerY of markerYs) {
+    const radius = markerDiameter / 2;
+    ctx.beginPath();
+    ctx.arc(markerX, markerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBonusButtons(state, ctx, getGlassRect) {
+  const glassRect = getGlassRect();
+  const glassFrame = getGlassFrame(glassRect);
+  const { rightBorderRect } = getGlassBorderRects(glassFrame);
+  const radius = WALL_THICKNESS;
+  const centerX = rightBorderRect.x + rightBorderRect.width / 2;
+  const startY = glassRect.top + KILL_OFFSET + WALL_THICKNESS * 2;
+  const gap = WALL_THICKNESS * 2.5;
+  const centers = [startY, startY + gap, startY + gap * 2];
+
+  ctx.save();
+  ctx.fillStyle = "#0f1115";
+  ctx.strokeStyle = "#cfd8dc";
+  ctx.lineWidth = 2;
+  for (const centerY of centers) {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBottomProgress(state, ctx, getGlassRect) {
+  const glassRect = getGlassRect();
+  const glassFrame = getGlassFrame(glassRect);
+  const { bottomBorderRect } = getGlassBorderRects(glassFrame);
+  const padding = 8;
+  const barHeight = 10;
+  const barWidth = GLASS_WIDTH * 0.6;
+  const barX = glassRect.left + (GLASS_WIDTH - barWidth) / 2;
+  const barY = bottomBorderRect.y + (bottomBorderRect.height - barHeight) / 2;
+
+  ctx.save();
+  ctx.fillStyle = "#0f1115";
+  ctx.font = "14px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(`LVL ${state.level}`, glassRect.left + padding, barY + barHeight - 2);
+
+  ctx.strokeStyle = "#cfd8dc";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
+  const progress =
+    state.toNextLevel > 0 ? state.clearedThisLevel / state.toNextLevel : 0;
+  const fillWidth = Math.max(0, Math.min(1, progress)) * barWidth;
+  ctx.fillStyle = "#cfd8dc";
+  ctx.fillRect(barX, barY, fillWidth, barHeight);
+
+  const innerWidth = GLASS_WIDTH * 0.5;
+  const innerHeight = WALL_THICKNESS * 0.5;
+  const innerX = glassRect.left + (GLASS_WIDTH - innerWidth) / 2;
+  const innerY = barY + (barHeight - innerHeight) / 2;
+  ctx.fillStyle = "#0f1115";
+  ctx.fillRect(innerX, innerY, innerWidth, innerHeight);
+
+  const endRadius = innerHeight / 2;
+  const endLeftX = innerX;
+  const endRightX = innerX + innerWidth;
+  const endY = innerY + innerHeight / 2;
+  ctx.beginPath();
+  ctx.arc(endLeftX, endY, endRadius, 0, Math.PI * 2);
+  ctx.arc(endRightX, endY, endRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#0f1115";
+  ctx.fillText(
+    `${state.clearedThisLevel}/${state.toNextLevel}`,
+    glassRect.left + GLASS_WIDTH - padding,
+    barY + barHeight - 2
+  );
+  ctx.restore();
+}
+
+function drawGlassCaps(ctx, getGlassRect) {
+  const glassRect = getGlassRect();
+  const radius = WALL_THICKNESS / 2;
+  const leftX = glassRect.left - radius;
+  const rightX = glassRect.left + GLASS_WIDTH + radius;
+  const y = glassRect.top - radius;
+
+  ctx.save();
+  ctx.fillStyle = "#cfd8dc";
+  ctx.beginPath();
+  ctx.arc(leftX, y, radius, 0, Math.PI * 2);
+  ctx.arc(rightX, y, radius, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }

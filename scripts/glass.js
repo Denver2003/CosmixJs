@@ -1,6 +1,7 @@
 import {
   GLASS_HEIGHT,
   GLASS_WIDTH,
+  FLOOR_THICKNESS,
   HUD_TOP_RESERVE,
   WALL_THICKNESS,
 } from "./config.js";
@@ -31,31 +32,31 @@ export function createGlass(world, getViewRect) {
       restitution: 0.02,
       plugin: { isGlass: true },
       render: {
-        fillStyle: "rgba(0, 0, 0, 0)",
-        strokeStyle: "#cfd8dc",
-        lineWidth: 2,
+        fillStyle: "#cfd8dc",
+        strokeStyle: "rgba(0, 0, 0, 0)",
+        lineWidth: 0,
       },
     };
 
     const leftWall = Bodies.rectangle(
       left - WALL_THICKNESS / 2,
-      top + GLASS_HEIGHT / 2,
+      top + GLASS_HEIGHT / 2 + (FLOOR_THICKNESS - WALL_THICKNESS) / 2,
       WALL_THICKNESS,
-      GLASS_HEIGHT + WALL_THICKNESS,
+      GLASS_HEIGHT + FLOOR_THICKNESS,
       wallOptions
     );
     const rightWall = Bodies.rectangle(
       left + GLASS_WIDTH + WALL_THICKNESS / 2,
-      top + GLASS_HEIGHT / 2,
+      top + GLASS_HEIGHT / 2 + (FLOOR_THICKNESS - WALL_THICKNESS) / 2,
       WALL_THICKNESS,
-      GLASS_HEIGHT + WALL_THICKNESS,
+      GLASS_HEIGHT + FLOOR_THICKNESS,
       wallOptions
     );
     const floor = Bodies.rectangle(
       left + GLASS_WIDTH / 2,
-      top + GLASS_HEIGHT + WALL_THICKNESS / 2,
+      top + GLASS_HEIGHT + FLOOR_THICKNESS / 2,
       GLASS_WIDTH + WALL_THICKNESS * 2,
-      WALL_THICKNESS,
+      FLOOR_THICKNESS,
       wallOptions
     );
 

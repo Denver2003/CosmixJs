@@ -68,7 +68,9 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     state,
     getSpawnPoint,
     getGlassRect,
-    pause.togglePause
+    pause.togglePause,
+    render,
+    render?.canvas
   );
 
   function onResize() {

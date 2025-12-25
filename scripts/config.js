@@ -2,11 +2,12 @@ export const UNIT = 32;
 export const GLASS_WIDTH = 10 * UNIT;
 export const GLASS_HEIGHT = 20 * UNIT;
 export const WALL_THICKNESS = 24;
+export const FLOOR_THICKNESS = WALL_THICKNESS * 1.5;
 export const SPAWN_OFFSET = 2 * UNIT;
 export const SPAWN_START_OFFSET = 3 * UNIT;
 export const KILL_OFFSET = 3.5 * UNIT;
-export const HUD_TOP_RESERVE = 3 * UNIT;
-export const HUD_BOTTOM_RESERVE = WALL_THICKNESS;
+export const HUD_TOP_RESERVE = 2.5 * UNIT;
+export const HUD_BOTTOM_RESERVE = FLOOR_THICKNESS;
 
 export const BLOCK_OPTIONS = {
   friction: 0.8,

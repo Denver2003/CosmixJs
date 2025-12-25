@@ -1,8 +1,16 @@
 import { CONTROL_DESCENT_FACTOR, GLASS_WIDTH, WALL_THICKNESS } from "../config.js";
+import { getTopHudLayout } from "../ui/hud.js";
 import { dropActiveBody } from "./spawn.js";
 import { clampWaitingBody } from "./utils.js";
 
-export function attachControls(state, getSpawnPoint, getGlassRect, togglePause) {
+export function attachControls(
+  state,
+  getSpawnPoint,
+  getGlassRect,
+  togglePause,
+  render,
+  canvas
+) {
   let pointerActive = false;
   let lastX = 0;
 
@@ -48,6 +56,20 @@ export function attachControls(state, getSpawnPoint, getGlassRect, togglePause) 
   }
 
   function onPointerDown(event) {
+    const target = event.target || canvas;
+    const rect = target?.getBoundingClientRect?.();
+    if (rect) {
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const layout = getTopHudLayout(state, render, getGlassRect);
+      const dx = x - layout.pause.centerX;
+      const dy = y - layout.pause.centerY;
+      if (dx * dx + dy * dy <= layout.pause.radius * layout.pause.radius) {
+        togglePause?.();
+        event.preventDefault();
+        return;
+      }
+    }
     if (!state.waitingBody || state.gameOver) {
       return;
     }

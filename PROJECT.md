@@ -34,6 +34,7 @@
 - **Impact flash**: first collision after a drop triggers a fast full-body fill blink.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
+- **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.
 
 ## File layout
 
@@ -57,6 +58,8 @@
 - `scripts/game/chains/effects.js` — chain fill/burst/flash effects.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
+- `scripts/ui/layout.js` — HUD layout helpers (safe area + glass rects).
+- `scripts/ui/hud.js` — top HUD layout geometry.
 
 ## Tuning hotspots
 
