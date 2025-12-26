@@ -1,6 +1,6 @@
 import { ROTATE_RANGE } from "../config.js";
 import { createRandomSpec } from "../shapes.js";
-import { loadCoins } from "./storage.js";
+import { loadBonusInventory, loadCoins } from "./storage.js";
 
 export function getColorsCount(level) {
   return Math.min(4 + Math.floor((level - 1) / 5), 7);
@@ -26,6 +26,7 @@ export function getSpawnWaitMs(level) {
 export function createGameState() {
   const level = 1;
   const toNextLevel = 10;
+  const bonusInventory = loadBonusInventory();
   return {
     waitingBody: null,
     waitingState: "none",
@@ -64,6 +65,7 @@ export function createGameState() {
     comboStreak: 0,
     comboLastAtMs: 0,
     comboPopups: [],
+    levelUpPopups: [],
     scoreParticles: [],
     bubbles: [],
     bubblePopParticles: [],
@@ -80,8 +82,8 @@ export function createGameState() {
       gun: 0,
     },
     bonusInventory: {
-      touch: 2,
-      gun: 2,
+      touch: bonusInventory.touch,
+      gun: bonusInventory.gun,
     },
     bonusCooldowns: {
       touchUntil: 0,

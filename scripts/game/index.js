@@ -7,13 +7,14 @@ import { updatePreview, repositionPreview } from "./preview.js";
 import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
 import { createPauseController } from "./pause.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
-import { saveCoins } from "./storage.js";
+import { saveBonusInventory, saveCoins } from "./storage.js";
 import { spawnScoreParticles } from "./score_particles.js";
 import { recordCombo } from "./combo.js";
 import { spawnComboPopup } from "./combo_popup.js";
 import { updateCosmometer, updateCosmometerMultiplier } from "./cosmometer.js";
 import { trySpawnBubble } from "./bubbles.js";
 import { updateGunBonus } from "./bonuses.js";
+import { spawnLevelUpPopup } from "./level_up_popup.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -37,6 +38,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     if (state.gameOver) {
       if (!state.gameOverHandled) {
         saveCoins(state.coins);
+        saveBonusInventory(state.bonusInventory);
         state.gameOverHandled = true;
       }
       return;
@@ -101,6 +103,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       );
       if (leveledUp) {
         applyLevelUpReward(state, prevToNextLevel);
+        spawnLevelUpPopup(state, getGlassRect, state.level);
       }
     }
     updatePreview(state, engine.timing.timestamp);

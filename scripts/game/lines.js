@@ -17,6 +17,7 @@ import { drawComboPopups, updateComboPopups } from "./combo_popup.js";
 import { getCosmoBaseColor } from "./cosmometer.js";
 import {
   drawBubbles,
+  drawBubbleIcon,
   drawBubblePopIcons,
   drawBubblePopParticles,
   updateBubbles,
@@ -33,6 +34,7 @@ import {
   drawBubbleKeyHint,
 } from "./draw/bonus_ui.js";
 import { drawTouchOverlay } from "./draw/overlays.js";
+import { drawLevelUpPopups, updateLevelUpPopups } from "./level_up_popup.js";
 
 const { Composite, Render } = Matter;
 
@@ -77,16 +79,19 @@ export function drawLines(state, render, getGlassRect) {
   drawBonusButtons(state, ctx, getGlassRect);
   drawTouchOverlay(state, ctx, getGlassRect, spawnY);
   drawBottomProgress(state, ctx, getGlassRect);
-  updateBubbles(state, state.engine.timing.lastDelta, getGlassRect);
-  updateBubblePopParticles(state, state.engine.timing.lastDelta);
-  updateBubblePopIcons(state);
-  updateGunMarks(state);
+  if (!state.paused) {
+    updateBubbles(state, state.engine.timing.lastDelta, getGlassRect);
+    updateBubblePopParticles(state, state.engine.timing.lastDelta);
+    updateBubblePopIcons(state);
+    updateGunMarks(state);
+  }
   drawBubbles(state, ctx);
   drawBubblePopParticles(state, ctx);
   drawBubblePopIcons(state, ctx);
   drawGunMarks(state, ctx);
   drawBubbleKeyHint(state, ctx);
-  drawBubbleIconLegend(state, ctx, getGlassRect);
+  updateLevelUpPopups(state);
+  drawLevelUpPopups(state, ctx);
   drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
   updateRewardFloaters(state, render, getGlassRect);
@@ -172,22 +177,29 @@ function drawWaitFill(state, ctx) {
 }
 
 function drawTopHud(state, ctx, render, getGlassRect) {
-  const { leftX, labelY, valueY, coinsGap, pause, rightX } = getTopHudLayout(
+  const { leftX, valueY, coinsGap, pause } = getTopHudLayout(
     state,
     render,
     getGlassRect
   );
 
-  ctx.save();
+  const iconSize = 18;
+  const iconGap = 6;
+  const hudY = pause.y + iconSize / 2 + 2;
 
-  ctx.fillStyle = "#b8c0c6";
-  ctx.font = "12px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText("SCORE", leftX, labelY);
-  ctx.fillStyle = "#e0e4e8";
-  ctx.font = "20px sans-serif";
+  ctx.save();
+  ctx.textBaseline = "middle";
+
   const scoreText = Math.floor(state.score || 0).toString().padStart(5, "0");
-  ctx.fillText(scoreText, leftX, valueY);
+  drawBubbleIcon(ctx, leftX + iconSize / 2, hudY, iconSize, {
+    type: "points",
+    subtype: "points1",
+    amount: 1,
+  });
+  ctx.fillStyle = "#e0e4e8";
+  ctx.font = "18px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(scoreText, leftX + iconSize + iconGap, hudY);
 
   ctx.strokeStyle = "#cfd8dc";
   ctx.lineWidth = 2;
@@ -203,14 +215,19 @@ function drawTopHud(state, ctx, render, getGlassRect) {
   ctx.fillRect(barX, barY, barWidth, barHeight);
   ctx.fillRect(barX + barWidth + barGap, barY, barWidth, barHeight);
 
-  ctx.textAlign = "right";
-  ctx.fillStyle = "#d2b65a";
-  ctx.font = "12px sans-serif";
-  ctx.fillText("COINS", pause.x - coinsGap, labelY);
-  ctx.fillStyle = "#f0c74a";
-  ctx.font = "18px sans-serif";
   const coinsText = Math.floor(state.coins || 0).toString().padStart(3, "0");
-  ctx.fillText(coinsText, pause.x - coinsGap, valueY);
+  ctx.font = "16px sans-serif";
+  const coinsWidth = ctx.measureText(coinsText).width;
+  const coinsGroupRight = pause.x - coinsGap;
+  const coinsGroupLeft = coinsGroupRight - (iconSize + iconGap + coinsWidth);
+  drawBubbleIcon(ctx, coinsGroupLeft + iconSize / 2, hudY, iconSize, {
+    type: "coins",
+    amount: 1,
+  });
+  ctx.fillStyle = "#f0c74a";
+  ctx.textAlign = "left";
+  ctx.fillText(coinsText, coinsGroupLeft + iconSize + iconGap, hudY);
+
   ctx.restore();
 }
 
@@ -341,40 +358,35 @@ function drawBottomProgress(state, ctx, getGlassRect) {
   const { bottomBorderRect } = getGlassBorderRects(glassFrame);
   const padding = 8;
   const barHeight = 10;
-  const barWidth = GLASS_WIDTH * 0.6;
+  const barWidth = GLASS_WIDTH * 0.5;
   const barX = glassRect.left + (GLASS_WIDTH - barWidth) / 2;
   const barY = bottomBorderRect.y + (bottomBorderRect.height - barHeight) / 2;
+  const radius = barHeight / 2;
 
   ctx.save();
   ctx.fillStyle = "#0f1115";
-  ctx.font = "14px sans-serif";
+  ctx.font = "13px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(`LVL ${state.level}`, glassRect.left + padding, barY + barHeight - 2);
+  ctx.fillText(`LVL ${state.level}`, glassRect.left + padding, barY + barHeight - 1);
 
   ctx.strokeStyle = "#cfd8dc";
   ctx.lineWidth = 2;
-  ctx.strokeRect(barX, barY, barWidth, barHeight);
+  ctx.beginPath();
+  roundRectPath(ctx, barX, barY, barWidth, barHeight, radius);
+  ctx.fill();
+  ctx.stroke();
   const progress =
     state.toNextLevel > 0 ? state.clearedThisLevel / state.toNextLevel : 0;
   const fillWidth = Math.max(0, Math.min(1, progress)) * barWidth;
-  ctx.fillStyle = "#cfd8dc";
-  ctx.fillRect(barX, barY, fillWidth, barHeight);
-
-  const innerWidth = GLASS_WIDTH * 0.5;
-  const innerHeight = WALL_THICKNESS * 0.5;
-  const innerX = glassRect.left + (GLASS_WIDTH - innerWidth) / 2;
-  const innerY = barY + (barHeight - innerHeight) / 2;
-  ctx.fillStyle = "#0f1115";
-  ctx.fillRect(innerX, innerY, innerWidth, innerHeight);
-
-  const endRadius = innerHeight / 2;
-  const endLeftX = innerX;
-  const endRightX = innerX + innerWidth;
-  const endY = innerY + innerHeight / 2;
-  ctx.beginPath();
-  ctx.arc(endLeftX, endY, endRadius, 0, Math.PI * 2);
-  ctx.arc(endRightX, endY, endRadius, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillStyle = "#4fd7ff";
+  if (fillWidth > 0) {
+    ctx.save();
+    ctx.beginPath();
+    roundRectPath(ctx, barX, barY, barWidth, barHeight, radius);
+    ctx.clip();
+    ctx.fillRect(barX, barY, fillWidth, barHeight);
+    ctx.restore();
+  }
 
   ctx.textAlign = "right";
   ctx.fillStyle = "#0f1115";
@@ -384,6 +396,19 @@ function drawBottomProgress(state, ctx, getGlassRect) {
     barY + barHeight - 2
   );
   ctx.restore();
+}
+
+function roundRectPath(ctx, x, y, width, height, radius) {
+  const r = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.arcTo(x + width, y, x + width, y + r, r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
+  ctx.lineTo(x + r, y + height);
+  ctx.arcTo(x, y + height, x, y + height - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
 }
 
 function drawGlassCaps(ctx, getGlassRect) {

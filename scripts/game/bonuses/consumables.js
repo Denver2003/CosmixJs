@@ -12,6 +12,7 @@ import { recordCombo } from "../combo.js";
 import { applyChainRewards, applyLevelUpReward } from "../rewards.js";
 import { spawnScoreParticles } from "../score_particles.js";
 import { spawnComboPopup } from "../combo_popup.js";
+import { spawnLevelUpPopup } from "../level_up_popup.js";
 import { buildGunRays } from "./gun_marks.js";
 
 const { Composite } = Matter;
@@ -188,6 +189,9 @@ function triggerComponentRemoval(state, bodies, color, getGlassRect) {
   const { leveledUp, prevToNextLevel } = applyLevelProgress(state, bodies.length);
   if (leveledUp) {
     applyLevelUpReward(state, prevToNextLevel);
+    if (getGlassRect) {
+      spawnLevelUpPopup(state, getGlassRect, state.level);
+    }
   }
 }
 

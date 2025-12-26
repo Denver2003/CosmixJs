@@ -39,6 +39,7 @@
 - **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups.
 - **Bubbles**: spawn chance uses legacy tables (count+combo); rewards roll on spawn with per-type cooldowns; bubbles pop on tap with VFX + reward icons.
 - **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
+- **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.
@@ -64,6 +65,14 @@
 - `scripts/game/chains/index.js` — chain detection + effects orchestration.
 - `scripts/game/chains/detect.js` — chain detection logic.
 - `scripts/game/chains/effects.js` — chain fill/burst/flash effects.
+- `scripts/game/draw/bonus_ui.js` — bonus buttons + bubble key hint + icon legend draw helpers.
+- `scripts/game/draw/overlays.js` — gameplay overlays (touch-to-kill).
+- `scripts/game/bonuses/instant.js` — instant bonus logic (hail, grenade).
+- `scripts/game/bonuses/consumables.js` — consumable bonus logic (touch, gun).
+- `scripts/game/bonuses/gun_marks.js` — machine gun mark VFX.
+- `scripts/game/bonuses/index.js` — bonus module exports.
+- `scripts/game/bonuses.js` — re-export entrypoint for bonus modules.
+- `scripts/game/level_up_popup.js` — level-up popup animation.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
 - `scripts/ui/layout.js` — HUD layout helpers (safe area + glass rects).

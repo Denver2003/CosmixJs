@@ -3,7 +3,7 @@ import { getGlassFrame, getScreenSafeAreaPx } from "./layout.js";
 
 export function getTopHudLayout(state, render, getGlassRect) {
   const safe = getScreenSafeAreaPx(render);
-  const padding = 12;
+  const padding = 0;
   const topY = safe.y + padding;
   const glassFrame = getGlassFrame(getGlassRect());
   const scale = state.viewScale || 1;
@@ -17,7 +17,7 @@ export function getTopHudLayout(state, render, getGlassRect) {
   const coinsGap = 10;
   const pauseSize = 34;
   const pauseOffsetX = (WALL_THICKNESS / 2) * scale;
-  const pauseOffsetY = -4;
+  const pauseOffsetY = -14;
   const pauseX = rightX - pauseSize + pauseOffsetX;
   const pauseY = topY + pauseOffsetY;
   const pauseCenterX = pauseX + pauseSize / 2;
@@ -27,7 +27,7 @@ export function getTopHudLayout(state, render, getGlassRect) {
     leftX,
     rightX,
     labelY,
-    valueY,
+    valueY: pauseCenterY,
     coinsGap,
     pause: {
       x: pauseX,

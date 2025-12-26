@@ -15,6 +15,7 @@ import { recordCombo } from "../combo.js";
 import { applyChainRewards, applyLevelUpReward } from "../rewards.js";
 import { spawnScoreParticles } from "../score_particles.js";
 import { spawnComboPopup } from "../combo_popup.js";
+import { spawnLevelUpPopup } from "../level_up_popup.js";
 
 const { Body, Composite, World } = Matter;
 
@@ -96,6 +97,9 @@ export function triggerGrenade(state, targetColor, getGlassRect) {
   const { leveledUp, prevToNextLevel } = applyLevelProgress(state, removedCount);
   if (leveledUp) {
     applyLevelUpReward(state, prevToNextLevel);
+    if (getGlassRect) {
+      spawnLevelUpPopup(state, getGlassRect, state.level);
+    }
   }
   return removedCount;
 }
