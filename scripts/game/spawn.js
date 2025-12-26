@@ -39,6 +39,9 @@ export function dropActiveBody(state, getSpawnPoint) {
   if (!state.waitingBody || state.gameOver) {
     return;
   }
+  if (state.bonusTouchActiveUntil && state.engine.timing.timestamp < state.bonusTouchActiveUntil) {
+    return;
+  }
   addEnergyOnDrop(state);
   updateCosmometerMultiplier(state, state.engine.timing.timestamp);
 
@@ -61,7 +64,12 @@ export function dropActiveBody(state, getSpawnPoint) {
 }
 
 export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
+  const now = state.engine.timing.timestamp;
+  const touchActive = state.bonusTouchActiveUntil && now < state.bonusTouchActiveUntil;
   if (!state.waitingBody) {
+    if (touchActive) {
+      return;
+    }
     return;
   }
 
@@ -87,7 +95,9 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     state.waitingState === "armed" &&
     state.engine.timing.timestamp - state.waitStartMs >= getSpawnWaitMs(state.level)
   ) {
-    dropActiveBody(state, getSpawnPoint);
+    if (!touchActive) {
+      dropActiveBody(state, getSpawnPoint);
+    }
   }
 
   if (state.waitingState === "armed" || state.waitingState === "descending") {

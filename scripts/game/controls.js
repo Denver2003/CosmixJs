@@ -1,7 +1,9 @@
 import { CONTROL_DESCENT_FACTOR, GLASS_WIDTH, WALL_THICKNESS } from "../config.js";
 import { getTopHudLayout } from "../ui/hud.js";
 import { dropActiveBody } from "./spawn.js";
-import { popBubbleAt } from "./bubbles.js";
+import { popBubbleAt, popTopBubble } from "./bubbles.js";
+import { getBonusSlots, hitTestBonusSlot } from "./bonus_ui.js";
+import { activateGunBonus, activateTouchBonus, tryTouchKill } from "./bonuses.js";
 import { clampWaitingBody } from "./utils.js";
 
 export function attachControls(
@@ -21,6 +23,46 @@ export function attachControls(
       event.preventDefault();
       return;
     }
+    if (event.key === "e" || event.key === "E" || event.key === "ArrowUp") {
+      if (!state.paused && !state.gameOver && state.keyboardControlActive) {
+        const reward = popTopBubble(state, getGlassRect);
+        if (reward) {
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+    if (event.key === "1") {
+      if (!state.paused && !state.gameOver && state.keyboardControlActive) {
+        if (activateTouchBonus(state)) {
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+    if (event.key === "2") {
+      if (!state.paused && !state.gameOver && state.keyboardControlActive) {
+        if (activateGunBonus(state, getGlassRect)) {
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "ArrowDown") {
+      state.keyboardControlActive = true;
+      state.keyboardControlMode = "arrows";
+    }
+    if (
+      event.key === "a" ||
+      event.key === "A" ||
+      event.key === "d" ||
+      event.key === "D" ||
+      event.key === "s" ||
+      event.key === "S"
+    ) {
+      state.keyboardControlActive = true;
+      state.keyboardControlMode = "wasd";
+    }
     if (!state.waitingBody || state.gameOver) {
       return;
     }
@@ -30,12 +72,20 @@ export function attachControls(
 
     switch (event.key) {
       case "ArrowLeft":
+      case "a":
+      case "A":
         state.moveLeft = true;
         break;
       case "ArrowRight":
+      case "d":
+      case "D":
         state.moveRight = true;
         break;
       case "ArrowDown":
+        dropActiveBody(state, getSpawnPoint);
+        break;
+      case "s":
+      case "S":
         dropActiveBody(state, getSpawnPoint);
         break;
       default:
@@ -46,9 +96,13 @@ export function attachControls(
   function onKeyUp(event) {
     switch (event.key) {
       case "ArrowLeft":
+      case "a":
+      case "A":
         state.moveLeft = false;
         break;
       case "ArrowRight":
+      case "d":
+      case "D":
         state.moveRight = false;
         break;
       default:
@@ -74,7 +128,23 @@ export function attachControls(
         const scale = state.viewScale || 1;
         const worldX = x / scale;
         const worldY = y / scale;
-        const reward = popBubbleAt(state, worldX, worldY);
+        if (tryTouchKill(state, worldX, worldY, getGlassRect)) {
+          event.preventDefault();
+          return;
+        }
+        const slots = getBonusSlots(state, getGlassRect);
+        const hit = hitTestBonusSlot(slots, worldX, worldY);
+        if (hit) {
+          const activated =
+            hit.key === "touch"
+              ? activateTouchBonus(state)
+              : activateGunBonus(state, getGlassRect);
+          if (activated) {
+            event.preventDefault();
+            return;
+          }
+        }
+        const reward = popBubbleAt(state, worldX, worldY, getGlassRect);
         if (reward) {
           event.preventDefault();
           return;

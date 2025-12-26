@@ -30,6 +30,7 @@ import {
   GLASS_WIDTH,
 } from "../config.js";
 import { calcBubbleMoney, calcBubbleScore } from "./rewards.js";
+import { triggerGrenade, triggerHail } from "./bonuses.js";
 
 const SPAWN_BY_FIGURE_COUNT = [
   [4, 30],
@@ -375,7 +376,7 @@ export function drawBubblePopParticles(state, ctx) {
   ctx.restore();
 }
 
-export function popBubbleAt(state, x, y) {
+export function popBubbleAt(state, x, y, getGlassRect) {
   const bubbles = state.bubbles;
   if (!bubbles || bubbles.length === 0) {
     return null;
@@ -400,11 +401,38 @@ export function popBubbleAt(state, x, y) {
   spawnBubblePopParticles(state, bubble.x, bubble.y, bubble.radius);
   spawnBubblePopIcon(state, bubble.x, bubble.y, bubble.reward);
   const reward = bubble.reward;
-  applyBubbleReward(state, reward);
+  applyBubbleReward(state, reward, getGlassRect);
   return reward;
 }
 
-function applyBubbleReward(state, reward) {
+export function popTopBubble(state, getGlassRect) {
+  const bubbles = state.bubbles;
+  if (!bubbles || bubbles.length === 0) {
+    return null;
+  }
+  let topIndex = -1;
+  let topY = Infinity;
+  for (let i = 0; i < bubbles.length; i += 1) {
+    if (bubbles[i].y < topY) {
+      topY = bubbles[i].y;
+      topIndex = i;
+    }
+  }
+  if (topIndex < 0) {
+    return null;
+  }
+  const [bubble] = bubbles.splice(topIndex, 1);
+  if (!bubble) {
+    return null;
+  }
+  spawnBubblePopParticles(state, bubble.x, bubble.y, bubble.radius);
+  spawnBubblePopIcon(state, bubble.x, bubble.y, bubble.reward);
+  const reward = bubble.reward;
+  applyBubbleReward(state, reward, getGlassRect);
+  return reward;
+}
+
+function applyBubbleReward(state, reward, getGlassRect) {
   if (!reward) {
     return;
   }
@@ -427,16 +455,20 @@ function applyBubbleReward(state, reward) {
     case "instant":
       if (reward.subtype === "hail") {
         state.bubbleRewardCooldowns.hail = now + BUBBLE_COOLDOWN_HAIL_MS;
+        triggerHail(state, getGlassRect);
       } else if (reward.subtype === "grenade") {
         state.bubbleRewardCooldowns.grenade = now + BUBBLE_COOLDOWN_GRENADE_MS;
+        triggerGrenade(state, reward.color, getGlassRect);
       }
       console.log("[bubble] instant:", reward.subtype);
       break;
     case "consumable":
       if (reward.subtype === "touch") {
         state.bubbleRewardCooldowns.touch = now + BUBBLE_COOLDOWN_TOUCH_MS;
+        state.bonusInventory.touch += 1;
       } else if (reward.subtype === "machine") {
         state.bubbleRewardCooldowns.gun = now + BUBBLE_COOLDOWN_GUN_MS;
+        state.bonusInventory.gun += 1;
       }
       console.log("[bubble] consumable:", reward.subtype);
       break;

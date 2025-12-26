@@ -86,3 +86,14 @@ export const BUBBLE_POP_GRAVITY = 420;
 export const BUBBLE_POP_RADIUS_MIN = 2;
 export const BUBBLE_POP_RADIUS_MAX = 4;
 export const BUBBLE_POP_ICON_MS = 500;
+
+export const HAIL_RESPAWN_POINTS = 10;
+export const HAIL_EXTRA_COUNT = 3;
+export const HAIL_SPAWN_Y_OFFSET = 48;
+export const HAIL_DROP_SPEED = 10;
+export const HAIL_ANGULAR_SPEED = 0.08;
+
+export const BONUS_COOLDOWN_MS = 300000;
+export const BONUS_TOUCH_DURATION_MS = 10000;
+export const BONUS_GUN_SHOTS = 20;
+export const BONUS_GUN_INTERVAL_MS = 160;

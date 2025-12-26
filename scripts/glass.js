@@ -3,6 +3,7 @@ import {
   GLASS_WIDTH,
   FLOOR_THICKNESS,
   HUD_TOP_RESERVE,
+  HAIL_SPAWN_Y_OFFSET,
   WALL_THICKNESS,
 } from "./config.js";
 
@@ -60,7 +61,32 @@ export function createGlass(world, getViewRect) {
       wallOptions
     );
 
-    glassBodies = [leftWall, rightWall, floor];
+    const extendUp = Math.max(0, HAIL_SPAWN_Y_OFFSET + WALL_THICKNESS);
+    const extensionHeight = extendUp;
+    const extensionCenterY = top - extensionHeight / 2;
+    const extensionOptions = {
+      ...wallOptions,
+      render: {
+        fillStyle: "rgba(0, 0, 0, 0)",
+        strokeStyle: "rgba(0, 0, 0, 0)",
+        lineWidth: 0,
+      },
+    };
+    const leftExtension = Bodies.rectangle(
+      left - WALL_THICKNESS / 2,
+      extensionCenterY,
+      WALL_THICKNESS,
+      extensionHeight,
+      extensionOptions
+    );
+    const rightExtension = Bodies.rectangle(
+      left + GLASS_WIDTH + WALL_THICKNESS / 2,
+      extensionCenterY,
+      WALL_THICKNESS,
+      extensionHeight,
+      extensionOptions
+    );
+    glassBodies = [leftWall, rightWall, floor, leftExtension, rightExtension];
     World.add(world, glassBodies);
   }
 

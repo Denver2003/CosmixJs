@@ -13,6 +13,7 @@ import { recordCombo } from "./combo.js";
 import { spawnComboPopup } from "./combo_popup.js";
 import { updateCosmometer, updateCosmometerMultiplier } from "./cosmometer.js";
 import { trySpawnBubble } from "./bubbles.js";
+import { updateGunBonus } from "./bonuses.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -21,6 +22,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   const state = createGameState();
   state.engine = engine;
   state.world = world;
+  state.render = render;
   const pause = createPauseController(state, runner);
 
   function getSpawnPoint() {
@@ -46,6 +48,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     updateCosmometer(state, deltaMs);
     const prevMultiplier = state.gameMultiplier;
     updateCosmometerMultiplier(state, engine.timing.timestamp);
+    updateGunBonus(state, getGlassRect);
     updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs);
     updateKillLine(state, getGlassRect, deltaMs);
     const { removedCount, removedComponents, removedComponentBodies } =
