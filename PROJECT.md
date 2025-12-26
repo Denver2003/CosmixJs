@@ -37,6 +37,8 @@
 - **Combo system**: each collapse opens a 4s window for the next; streak-based multiplier capped at x5 (Combo/Super/Mega/Cosmo).
 - **Combo popup**: combo label bursts from collapse center to glass center, blinks on peak (1–4), then floats up and fades; stacked vertically when overlapping.
 - **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups.
+- **Bubbles**: spawn chance uses legacy tables (count+combo); rewards roll on spawn with per-type cooldowns; bubbles pop on tap with VFX + reward icons.
+- **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.

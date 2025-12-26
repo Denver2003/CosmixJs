@@ -68,6 +68,7 @@ export function createGameState() {
     bubbles: [],
     bubblePopParticles: [],
     bubblePopIcons: [],
+    rewardFloaters: [],
     bubbleRewardCooldowns: {
       coins: 0,
       points1: 0,

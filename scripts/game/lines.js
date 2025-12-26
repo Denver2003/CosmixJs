@@ -29,6 +29,7 @@ import { drawGunMarks, updateGunMarks } from "./bonuses.js";
 import { getBonusSlots } from "./bonus_ui.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
+import { drawRewardFloaters, updateRewardFloaters } from "./reward_floaters.js";
 
 const { Composite, Render } = Matter;
 
@@ -85,6 +86,8 @@ export function drawLines(state, render, getGlassRect) {
   drawBubbleIconLegend(state, ctx, getGlassRect);
   drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
+  updateRewardFloaters(state, render, getGlassRect);
+  drawRewardFloaters(state, ctx);
   updateScoreParticles(state, render, getGlassRect);
   drawScoreParticles(state, ctx);
   updateComboPopups(state);
@@ -377,9 +380,19 @@ function drawBonusButtons(state, ctx, getGlassRect) {
       );
       ctx.closePath();
       ctx.fill();
+
+      const totalSeconds = Math.ceil(remaining / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      const timeLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(timeLabel, slot.x, slot.y + 0.5);
     }
 
-    if (count > 1) {
+    if (!cooling && count > 1) {
       const badgeR = slot.radius * 0.35;
       const badgeX = slot.x - slot.radius * 0.6;
       const badgeY = slot.y + slot.radius * 0.55;

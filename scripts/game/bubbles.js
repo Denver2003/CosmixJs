@@ -31,6 +31,7 @@ import {
 } from "../config.js";
 import { calcBubbleMoney, calcBubbleScore } from "./rewards.js";
 import { triggerGrenade, triggerHail } from "./bonuses.js";
+import { spawnRewardFloater } from "./reward_floaters.js";
 
 const SPAWN_BY_FIGURE_COUNT = [
   [4, 30],
@@ -400,7 +401,7 @@ export function popBubbleAt(state, x, y, getGlassRect) {
   }
   spawnBubblePopParticles(state, bubble.x, bubble.y, bubble.radius);
   spawnBubblePopIcon(state, bubble.x, bubble.y, bubble.reward);
-  const reward = bubble.reward;
+  const reward = { ...bubble.reward, x: bubble.x, y: bubble.y };
   applyBubbleReward(state, reward, getGlassRect);
   return reward;
 }
@@ -427,7 +428,7 @@ export function popTopBubble(state, getGlassRect) {
   }
   spawnBubblePopParticles(state, bubble.x, bubble.y, bubble.radius);
   spawnBubblePopIcon(state, bubble.x, bubble.y, bubble.reward);
-  const reward = bubble.reward;
+  const reward = { ...bubble.reward, x: bubble.x, y: bubble.y };
   applyBubbleReward(state, reward, getGlassRect);
   return reward;
 }
@@ -441,9 +442,35 @@ function applyBubbleReward(state, reward, getGlassRect) {
     case "coins":
       state.coins += reward.amount;
       state.bubbleRewardCooldowns.coins = now + BUBBLE_COOLDOWN_COINS_MS;
+      if (state.render) {
+        spawnRewardFloater(
+          state,
+          state.render,
+          "coins",
+          reward.x,
+          reward.y,
+          reward.amount,
+          "#f0c74a"
+        );
+      }
       break;
     case "points":
       state.score += reward.amount;
+      if (state.render) {
+        spawnRewardFloater(
+          state,
+          state.render,
+          "points",
+          reward.x,
+          reward.y,
+          reward.amount,
+          reward.subtype === "points2"
+            ? "#4fe070"
+            : reward.subtype === "points3"
+              ? "#ff5a5a"
+              : "#4aa7ff"
+        );
+      }
       if (reward.subtype === "points1") {
         state.bubbleRewardCooldowns.points1 = now + BUBBLE_COOLDOWN_POINTS1_MS;
       } else if (reward.subtype === "points2") {

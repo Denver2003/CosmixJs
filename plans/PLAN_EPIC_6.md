@@ -7,4 +7,4 @@
 - [x] Integrate bonus rewards into score/coin calculations as needed.
 - [x] Add minimal UI hooks + debug telemetry.
 - [x] Add keyboard bubble pop (E) + top-bubble indicator when using keyboard controls.
-- [ ] Update PROJECT.md to reflect new behavior.
+- [x] Update PROJECT.md to reflect new behavior.
