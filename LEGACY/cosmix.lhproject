@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>2HDSuffix</key>
+	<string>-ipadhd</string>
+	<key>AutoGenerateCode</key>
+	<false/>
+	<key>AutoIncludeXCode</key>
+	<false/>
+	<key>BundleIdentifier</key>
+	<string></string>
+	<key>CustomClasses</key>
+	<array/>
+	<key>CustomScreenSize</key>
+	<string>{0, 0}</string>
+	<key>Device</key>
+	<integer>2</integer>
+	<key>Engine</key>
+	<integer>0</integer>
+	<key>HDSuffix</key>
+	<string>-hd</string>
+	<key>LastLevelLoaded</key>
+	<string></string>
+	<key>Orientation</key>
+	<integer>1</integer>
+	<key>ProjectName</key>
+	<string></string>
+	<key>Tags</key>
+	<array/>
+</dict>
+</plist>

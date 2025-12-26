@@ -1,6 +1,7 @@
 import { CONTROL_DESCENT_FACTOR, GLASS_WIDTH, WALL_THICKNESS } from "../config.js";
 import { getTopHudLayout } from "../ui/hud.js";
 import { dropActiveBody } from "./spawn.js";
+import { popBubbleAt } from "./bubbles.js";
 import { clampWaitingBody } from "./utils.js";
 
 export function attachControls(
@@ -68,6 +69,16 @@ export function attachControls(
         togglePause?.();
         event.preventDefault();
         return;
+      }
+      if (!state.paused) {
+        const scale = state.viewScale || 1;
+        const worldX = x / scale;
+        const worldY = y / scale;
+        const reward = popBubbleAt(state, worldX, worldY);
+        if (reward) {
+          event.preventDefault();
+          return;
+        }
       }
     }
     if (!state.waitingBody || state.gameOver) {

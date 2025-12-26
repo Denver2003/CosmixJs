@@ -15,6 +15,15 @@ import { getGlassBorderRects, getGlassFrame } from "../ui/layout.js";
 import { drawScoreParticles, updateScoreParticles } from "./score_particles.js";
 import { drawComboPopups, updateComboPopups } from "./combo_popup.js";
 import { getCosmoBaseColor } from "./cosmometer.js";
+import {
+  drawBubbles,
+  drawBubbleIcon,
+  drawBubblePopIcons,
+  drawBubblePopParticles,
+  updateBubbles,
+  updateBubblePopIcons,
+  updateBubblePopParticles,
+} from "./bubbles.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 
@@ -60,6 +69,13 @@ export function drawLines(state, render, getGlassRect) {
   drawCosmometer(state, ctx, getGlassRect);
   drawBonusButtons(state, ctx, getGlassRect);
   drawBottomProgress(state, ctx, getGlassRect);
+  updateBubbles(state, state.engine.timing.lastDelta, getGlassRect);
+  updateBubblePopParticles(state, state.engine.timing.lastDelta);
+  updateBubblePopIcons(state);
+  drawBubbles(state, ctx);
+  drawBubblePopParticles(state, ctx);
+  drawBubblePopIcons(state, ctx);
+  drawBubbleIconLegend(state, ctx, getGlassRect);
   drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
   updateScoreParticles(state, render, getGlassRect);
@@ -393,6 +409,31 @@ function drawGlassCaps(ctx, getGlassRect) {
   ctx.arc(leftX, y, radius, 0, Math.PI * 2);
   ctx.arc(rightX, y, radius, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawBubbleIconLegend(state, ctx, getGlassRect) {
+  const glassRect = getGlassRect();
+  const x = glassRect.left - WALL_THICKNESS * 2.2;
+  const startY = glassRect.top + WALL_THICKNESS * 2.2;
+  const spacing = 44;
+  const size = 44;
+  const sampleColors = ["#00e5ff", "#00ff85", "#ffe600"];
+  const items = [
+    { type: "coins", amount: 1 },
+    { type: "points", subtype: "points1", amount: 1 },
+    { type: "points", subtype: "points2", amount: 1 },
+    { type: "points", subtype: "points3", amount: 1 },
+    { type: "instant", subtype: "hail", colors: sampleColors },
+    { type: "instant", subtype: "grenade", color: "#ff5bd8" },
+    { type: "consumable", subtype: "touch" },
+    { type: "consumable", subtype: "machine" },
+  ];
+  ctx.save();
+  for (let i = 0; i < items.length; i += 1) {
+    const y = startY + i * spacing;
+    drawBubbleIcon(ctx, x, y, size, items[i]);
+  }
   ctx.restore();
 }
 

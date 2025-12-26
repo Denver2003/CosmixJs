@@ -1,0 +1,20 @@
+info face="Derby" size=128 bold=1 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=4,4,4,4 spacing=1,1 outline=4
+common lineHeight=128 base=98 scaleW=512 scaleH=512 pages=1 packed=0 alphaChnl=1 redChnl=0 greenChnl=0 blueChnl=0
+page id=0 file="points_0.png"
+chars count=16
+char id=-1   x=0     y=0     width=105   height=144   xoffset=-3    yoffset=-8    xadvance=99    page=0  chnl=15
+char id=36   x=0     y=290   width=68    height=144   xoffset=-5    yoffset=-8    xadvance=57    page=0  chnl=15
+char id=43   x=427   y=145   width=78    height=144   xoffset=4     yoffset=-8    xadvance=85    page=0  chnl=15
+char id=44   x=186   y=290   width=43    height=144   xoffset=-6    yoffset=-8    xadvance=30    page=0  chnl=15
+char id=45   x=136   y=290   width=49    height=144   xoffset=-5    yoffset=-8    xadvance=38    page=0  chnl=15
+char id=46   x=470   y=0     width=39    height=144   xoffset=-6    yoffset=-8    xadvance=26    page=0  chnl=15
+char id=48   x=199   y=0     width=90    height=144   xoffset=-8    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=49   x=69    y=290   width=66    height=144   xoffset=2     yoffset=-8    xadvance=73    page=0  chnl=15
+char id=50   x=346   y=145   width=80    height=144   xoffset=-1    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=51   x=290   y=0     width=89    height=144   xoffset=-5    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=52   x=106   y=0     width=92    height=144   xoffset=-9    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=53   x=0     y=145   width=87    height=144   xoffset=-7    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=54   x=176   y=145   width=84    height=144   xoffset=-5    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=55   x=261   y=145   width=84    height=144   xoffset=-1    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=56   x=88    y=145   width=87    height=144   xoffset=-7    yoffset=-8    xadvance=73    page=0  chnl=15
+char id=57   x=380   y=0     width=89    height=144   xoffset=-9    yoffset=-8    xadvance=73    page=0  chnl=15

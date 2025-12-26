@@ -29,3 +29,7 @@ General Collaboration Notes
 - Ask for confirmation before important steps and large changes.
 - Use step-by-step plans with checkboxes for epics; confirm each step before execution.
 - Update PROJECT.md when behavior changes; update PROJECT_OVERVIEW.md only with approval.
+- Treat newly introduced specs as the source of truth and align behavior accordingly.
+- When changing probabilities, cooldowns, or formulas, document the active values and where they are configured.
+- Parameterize visual effects and animations via config values for fast tuning.
+- When using external assets, verify paths/names and guard against failed loads.

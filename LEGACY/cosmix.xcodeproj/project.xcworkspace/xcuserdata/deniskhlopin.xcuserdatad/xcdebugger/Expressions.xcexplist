@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "cocos2d::getXMLNodeForKey(char const*, _xmlNode**):CCUserDefault.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "(char*)curNode-&gt;name">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "ShopItem::ShopItem(std::string, int, int, LevelHelperLoader*):shop.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "Shop::getInstance()-&gt;infos.size()">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "CosmoBonuses::load():CosmoBonuses.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "cocos2d::setValueForKey(char const*, char const*):CCUserDefault.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "(char*)node-&gt;name">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Shop::init():shop.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "layer-&gt;getContentSize().width">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

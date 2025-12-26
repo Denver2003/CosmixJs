@@ -35,5 +35,6 @@ export function updateKillLine(state, getGlassRect, deltaMs) {
     state.waitingState = "none";
     state.moveLeft = false;
     state.moveRight = false;
+    state.bubbles = [];
   }
 }

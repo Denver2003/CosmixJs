@@ -12,6 +12,7 @@ import { spawnScoreParticles } from "./score_particles.js";
 import { recordCombo } from "./combo.js";
 import { spawnComboPopup } from "./combo_popup.js";
 import { updateCosmometer, updateCosmometerMultiplier } from "./cosmometer.js";
+import { trySpawnBubble } from "./bubbles.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -60,6 +61,13 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
         }
         spawnComboPopup(state, getGlassRect, allBodies, comboInfo.multiplier);
       }
+      trySpawnBubble(
+        state,
+        getGlassRect,
+        "collapse",
+        removedCount,
+        comboInfo?.chainCount || 0
+      );
       const { breakdown } = applyChainRewards(state, removedComponents);
       if (comboInfo && comboInfo.multiplier > 1) {
         console.log(
