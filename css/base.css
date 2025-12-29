@@ -1,0 +1,29 @@
+:root {
+  --safe-top: env(safe-area-inset-top);
+  --safe-right: env(safe-area-inset-right);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --bg-deep: #0f1115;
+  --bg-soft: #171b22;
+  --panel: rgba(255, 255, 255, 0.06);
+  --panel-border: rgba(255, 255, 255, 0.12);
+  --text-main: #e8edf2;
+  --text-soft: rgba(255, 255, 255, 0.6);
+  --accent: #7af5ff;
+  --accent-strong: #47e6ff;
+  --danger: #ff6b6b;
+  --shadow-soft: 0 12px 30px rgba(71, 230, 255, 0.22);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
