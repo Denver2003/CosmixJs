@@ -42,6 +42,7 @@
 - **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
+- **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.
 - **Score/Coins HUD**: live score display; coins persist between sessions (saved on game over).
 
@@ -77,6 +78,21 @@
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
 - `scripts/ui/layout.js` — HUD layout helpers (safe area + glass rects).
 - `scripts/ui/hud.js` — top HUD layout geometry.
+- `scripts/shell/router.js` — screen/overlay router with Back/ESC handling.
+- `scripts/shell/screens.js` — screen IDs + base screen factory.
+- `scripts/shell/overlays.js` — overlay IDs + base overlay factory.
+- `scripts/shell/index.js` — shell initialization (layers + screen/overlay registration).
+- `scripts/shell/ui/header.js` — header bar and shared UI element factories.
+- `scripts/shell/app_state.js` — mock app state + subscriptions for shell UI.
+- `scripts/shell/home.js` — home screen wiring (CTA + footer navigation).
+- `scripts/shell/shop.js` — shop screen wiring (tabs + cards layout).
+- `scripts/shell/settings.js` — settings screen wiring (audio/account/data).
+- `scripts/shell/confirm_dialog.js` — generic confirm dialog overlay.
+- `scripts/shell/leaderboards.js` — leaderboards screen wiring (tabs + list).
+- `scripts/shell/loading.js` — loading overlay scaffold.
+- `scripts/shell/toast.js` — toast overlay scaffold.
+- `scripts/shell/pause_menu.js` — pause menu overlay scaffold.
+- `scripts/shell/game_over_menu.js` — game over menu overlay scaffold.
 
 ## Tuning hotspots
 

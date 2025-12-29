@@ -19,7 +19,11 @@ export function attachControls(
 
   function onKeyDown(event) {
     if (event.key === "p" || event.key === "P") {
-      togglePause?.();
+      if (typeof window !== "undefined" && window.openPauseMenu) {
+        window.openPauseMenu();
+      } else {
+        togglePause?.();
+      }
       event.preventDefault();
       return;
     }
@@ -120,7 +124,11 @@ export function attachControls(
       const dx = x - layout.pause.centerX;
       const dy = y - layout.pause.centerY;
       if (dx * dx + dy * dy <= layout.pause.radius * layout.pause.radius) {
-        togglePause?.();
+        if (typeof window !== "undefined" && window.openPauseMenu) {
+          window.openPauseMenu();
+        } else {
+          togglePause?.();
+        }
         event.preventDefault();
         return;
       }

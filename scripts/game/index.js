@@ -8,13 +8,14 @@ import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
 import { createPauseController } from "./pause.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
 import { saveBonusInventory, saveCoins } from "./storage.js";
-import { spawnScoreParticles } from "./score_particles.js";
+import { spawnScoreParticles, updateScoreParticles } from "./score_particles.js";
 import { recordCombo } from "./combo.js";
-import { spawnComboPopup } from "./combo_popup.js";
+import { spawnComboPopup, updateComboPopups } from "./combo_popup.js";
 import { updateCosmometer, updateCosmometerMultiplier } from "./cosmometer.js";
-import { trySpawnBubble } from "./bubbles.js";
-import { updateGunBonus } from "./bonuses.js";
-import { spawnLevelUpPopup } from "./level_up_popup.js";
+import { trySpawnBubble, updateBubbles, updateBubblePopIcons, updateBubblePopParticles } from "./bubbles.js";
+import { updateGunBonus, updateGunMarks } from "./bonuses.js";
+import { spawnLevelUpPopup, updateLevelUpPopups } from "./level_up_popup.js";
+import { updateRewardFloaters } from "./reward_floaters.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 
 const { Events } = Matter;
@@ -40,6 +41,9 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
         saveCoins(state.coins);
         saveBonusInventory(state.bonusInventory);
         state.gameOverHandled = true;
+        if (typeof window !== "undefined" && window.shellGameOver?.open) {
+          window.shellGameOver.open();
+        }
       }
       return;
     }
@@ -53,6 +57,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     updateGunBonus(state, getGlassRect);
     updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs);
     updateKillLine(state, getGlassRect, deltaMs);
+    updateBubbles(state, deltaMs, getGlassRect);
+    updateBubblePopParticles(state, deltaMs);
+    updateBubblePopIcons(state);
+    updateGunMarks(state);
     const { removedCount, removedComponents, removedComponentBodies } =
       updateChains(state, deltaMs);
     if (removedCount) {
@@ -107,6 +115,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       }
     }
     updatePreview(state, engine.timing.timestamp);
+    updateRewardFloaters(state, render, getGlassRect);
+    updateScoreParticles(state, render, getGlassRect);
+    updateComboPopups(state);
+    updateLevelUpPopups(state);
 
     if (state.gameMultiplier !== prevMultiplier) {
       console.log(

@@ -12,29 +12,26 @@ import {
 } from "../config.js";
 import { getTopHudLayout } from "../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../ui/layout.js";
-import { drawScoreParticles, updateScoreParticles } from "./score_particles.js";
-import { drawComboPopups, updateComboPopups } from "./combo_popup.js";
+import { drawScoreParticles } from "./score_particles.js";
+import { drawComboPopups } from "./combo_popup.js";
 import { getCosmoBaseColor } from "./cosmometer.js";
 import {
   drawBubbles,
   drawBubbleIcon,
   drawBubblePopIcons,
   drawBubblePopParticles,
-  updateBubbles,
-  updateBubblePopIcons,
-  updateBubblePopParticles,
 } from "./bubbles.js";
-import { drawGunMarks, updateGunMarks } from "./bonuses.js";
+import { drawGunMarks } from "./bonuses.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
-import { drawRewardFloaters, updateRewardFloaters } from "./reward_floaters.js";
+import { drawRewardFloaters } from "./reward_floaters.js";
 import {
   drawBonusButtons,
   drawBubbleIconLegend,
   drawBubbleKeyHint,
 } from "./draw/bonus_ui.js";
 import { drawTouchOverlay } from "./draw/overlays.js";
-import { drawLevelUpPopups, updateLevelUpPopups } from "./level_up_popup.js";
+import { drawLevelUpPopups } from "./level_up_popup.js";
 
 const { Composite, Render } = Matter;
 
@@ -79,26 +76,16 @@ export function drawLines(state, render, getGlassRect) {
   drawBonusButtons(state, ctx, getGlassRect);
   drawTouchOverlay(state, ctx, getGlassRect, spawnY);
   drawBottomProgress(state, ctx, getGlassRect);
-  if (!state.paused) {
-    updateBubbles(state, state.engine.timing.lastDelta, getGlassRect);
-    updateBubblePopParticles(state, state.engine.timing.lastDelta);
-    updateBubblePopIcons(state);
-    updateGunMarks(state);
-  }
   drawBubbles(state, ctx);
   drawBubblePopParticles(state, ctx);
   drawBubblePopIcons(state, ctx);
   drawGunMarks(state, ctx);
   drawBubbleKeyHint(state, ctx);
-  updateLevelUpPopups(state);
   drawLevelUpPopups(state, ctx);
   drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
-  updateRewardFloaters(state, render, getGlassRect);
   drawRewardFloaters(state, ctx);
-  updateScoreParticles(state, render, getGlassRect);
   drawScoreParticles(state, ctx);
-  updateComboPopups(state);
   drawComboPopups(state, ctx);
   drawTopHud(state, ctx, render, getGlassRect);
   drawPauseOverlay(state, ctx, render);

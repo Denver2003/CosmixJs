@@ -1,9 +1,10 @@
 import { createGlass } from "./glass.js";
 import { createGame } from "./game/index.js";
+import { createShell } from "./shell/index.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
 
-const { Engine, Render, Runner } = Matter;
+const { Engine, Render } = Matter;
 
 console.log("[main] init");
 
@@ -45,8 +46,8 @@ glass.build();
 
 Render.run(render);
 
-const runner = Runner.create();
-Runner.run(runner, engine);
+const runner = { enabled: true, delta: 1000 / 60 };
+startFixedRunner(engine, runner);
 
 const game = createGame({
   engine,
@@ -58,7 +59,58 @@ const game = createGame({
 game.setViewScale(viewport.getState().scale);
 game.setViewSize(viewport.getState().width, viewport.getState().height);
 
-game.start();
+let gameStarted = false;
+const shell = createShell({
+  onPlay: () => {
+    if (gameStarted) {
+      return;
+    }
+    game.start();
+    gameStarted = true;
+  },
+  onPause: {
+    resume: () => {
+      game.setPaused(false, "manual");
+    },
+    restart: () => {
+      window.location.reload();
+    },
+    home: () => {
+      game.setPaused(true, "manual");
+      shell?.router?.showScreen?.("home");
+    },
+    shop: () => {
+      game.setPaused(true, "manual");
+      shell?.router?.showScreen?.("shop");
+    },
+  },
+  onGameOver: {
+    retry: () => {
+      window.location.reload();
+    },
+    home: () => {
+      shell?.router?.showScreen?.("home");
+    },
+    shop: () => {
+      shell?.router?.showScreen?.("shop");
+    },
+  },
+});
+if (shell) {
+  window.shell = shell.router;
+  window.shellPause = shell.pauseMenu;
+  window.shellGameOver = shell.gameOverMenu;
+}
+
+function openPauseMenu() {
+  if (game.getPauseInfo?.().paused) {
+    return;
+  }
+  game.setPaused(true, "manual");
+  shell?.pauseMenu?.open();
+}
+
+window.openPauseMenu = openPauseMenu;
 
 Matter.Events.on(engine, "afterUpdate", () => {
   game.tickAutoResume();
@@ -140,3 +192,50 @@ function scheduleAutoResume() {
     game.resumeIfAuto();
   }, 3000);
 }
+
+function startFixedRunner(engineInstance, runnerState) {
+  let lastTime = null;
+  let accumulator = 0;
+  const stepMs = runnerState.delta;
+  const maxSteps = 5;
+
+  function tick(time) {
+    if (lastTime === null) {
+      lastTime = time;
+    }
+    const frameDelta = time - lastTime;
+    lastTime = time;
+    if (runnerState.enabled) {
+      accumulator += frameDelta;
+      let steps = 0;
+      while (accumulator >= stepMs && steps < maxSteps) {
+        Matter.Engine.update(engineInstance, stepMs);
+        accumulator -= stepMs;
+        steps += 1;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function isTypingTarget(target) {
+  if (!target || !(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
+}
+
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" && event.key !== "Backspace") {
+    return;
+  }
+  if (isTypingTarget(event.target)) {
+    return;
+  }
+  if (shell?.handleBack?.()) {
+    event.preventDefault();
+  }
+});
