@@ -17,6 +17,7 @@ import { updateGunBonus, updateGunMarks } from "./bonuses.js";
 import { spawnLevelUpPopup, updateLevelUpPopups } from "./level_up_popup.js";
 import { updateRewardFloaters } from "./reward_floaters.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
+import { updateBackgroundStars } from "./background.js";
 
 const { Events } = Matter;
 
@@ -51,6 +52,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       return;
     }
     const deltaMs = engine.timing.lastDelta;
+    updateBackgroundStars(deltaMs);
     updateCosmometer(state, deltaMs);
     const prevMultiplier = state.gameMultiplier;
     updateCosmometerMultiplier(state, engine.timing.timestamp);

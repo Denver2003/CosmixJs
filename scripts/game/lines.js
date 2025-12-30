@@ -25,6 +25,7 @@ import { drawGunMarks } from "./bonuses.js";
 import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 import { drawRewardFloaters } from "./reward_floaters.js";
+import { drawBackground } from "./background.js";
 import {
   drawBonusButtons,
   drawBubbleIconLegend,
@@ -43,6 +44,10 @@ export function drawLines(state, render, getGlassRect) {
   const ctx = render.context;
   ctx.save();
   Render.startViewTransform(render);
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-over";
+  drawBackground(ctx, render, getGlassRect, state.engine.timing.timestamp);
+  ctx.restore();
   // Control line rendering intentionally hidden; logic remains.
 
   const killPhaseMs = state.killTouchMs;

@@ -43,6 +43,7 @@
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
+- **Background layer**: placeholder space background image is drawn behind the glass, scaled to glass height, with a light twinkling star field.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.
 - **Score/Coins HUD**: live score display; coins persist between sessions (saved on game over).
 
@@ -93,6 +94,19 @@
 - `scripts/shell/toast.js` — toast overlay scaffold.
 - `scripts/shell/pause_menu.js` — pause menu overlay scaffold.
 - `scripts/shell/game_over_menu.js` — game over menu overlay scaffold.
+- `css/base.css` — base tokens and global resets.
+- `css/layout.css` — app layout and core layers.
+- `css/components.css` — shared UI components.
+- `css/screens/home.css` — Home screen styles.
+- `css/screens/shop.css` — Shop screen styles.
+- `css/screens/settings.css` — Settings screen styles.
+- `css/screens/leaderboards.css` — Leaderboards screen styles.
+- `css/overlays/confirm.css` — Confirm dialog styles.
+- `css/overlays/pause.css` — Pause menu styles.
+- `css/overlays/gameover.css` — Game Over menu styles.
+- `css/overlays/toast-loading.css` — Toast + Loading styles.
+- `css/debug.css` — Debug panel styles.
+- `scripts/game/background.js` — background image loader + draw helper.
 
 ## Tuning hotspots
 

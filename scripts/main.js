@@ -29,8 +29,8 @@ const render = Render.create({
     height: viewportHeight,
     pixelRatio: viewport.getState().pixelRatio,
     wireframes: false,
-    background: "#0f1115",
-    wireframeBackground: "#0f1115",
+    background: "#000000",
+    wireframeBackground: "#000000",
   },
 });
 Render.lookAt(render, {
