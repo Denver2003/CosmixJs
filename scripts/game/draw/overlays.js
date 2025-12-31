@@ -22,13 +22,13 @@ export function drawTouchOverlay(state, ctx, getGlassRect, spawnY) {
   ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "16px sans-serif";
+  ctx.font = "16px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("TOUCH TO KILL", centerX, boxY + 18);
-  ctx.font = "11px sans-serif";
+  ctx.font = "11px \"RussoOne\", sans-serif";
   ctx.fillText("TAP FIGURES TO DESTROY", centerX, boxY + 34);
-  ctx.font = "11px sans-serif";
+  ctx.font = "11px \"RussoOne\", sans-serif";
   ctx.fillText(`ENDS IN ${seconds}s`, centerX, boxY + 48);
   ctx.restore();
 }

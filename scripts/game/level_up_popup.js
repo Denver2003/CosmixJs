@@ -117,28 +117,28 @@ export function drawLevelUpPopups(state, ctx) {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = hexToRgba("#ffffff", alpha);
-    ctx.font = `${Math.round(baseFont * newScale)}px sans-serif`;
+    ctx.font = `${Math.round(baseFont * newScale)}px "RussoOne", sans-serif`;
     ctx.fillText("NEW", newPos.x, newPos.y);
     ctx.restore();
 
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = hexToRgba(color, alpha);
-    ctx.font = `${Math.round(baseFont * levelScale)}px sans-serif`;
+    ctx.font = `${Math.round(baseFont * levelScale)}px "RussoOne", sans-serif`;
     ctx.fillText(String(popup.level), levelPos.x, levelPos.y);
     ctx.restore();
 
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = hexToRgba("#ffffff", alpha);
-    ctx.font = `${Math.round(baseFont * levelLabelScale)}px sans-serif`;
+    ctx.font = `${Math.round(baseFont * levelLabelScale)}px "RussoOne", sans-serif`;
     ctx.fillText("LEVEL", levelLabelPos.x, levelLabelPos.y);
     ctx.restore();
   }
   ctx.restore();
 }
 
-function getLevelColor(level) {
+export function getLevelColor(level) {
   if (level <= 5) {
     return "#2f9cff";
   }

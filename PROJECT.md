@@ -2,7 +2,7 @@
 
 ## What exists now
 
-- **Matter.js playground** with a centered glass (10x20 units) and wireframe-style render.
+- **Matter.js playground** with a centered glass (~340px wide); glass physics remain but visual glass is now PNG overlay.
 - **Spawn/kill lines** drawn as horizontal guides.
 - **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes (L1=4.0s; -0.16s per level; min 1.0s), then auto-drops.
 - **Spawn wait indicator**: active piece fills from top to bottom while waiting on the control line.
@@ -43,8 +43,9 @@
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
-- **Background layer**: placeholder space background image is drawn behind the glass, scaled to glass height, with a light twinkling star field.
-- **HUD layout (prototype)**: top HUD (Score/Coins/Pause), left-border cosmometer, right-side bonus button slots, bottom progress in floor border.
+- **Background layer**: placeholder space background image is drawn behind the glass, scaled to the full view height, with a light twinkling star field.
+- **Glass frame overlay**: PNG frame (`assets/levelUI/glass_frame.png`) is drawn over the glass for visual alignment checks.
+- **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
 - **Score/Coins HUD**: live score display; coins persist between sessions (saved on game over).
 
 ## File layout

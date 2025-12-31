@@ -114,7 +114,7 @@ export function drawScoreParticles(state, ctx) {
     return;
   }
   ctx.save();
-  ctx.font = "14px sans-serif";
+  ctx.font = "28px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const particle of particles) {

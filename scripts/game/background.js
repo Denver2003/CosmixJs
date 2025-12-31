@@ -76,9 +76,8 @@ export function updateBackgroundStars(deltaMs) {
 export function drawBackground(ctx, render, getGlassRect, nowMs) {
   const image = getBackgroundImage();
   const glass = getGlassRect();
-  const padY = WALL_THICKNESS * 2;
   const targetTop = render.bounds.min.y;
-  const targetHeight = glass.top + GLASS_HEIGHT + padY - targetTop;
+  const targetHeight = render.bounds.max.y - render.bounds.min.y;
   ctx.save();
   const hasImage =
     !image._broken && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
@@ -88,8 +87,9 @@ export function drawBackground(ctx, render, getGlassRect, nowMs) {
   const drawWidth = sourceWidth * scale;
   const drawHeight = sourceHeight * scale;
   const centerX = glass.left + GLASS_WIDTH / 2;
+  const centerY = glass.top + GLASS_HEIGHT / 2;
   const x = centerX - drawWidth / 2;
-  const y = targetTop;
+  const y = centerY - drawHeight / 2;
   if (hasImage) {
     ctx.save();
     ctx.beginPath();

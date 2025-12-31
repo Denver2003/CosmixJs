@@ -15,6 +15,12 @@
   --shadow-soft: 0 12px 30px rgba(71, 230, 255, 0.22);
 }
 
+@font-face {
+  font-family: "RussoOne";
+  src: url("../assets/fonts/RussoOne-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
 html,
 body {
   height: 100%;

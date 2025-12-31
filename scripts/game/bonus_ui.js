@@ -6,7 +6,7 @@ export function getBonusSlots(state, getGlassRect) {
   const glassFrame = getGlassFrame(glassRect);
   const { rightBorderRect } = getGlassBorderRects(glassFrame);
   const radius = WALL_THICKNESS;
-  const centerX = rightBorderRect.x + rightBorderRect.width / 2;
+  const centerX = rightBorderRect.x + rightBorderRect.width / 2 + 15;
   const startY = glassRect.top + WALL_THICKNESS * 2;
   const gap = WALL_THICKNESS * 2.5;
 

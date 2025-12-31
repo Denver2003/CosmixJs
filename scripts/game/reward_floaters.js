@@ -86,9 +86,9 @@ export function drawRewardFloaters(state, ctx) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     if (floater.type === "coins") {
-      ctx.font = "bold 16px sans-serif";
+      ctx.font = "bold 32px \"RussoOne\", sans-serif";
     } else {
-      ctx.font = "14px sans-serif";
+      ctx.font = "28px \"RussoOne\", sans-serif";
     }
     ctx.fillText(`+${floater.value}`, floater.x, floater.y);
   }

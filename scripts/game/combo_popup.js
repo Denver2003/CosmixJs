@@ -5,8 +5,8 @@ const PHASE2_MS = 1000;
 const START_SCALE = 0.3;
 const PEAK_SCALE = 1.5;
 const END_SCALE = 1;
-const FONT_SIZE = 24;
-const FONT_FAMILY = "sans-serif";
+const FONT_SIZE = 48;
+const FONT_FAMILY = "\"RussoOne\", sans-serif";
 const DEFAULT_COLOR = "#f0c74a";
 
 function worldToScreen(state, x, y) {

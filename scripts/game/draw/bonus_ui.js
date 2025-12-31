@@ -56,7 +56,7 @@ export function drawBonusButtons(state, ctx, getGlassRect) {
       const seconds = totalSeconds % 60;
       const timeLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
       ctx.fillStyle = "#ffffff";
-      ctx.font = "12px sans-serif";
+      ctx.font = "12px \"RussoOne\", sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(timeLabel, slot.x, slot.y + 0.5);
@@ -71,7 +71,7 @@ export function drawBonusButtons(state, ctx, getGlassRect) {
       ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#0f1115";
-      ctx.font = "10px sans-serif";
+      ctx.font = "10px \"RussoOne\", sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(String(count), badgeX, badgeY + 0.5);
@@ -141,7 +141,7 @@ export function drawBubbleKeyHint(state, ctx) {
   ctx.lineTo(x + size, y);
   ctx.stroke();
   ctx.fillStyle = "#0f1115";
-  ctx.font = "12px sans-serif";
+  ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + size / 2, y + size / 2 + 0.5);

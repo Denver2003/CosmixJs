@@ -12,6 +12,9 @@ const engine = Engine.create();
 const world = engine.world;
 
 const canvas = document.getElementById("world");
+if (document.fonts?.load) {
+  document.fonts.load("16px RussoOne");
+}
 const viewport = createViewport(canvas);
 const fitHeight = getFitViewHeight();
 const {

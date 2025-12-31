@@ -26,13 +26,15 @@ import { hexToRgba } from "./utils.js";
 import { getSpawnWaitMs } from "./state.js";
 import { drawRewardFloaters } from "./reward_floaters.js";
 import { drawBackground } from "./background.js";
+import { drawGlassFrame } from "./glass_frame.js";
 import {
   drawBonusButtons,
   drawBubbleIconLegend,
   drawBubbleKeyHint,
 } from "./draw/bonus_ui.js";
 import { drawTouchOverlay } from "./draw/overlays.js";
-import { drawLevelUpPopups } from "./level_up_popup.js";
+import { drawLevelUpPopups, getLevelColor } from "./level_up_popup.js";
+import { drawPauseButton } from "./pause_button.js";
 
 const { Composite, Render } = Matter;
 
@@ -46,6 +48,7 @@ export function drawLines(state, render, getGlassRect) {
   Render.startViewTransform(render);
   ctx.save();
   ctx.globalCompositeOperation = "destination-over";
+  drawGlassFrame(ctx, getGlassRect, render);
   drawBackground(ctx, render, getGlassRect, state.engine.timing.timestamp);
   ctx.restore();
   // Control line rendering intentionally hidden; logic remains.
@@ -87,7 +90,6 @@ export function drawLines(state, render, getGlassRect) {
   drawGunMarks(state, ctx);
   drawBubbleKeyHint(state, ctx);
   drawLevelUpPopups(state, ctx);
-  drawGlassCaps(ctx, getGlassRect);
   Render.endViewTransform(render);
   drawRewardFloaters(state, ctx);
   drawScoreParticles(state, ctx);
@@ -175,9 +177,10 @@ function drawTopHud(state, ctx, render, getGlassRect) {
     getGlassRect
   );
 
-  const iconSize = 18;
-  const iconGap = 6;
-  const hudY = pause.y + iconSize / 2 + 2;
+  const textScale = state.viewScale || 1;
+  const iconSize = 18 * textScale;
+  const iconGap = 6 * textScale;
+  const hudY = pause.y + iconSize / 2 + 2 * textScale + 7 * textScale;
 
   ctx.save();
   ctx.textBaseline = "middle";
@@ -189,26 +192,14 @@ function drawTopHud(state, ctx, render, getGlassRect) {
     amount: 1,
   });
   ctx.fillStyle = "#e0e4e8";
-  ctx.font = "18px sans-serif";
+  ctx.font = `${Math.round(18 * textScale)}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.fillText(scoreText, leftX + iconSize + iconGap, hudY);
 
-  ctx.strokeStyle = "#cfd8dc";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(pause.centerX, pause.centerY, pause.radius, 0, Math.PI * 2);
-  ctx.stroke();
-  const barWidth = 4;
-  const barHeight = 16;
-  const barGap = 4;
-  const barX = pause.centerX - (barWidth * 2 + barGap) / 2;
-  const barY = pause.centerY - barHeight / 2;
-  ctx.fillStyle = "#cfd8dc";
-  ctx.fillRect(barX, barY, barWidth, barHeight);
-  ctx.fillRect(barX + barWidth + barGap, barY, barWidth, barHeight);
+  drawPauseButton(ctx, pause);
 
   const coinsText = Math.floor(state.coins || 0).toString().padStart(3, "0");
-  ctx.font = "16px sans-serif";
+  ctx.font = `${Math.round(16 * textScale)}px "RussoOne", sans-serif`;
   const coinsWidth = ctx.measureText(coinsText).width;
   const coinsGroupRight = pause.x - coinsGap;
   const coinsGroupLeft = coinsGroupRight - (iconSize + iconGap + coinsWidth);
@@ -222,6 +213,7 @@ function drawTopHud(state, ctx, render, getGlassRect) {
 
   ctx.restore();
 }
+
 
 function drawPauseOverlay(state, ctx, render) {
   if (!state.paused) {
@@ -247,7 +239,7 @@ function drawPauseOverlay(state, ctx, render) {
   ctx.lineWidth = 2;
   ctx.strokeRect(centerX - boxWidth / 2, centerY - boxHeight / 2, boxWidth, boxHeight);
   ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  ctx.font = "14px sans-serif";
+  ctx.font = "14px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   const isAuto = state.pausedReason && state.pausedReason !== "manual";
   const label = isAuto ? "PAUSED (AUTO)" : "PAUSED";
@@ -259,10 +251,10 @@ function drawPauseOverlay(state, ctx, render) {
         : Date.now();
     const remaining = Math.max(0, state.pausedResumeMs - nowMs);
     const seconds = Math.ceil(remaining / 1000);
-    ctx.font = "12px sans-serif";
+    ctx.font = "12px \"RussoOne\", sans-serif";
     ctx.fillText(`RESUMING IN ${seconds}`, centerX, centerY + 12);
   } else {
-    ctx.font = "12px sans-serif";
+    ctx.font = "12px \"RussoOne\", sans-serif";
     ctx.fillText("PRESS P TO RESUME", centerX, centerY + 12);
   }
   ctx.restore();
@@ -273,7 +265,7 @@ function drawCosmometer(state, ctx, getGlassRect) {
   const glassFrame = getGlassFrame(glassRect);
   const { leftBorderRect } = getGlassBorderRects(glassFrame);
   const width = WALL_THICKNESS / 3;
-  const x = leftBorderRect.x + (leftBorderRect.width - width) / 2;
+  const x = leftBorderRect.x + (leftBorderRect.width - width) / 2 - 15;
   const bottomY = glassRect.top + GLASS_HEIGHT - WALL_THICKNESS;
   const topY = glassRect.top + KILL_OFFSET - WALL_THICKNESS;
   const yTop = Math.min(topY, bottomY);
@@ -282,11 +274,11 @@ function drawCosmometer(state, ctx, getGlassRect) {
   const y = yTop;
 
   ctx.save();
-  ctx.strokeStyle = "#cfd8dc";
-  ctx.lineWidth = 2;
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeRect(x, y, width, height);
+  const radius = width / 2;
+  ctx.fillStyle = hexToRgba("#000000", 0.2);
+  ctx.beginPath();
+  roundRectPath(ctx, x, y, width, height, radius);
+  ctx.fill();
 
   const energy = Math.max(0, Math.min(COSMO_ENERGY_MAX, state.energy || 0));
   const fillRatio = COSMO_ENERGY_MAX ? energy / COSMO_ENERGY_MAX : 0;
@@ -297,47 +289,20 @@ function drawCosmometer(state, ctx, getGlassRect) {
   const baseLevel = getEnergyLevel(energy);
   let fillColor = getCosmoBaseColor(baseLevel);
   if (state.cosmoColorBlendStartMs) {
-    const blendMs = 500;
-    const t = Math.max(0, Math.min(1, (now - state.cosmoColorBlendStartMs) / blendMs));
-    if (t < 1 && state.cosmoColorFrom && state.cosmoColorTo) {
-      fillColor = blendHex(state.cosmoColorFrom, state.cosmoColorTo, t);
-    }
+    state.cosmoColorBlendStartMs = 0;
+    state.cosmoColorFrom = null;
+    state.cosmoColorTo = null;
   }
   if (fillHeight > 0) {
-    ctx.fillStyle = fillColor;
+    ctx.fillStyle = hexToRgba(fillColor, 0.8);
+    ctx.save();
+    ctx.beginPath();
+    roundRectPath(ctx, x, y, width, height, radius);
+    ctx.clip();
     ctx.fillRect(x, fillY, width, fillHeight);
+    ctx.restore();
   }
 
-  const markerDiameter = (WALL_THICKNESS * 2) / 3;
-  const markerX = x + width / 2;
-  const markerDefs = [
-    { threshold: 0, y: y + height, scale: 1 },
-    {
-      threshold: COSMO_ENERGY_L2,
-      y: y + height - height * (COSMO_ENERGY_L2 / COSMO_ENERGY_MAX),
-      scale: 1.1,
-    },
-    {
-      threshold: COSMO_ENERGY_L3,
-      y: y + height - height * (COSMO_ENERGY_L3 / COSMO_ENERGY_MAX),
-      scale: 1.2,
-    },
-    {
-      threshold: COSMO_ENERGY_L5,
-      y: y + height - height * (COSMO_ENERGY_L5 / COSMO_ENERGY_MAX),
-      scale: 1.3,
-    },
-  ];
-  ctx.fillStyle = fillColor;
-  for (const marker of markerDefs) {
-    if (energy < marker.threshold) {
-      continue;
-    }
-    const radius = (markerDiameter / 2) * (marker.scale || 1);
-    ctx.beginPath();
-    ctx.arc(markerX, marker.y, radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
   ctx.restore();
 
   updateCosmoPopups(state);
@@ -352,25 +317,32 @@ function drawBottomProgress(state, ctx, getGlassRect) {
   const barHeight = 10;
   const barWidth = GLASS_WIDTH * 0.5;
   const barX = glassRect.left + (GLASS_WIDTH - barWidth) / 2;
-  const barY = bottomBorderRect.y + (bottomBorderRect.height - barHeight) / 2;
+  const barY =
+    bottomBorderRect.y + (bottomBorderRect.height - barHeight) / 2 + 23;
   const radius = barHeight / 2;
+  const levelColor = getLevelColor(state.level);
 
   ctx.save();
-  ctx.fillStyle = "#0f1115";
-  ctx.font = "13px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText(`LVL ${state.level}`, glassRect.left + padding, barY + barHeight - 1);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "15px \"RussoOne\", sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(
+    `LVL ${state.level}`,
+    glassRect.left + GLASS_WIDTH / 2,
+    barY - 32
+  );
 
-  ctx.strokeStyle = "#cfd8dc";
+  ctx.strokeStyle = hexToRgba("#ffffff", 0.5);
   ctx.lineWidth = 2;
   ctx.beginPath();
   roundRectPath(ctx, barX, barY, barWidth, barHeight, radius);
+  ctx.fillStyle = hexToRgba("#0f1115", 0.4);
   ctx.fill();
   ctx.stroke();
   const progress =
     state.toNextLevel > 0 ? state.clearedThisLevel / state.toNextLevel : 0;
   const fillWidth = Math.max(0, Math.min(1, progress)) * barWidth;
-  ctx.fillStyle = "#4fd7ff";
+  ctx.fillStyle = hexToRgba(levelColor, 0.8);
   if (fillWidth > 0) {
     ctx.save();
     ctx.beginPath();
@@ -381,10 +353,11 @@ function drawBottomProgress(state, ctx, getGlassRect) {
   }
 
   ctx.textAlign = "right";
-  ctx.fillStyle = "#0f1115";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.fillText(
     `${state.clearedThisLevel}/${state.toNextLevel}`,
-    glassRect.left + GLASS_WIDTH - padding,
+    glassRect.left + GLASS_WIDTH - padding - 25,
     barY + barHeight - 2
   );
   ctx.restore();
@@ -492,7 +465,7 @@ function drawCosmoPopups(state, ctx, bar) {
   const moveX = bar.width * 2 + 12;
   const lift = bar.height * 0.1;
   ctx.save();
-  ctx.font = "16px sans-serif";
+  ctx.font = "16px \"RussoOne\", sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   for (const popup of popups) {

@@ -1,8 +1,8 @@
 export const UNIT = 32;
-export const GLASS_WIDTH = 10 * UNIT;
+export const GLASS_WIDTH = 10 * UNIT + 20;
 export const GLASS_HEIGHT = 20 * UNIT;
 export const WALL_THICKNESS = 24;
-export const FLOOR_THICKNESS = WALL_THICKNESS * 1.5;
+export const FLOOR_THICKNESS = WALL_THICKNESS * 5;
 export const SPAWN_OFFSET = 2 * UNIT;
 export const SPAWN_START_OFFSET = 3 * UNIT;
 export const KILL_OFFSET = 3.5 * UNIT;

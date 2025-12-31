@@ -33,7 +33,7 @@ export function createGlass(world, getViewRect) {
       restitution: 0.02,
       plugin: { isGlass: true },
       render: {
-        fillStyle: "#cfd8dc",
+        fillStyle: "rgba(0, 0, 0, 0)",
         strokeStyle: "rgba(0, 0, 0, 0)",
         lineWidth: 0,
       },
