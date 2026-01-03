@@ -63,6 +63,10 @@
 - `scripts/game/preview.js` — next-piece preview and fade-in.
 - `scripts/game/controls.js` — keyboard input handling.
 - `scripts/game/lines.js` — spawn/kill line drawing.
+- `scripts/game/lines/hud.js` — HUD (верх, космометр, прогресс).
+- `scripts/game/lines/overlays.js` — оверлеи паузы/автопаузы.
+- `scripts/game/lines/world.js` — отрисовка waiting fill и кастомных контуров.
+- `scripts/game/lines/utils.js` — утилиты для линий/фигур.
 - `scripts/game/kill.js` — kill-line timer and game over.
 - `scripts/game/pause.js` — pause/auto-pause controller.
 - `scripts/game/chains/index.js` — chain detection + effects orchestration.
@@ -75,6 +79,13 @@
 - `scripts/game/bonuses/gun_marks.js` — machine gun mark VFX.
 - `scripts/game/bonuses/index.js` — bonus module exports.
 - `scripts/game/bonuses.js` — re-export entrypoint for bonus modules.
+- `scripts/game/bubbles.js` — bubble module barrel (core/pop/rewards/icons).
+- `scripts/game/bubbles/core.js` — spawn/update/render пузырей.
+- `scripts/game/bubbles/pop.js` — лопание пузырей, частицы и иконки.
+- `scripts/game/bubbles/rewards.js` — расчет наград + применение.
+- `scripts/game/bubbles/constants.js` — таблицы и пути иконок.
+- `scripts/game/bubbles/icons.js` — кеширование и отрисовка иконок.
+- `scripts/game/bubbles/utils.js` — утилиты (проценты/рандом).
 - `scripts/game/level_up_popup.js` — level-up popup animation.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
