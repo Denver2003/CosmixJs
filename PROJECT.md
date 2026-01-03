@@ -43,6 +43,7 @@
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
+- **Canvas shell UI**: Home/Shop/Settings/Leaderboards now render in canvas; DOM layers are hidden.
 - **Background layer**: placeholder space background image is drawn behind the glass, scaled to the full view height, with a light twinkling star field.
 - **Glass frame overlay**: PNG frame (`assets/levelUI/glass_frame.png`) is drawn over the glass for visual alignment checks.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
@@ -106,6 +107,8 @@
 - `scripts/shell/toast.js` — toast overlay scaffold.
 - `scripts/shell/pause_menu.js` — pause menu overlay scaffold.
 - `scripts/shell/game_over_menu.js` — game over menu overlay scaffold.
+- `scripts/ui/canvas_ui.js` — canvas UI dispatcher (HUD + overlays).
+- `scripts/ui/canvas_shell.js` — canvas shell screens (Home/Shop/Settings/Leaderboards).
 - `css/base.css` — base tokens and global resets.
 - `css/layout.css` — app layout and core layers.
 - `css/components.css` — shared UI components.

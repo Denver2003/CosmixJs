@@ -21,15 +21,9 @@ import {
   drawBonusButtons,
   drawBubbleKeyHint,
 } from "./draw/bonus_ui.js";
-import { drawTouchOverlay } from "./draw/overlays.js";
 import { drawLevelUpPopups } from "./level_up_popup.js";
-import {
-  drawBottomProgress,
-  drawCosmometer,
-  drawTopHud,
-} from "./lines/hud.js";
-import { drawPauseOverlay } from "./lines/overlays.js";
 import { drawCustomOutlines, drawWaitFill } from "./lines/world.js";
+import { drawCanvasUiScreen, drawCanvasUiWorld } from "../ui/canvas_ui.js";
 
 const { Render } = Matter;
 
@@ -63,33 +57,24 @@ export function drawLines(state, render, getGlassRect) {
   ctx.lineTo(left + GLASS_WIDTH, killY);
   ctx.stroke();
 
-  if (state.gameOver) {
-    ctx.fillStyle = "#f55a5a";
-    ctx.font = "20px sans-serif";
-    ctx.fillText("GAME OVER", left + 10, top + 30);
-  }
-
   if (DEBUG_OVERLAY) {
     // Reserved for future debug visuals.
   }
 
   drawWaitFill(state, ctx);
   drawCustomOutlines(state, ctx);
-  drawCosmometer(state, ctx, getGlassRect);
   drawBonusButtons(state, ctx, getGlassRect);
-  drawTouchOverlay(state, ctx, getGlassRect, spawnY);
-  drawBottomProgress(state, ctx, getGlassRect);
   drawBubbles(state, ctx);
   drawBubblePopParticles(state, ctx);
   drawBubblePopIcons(state, ctx);
   drawGunMarks(state, ctx);
   drawBubbleKeyHint(state, ctx);
   drawLevelUpPopups(state, ctx);
+  drawCanvasUiWorld({ ctx, state, render, getGlassRect });
   Render.endViewTransform(render);
   drawRewardFloaters(state, ctx);
   drawScoreParticles(state, ctx);
   drawComboPopups(state, ctx);
-  drawTopHud(state, ctx, render, getGlassRect);
-  drawPauseOverlay(state, ctx, render);
+  drawCanvasUiScreen({ ctx, state, render, getGlassRect });
   ctx.restore();
 }

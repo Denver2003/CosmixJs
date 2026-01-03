@@ -3,6 +3,7 @@ import { createGame } from "./game/index.js";
 import { createShell } from "./shell/index.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
+import { handleShellPointer } from "./ui/canvas_shell.js";
 
 const { Engine, Render } = Matter;
 
@@ -98,6 +99,34 @@ const shell = createShell({
       shell?.router?.showScreen?.("shop");
     },
   },
+});
+if (shell?.router) {
+  window.__shellRouter = shell.router;
+  window.__shellRoot = document.getElementById("shell-root");
+  window.__overlayRoot = document.getElementById("overlay-root");
+}
+window.__canvasStartGame = () => {
+  if (shell?.router) {
+    shell.router.showScreen("game");
+  }
+  if (!gameStarted) {
+    game.start();
+    gameStarted = true;
+  }
+};
+
+const canvasRect = () => canvas.getBoundingClientRect();
+canvas.addEventListener("pointerdown", (event) => {
+  const rect = canvasRect();
+  const scaleX = render.options.width / rect.width;
+  const scaleY = render.options.height / rect.height;
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
+  if (handleShellPointer(x, y, render)) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
 });
 if (shell) {
   window.shell = shell.router;
