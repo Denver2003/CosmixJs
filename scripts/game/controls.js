@@ -86,11 +86,11 @@ export function attachControls(
         state.moveRight = true;
         break;
       case "ArrowDown":
-        dropActiveBody(state, getSpawnPoint);
+        dropActiveBody(state, getSpawnPoint, getGlassRect);
         break;
       case "s":
       case "S":
-        dropActiveBody(state, getSpawnPoint);
+        dropActiveBody(state, getSpawnPoint, getGlassRect);
         break;
       default:
         break;
@@ -206,7 +206,7 @@ export function attachControls(
     }
     pointerActive = false;
     event.target.releasePointerCapture?.(event.pointerId);
-    dropActiveBody(state, getSpawnPoint);
+    dropActiveBody(state, getSpawnPoint, getGlassRect);
     event.preventDefault();
   }
 

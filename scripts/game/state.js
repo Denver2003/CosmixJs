@@ -1,5 +1,6 @@
 import { ROTATE_RANGE } from "../config.js";
 import { createRandomSpec } from "../shapes.js";
+import { applyShopToGameState, getShopProgress } from "../shop/progression.js";
 import { loadBonusInventory, loadCoins } from "./storage.js";
 
 export function getColorsCount(level) {
@@ -27,7 +28,7 @@ export function createGameState() {
   const level = 1;
   const toNextLevel = 10;
   const bonusInventory = loadBonusInventory();
-  return {
+  const state = {
     waitingBody: null,
     waitingState: "none",
     waitStartMs: 0,
@@ -54,6 +55,10 @@ export function createGameState() {
     coins: loadCoins(),
     scoreCoef: 1,
     moneyCoef: 1,
+    bonusDropChance: 0,
+    bonusUpgradeLevel: 0,
+    bonusCooldownMs: 0,
+    removeAds: false,
     gameMultiplier: 1,
     comboMultiplier: 1,
     energy: 0,
@@ -100,6 +105,8 @@ export function createGameState() {
     colorsCount: getColorsCount(level),
     rotationRange: getRotationRange(level),
   };
+  applyShopToGameState(state, getShopProgress());
+  return state;
 }
 
 export function applyLevelProgress(state, removedCount) {

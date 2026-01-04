@@ -4,5 +4,6 @@ export {
   activateGunBonus,
   updateGunBonus,
   tryTouchKill,
+  getBonusCooldownMs,
 } from "./consumables.js";
 export { updateGunMarks, drawGunMarks } from "./gun_marks.js";

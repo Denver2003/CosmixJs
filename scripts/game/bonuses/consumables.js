@@ -26,7 +26,7 @@ export function activateTouchBonus(state) {
     return false;
   }
   state.bonusInventory.touch -= 1;
-  state.bonusCooldowns.touchUntil = now + BONUS_COOLDOWN_MS;
+  state.bonusCooldowns.touchUntil = now + getBonusCooldownMs(state);
   state.bonusTouchActiveUntil = now + BONUS_TOUCH_DURATION_MS;
   return true;
 }
@@ -40,7 +40,7 @@ export function activateGunBonus(state, getGlassRect) {
     return false;
   }
   state.bonusInventory.gun -= 1;
-  state.bonusCooldowns.gunUntil = now + BONUS_COOLDOWN_MS;
+  state.bonusCooldowns.gunUntil = now + getBonusCooldownMs(state);
   state.bonusGunShots = buildGunShots(now, getGlassRect);
   return true;
 }
@@ -217,4 +217,12 @@ function buildGunShots(now, getGlassRect) {
     });
   }
   return shots;
+}
+
+export function getBonusCooldownMs(state) {
+  const value = Number(state?.bonusCooldownMs);
+  if (Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return BONUS_COOLDOWN_MS;
 }

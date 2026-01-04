@@ -1,6 +1,7 @@
 import { createGlass } from "./glass.js";
 import { createGame } from "./game/index.js";
 import { createShell } from "./shell/index.js";
+import { setAppState } from "./shell/app_state.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
 import { handleShellPointer } from "./ui/canvas_shell.js";
@@ -113,6 +114,15 @@ window.__canvasStartGame = () => {
     game.start();
     gameStarted = true;
   }
+};
+window.__applyShopState = (payload) => {
+  game.applyShopState?.(payload);
+};
+window.__setBestScore = (score) => {
+  if (!Number.isFinite(score)) {
+    return;
+  }
+  setAppState({ bestScore: Math.max(0, Math.floor(score)) });
 };
 
 const canvasRect = () => canvas.getBoundingClientRect();

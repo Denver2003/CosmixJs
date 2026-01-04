@@ -1,17 +1,24 @@
 import { ScreenId } from "../shell/index.js";
-import { getAppState } from "../shell/app_state.js";
-
-const SHOP_UPGRADES = [
-  { title: "Score Multiplier", current: "+0%", next: "+10%", price: "UPGRADE 100" },
-  { title: "Coin Multiplier", current: "+0%", next: "+10%", price: "UPGRADE 100" },
-  { title: "Bonus Drop Chance", current: "5%", next: "7%", price: "UPGRADE 100" },
-  { title: "Bonus Upgrades", current: "Level 0", next: "Details", price: "OPEN" },
-];
-
-const SHOP_ITEMS = [
-  { title: "Touch-to-Kill", meta: "Consumable", owned: "Owned: 0", price: "BUY 5000" },
-  { title: "Machine Gun", meta: "Consumable", owned: "Owned: 0", price: "BUY 5000" },
-];
+import { getAppState, setAppState } from "../shell/app_state.js";
+import {
+  BONUS_DROP_LEVELS,
+  BONUS_UPGRADE_LEVELS,
+  COIN_MULTIPLIER_LEVELS,
+  REAL_MONEY_ITEMS,
+  SCORE_MULTIPLIER_LEVELS,
+  SHOP_ITEMS,
+  UPGRADE_TYPES,
+  getUpgradePrice,
+} from "../shop/model.js";
+import {
+  getMaxUpgradeLevel,
+  getShopProgress,
+  tryBuyItem,
+  tryBuyRealMoneyItem,
+  tryBuyUpgrade,
+  updateShopProgress,
+} from "../shop/progression.js";
+import { loadBonusInventory, saveBonusInventory, saveCoins } from "../game/storage.js";
 
 const LEADERBOARD_ROWS = [
   { rank: "1", name: "You", score: "12 450" },
@@ -124,6 +131,13 @@ export function handleShellPointer(x, y, render) {
         return true;
       }
     }
+    if (layout?.actions) {
+      const action = layout.actions.find((entry) => pointInRect(x, y, entry.rect));
+      if (action) {
+        handleShopAction(action);
+        return true;
+      }
+    }
   }
   if (router.activeScreen === ScreenId.SETTINGS) {
     const layout = lastLayout.settings;
@@ -164,6 +178,7 @@ const shopState = {
 const leaderboardsState = {
   tab: "all",
 };
+const shopActions = [];
 
 function drawHomeScreen(ctx, render) {
   const { width, height } = render.options;
@@ -193,23 +208,210 @@ function drawShopScreen(ctx, render) {
   const headerY = 48;
   const state = getAppState();
   const coins = state.coins ?? 0;
+  const progress = getShopProgress();
+  const inventory = loadBonusInventory();
 
   const backRect = drawBackButton(ctx, pad, headerY, "BACK");
   drawShopHeader(ctx, width, headerY, pad, coins);
 
   const tabs = drawShopTabs(ctx, width / 2, headerY + 70, shopState.tab);
   const contentTop = headerY + 130;
+  const upgrades = buildUpgradeCards(progress, coins);
+  const items = buildItemCards(progress, inventory, coins);
+  resetShopActions();
   drawShopCards(
     ctx,
     pad,
     contentTop,
     width - pad * 2,
     height - contentTop - pad,
-    shopState.tab === "items" ? SHOP_ITEMS : SHOP_UPGRADES,
+    shopState.tab === "items" ? items : upgrades,
     shopState.tab === "upgrades"
   );
+  lastLayout.shop = {
+    back: backRect,
+    tabs,
+    actions: getActionRects(),
+  };
+}
 
-  lastLayout.shop = { back: backRect, tabs };
+function buildUpgradeCards(progress, coins) {
+  const upgrades = [
+    {
+      id: UPGRADE_TYPES.SCORE_MULTIPLIER,
+      title: "Score Multiplier",
+      levels: SCORE_MULTIPLIER_LEVELS,
+      formatter: (value) => `+${Math.round((value - 1) * 100)}%`,
+    },
+    {
+      id: UPGRADE_TYPES.COIN_MULTIPLIER,
+      title: "Coin Multiplier",
+      levels: COIN_MULTIPLIER_LEVELS,
+      formatter: (value) => `+${Math.round((value - 1) * 100)}%`,
+    },
+    {
+      id: UPGRADE_TYPES.BONUS_DROP,
+      title: "Bonus Drop Chance",
+      levels: BONUS_DROP_LEVELS,
+      formatter: (value) => `${Math.round(value * 100)}%`,
+    },
+    {
+      id: UPGRADE_TYPES.BONUS_UPGRADE,
+      title: "Bonus Upgrades",
+      levels: BONUS_UPGRADE_LEVELS,
+      formatter: (value, level) => `Level ${level}`,
+    },
+  ];
+  return upgrades.map((upgrade) => {
+    const level = progress?.upgrades?.[upgrade.id] ?? 0;
+    const maxLevel = getMaxUpgradeLevel(upgrade.id);
+    const current = upgrade.formatter(upgrade.levels[level] ?? 0, level);
+    const nextLevel = Math.min(level + 1, maxLevel);
+    const nextValue = upgrade.levels[nextLevel];
+    const next =
+      level >= maxLevel
+        ? "MAX"
+        : upgrade.id === UPGRADE_TYPES.BONUS_UPGRADE
+          ? BONUS_UPGRADE_LEVELS[nextLevel]?.label || "Next"
+          : upgrade.formatter(nextValue ?? 0, nextLevel);
+    const priceValue = getUpgradePrice(level);
+    const canAfford = Number.isFinite(priceValue) ? coins >= priceValue : false;
+    return {
+      id: upgrade.id,
+      kind: "upgrade",
+      title: upgrade.title,
+      current,
+      next,
+      actionLabel: level >= maxLevel ? "MAX" : `UPGRADE ${priceValue}`,
+      actionDisabled: level >= maxLevel || !canAfford,
+    };
+  });
+}
+
+function buildItemCards(progress, inventory, coins) {
+  const cards = SHOP_ITEMS.map((item) => {
+    const count = Math.max(0, Math.floor(inventory?.[item.id] || 0));
+    const canAfford = coins >= item.cost;
+    return {
+      id: item.id,
+      kind: "item",
+      title: item.title,
+      meta: "Consumable",
+      owned: `Owned: ${count}`,
+      actionLabel: `BUY ${item.cost}`,
+      actionDisabled: !canAfford,
+    };
+  });
+
+  for (const item of REAL_MONEY_ITEMS) {
+    if (item.id === "remove_ads") {
+      const owned = Boolean(progress?.removeAds);
+      cards.push({
+        id: item.id,
+        kind: "real",
+        title: "Remove Ads",
+        meta: "All ads",
+        owned: owned ? "Owned" : null,
+        actionLabel: owned ? "OWNED" : `BUY ${item.price} YAN`,
+        actionDisabled: owned,
+      });
+    } else if (item.id === "coins_1000") {
+      cards.push({
+        id: item.id,
+        kind: "real",
+        title: "Coins Pack",
+        meta: "1000 coins",
+        owned: null,
+        actionLabel: `BUY ${item.price} YAN`,
+        actionDisabled: false,
+      });
+    }
+  }
+  return cards;
+}
+
+function handleShopAction(action) {
+  if (action.disabled) {
+    return;
+  }
+  const appState = getAppState();
+  const progress = getShopProgress();
+  const inventory = loadBonusInventory();
+  let coins = appState.coins ?? 0;
+
+  if (action.kind === "upgrade") {
+    const result = tryBuyUpgrade(progress, action.id, coins);
+    if (!result.ok) {
+      return;
+    }
+    coins = result.coins;
+    const nextProgress = updateShopProgress({
+      upgrades: progress.upgrades,
+      removeAds: progress.removeAds,
+    });
+    saveCoins(coins);
+    setAppState({ coins });
+    applyShopStateToGame({ coins, progress: nextProgress, inventory });
+    return;
+  }
+
+  if (action.kind === "item") {
+    const result = tryBuyItem(progress, action.id, coins, inventory);
+    if (!result.ok) {
+      return;
+    }
+    coins = result.coins;
+    saveCoins(coins);
+    setAppState({ coins });
+    if (result.inventory) {
+      saveBonusInventory(result.inventory);
+      applyShopStateToGame({ coins, progress, inventory: result.inventory });
+    }
+    return;
+  }
+
+  if (action.kind === "real") {
+    const result = tryBuyRealMoneyItem(progress, action.id);
+    if (!result.ok) {
+      return;
+    }
+    if (result.grant?.key === "coins") {
+      coins += result.grant.amount || 0;
+      saveCoins(coins);
+      setAppState({ coins });
+    }
+    const nextProgress = updateShopProgress({
+      upgrades: progress.upgrades,
+      removeAds: progress.removeAds,
+    });
+    applyShopStateToGame({ coins, progress: nextProgress, inventory });
+  }
+}
+
+function applyShopStateToGame(payload) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (typeof window.__applyShopState === "function") {
+    window.__applyShopState(payload);
+  }
+}
+
+function resetShopActions() {
+  shopActions.length = 0;
+}
+
+function addShopAction(card, rect) {
+  shopActions.push({
+    id: card.id,
+    kind: card.kind,
+    rect,
+    disabled: card.actionDisabled,
+  });
+}
+
+function getActionRects() {
+  return shopActions;
 }
 
 function drawSettingsScreen(ctx, render) {
@@ -425,20 +627,23 @@ function drawToggle(ctx, x, y, width, height, on) {
   ctx.restore();
 }
 
-function drawActionButton(ctx, x, y, w, h, label, danger = false) {
+function drawActionButton(ctx, x, y, w, h, label, danger = false, disabled = false) {
   ctx.save();
-  ctx.fillStyle = danger ? "rgba(255, 107, 107, 0.2)" : "rgba(95, 227, 255, 0.2)";
-  ctx.strokeStyle = danger ? "rgba(255, 107, 107, 0.8)" : "rgba(95, 227, 255, 0.7)";
+  const baseFill = danger ? "rgba(255, 107, 107, 0.2)" : "rgba(95, 227, 255, 0.2)";
+  const baseStroke = danger ? "rgba(255, 107, 107, 0.8)" : "rgba(95, 227, 255, 0.7)";
+  ctx.fillStyle = disabled ? "rgba(255, 255, 255, 0.08)" : baseFill;
+  ctx.strokeStyle = disabled ? "rgba(255, 255, 255, 0.25)" : baseStroke;
   ctx.lineWidth = 1.5;
   roundRect(ctx, x, y, w, h, 10);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = disabled ? "rgba(255, 255, 255, 0.6)" : "#ffffff";
   ctx.font = "11px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + w / 2, y + h / 2);
   ctx.restore();
+  return { x, y, width: w, height: h };
 }
 
 function drawShopHeader(ctx, width, y, pad, coins) {
@@ -526,7 +731,17 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext) {
       ctx.fillText(card.owned, x + 16, cardY + 56);
     }
 
-    drawActionButton(ctx, x + width - 140, cardY + 24, 120, 38, card.price);
+    const actionRect = drawActionButton(
+      ctx,
+      x + width - 140,
+      cardY + 24,
+      120,
+      38,
+      card.actionLabel || card.price,
+      false,
+      card.actionDisabled
+    );
+    addShopAction(card, actionRect);
   }
   ctx.restore();
 }

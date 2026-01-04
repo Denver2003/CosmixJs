@@ -75,10 +75,10 @@ export function applyBubbleReward(state, reward, getGlassRect) {
     case "consumable":
       if (reward.subtype === "touch") {
         state.bubbleRewardCooldowns.touch = now + BUBBLE_COOLDOWN_TOUCH_MS;
-        state.bonusInventory.touch += 1;
+        state.bonusInventory.touch += reward.amount || 1;
       } else if (reward.subtype === "machine") {
         state.bubbleRewardCooldowns.gun = now + BUBBLE_COOLDOWN_GUN_MS;
-        state.bonusInventory.gun += 1;
+        state.bonusInventory.gun += reward.amount || 1;
       }
       console.log("[bubble] consumable:", reward.subtype);
       break;
@@ -87,12 +87,14 @@ export function applyBubbleReward(state, reward, getGlassRect) {
   }
 }
 
-export function rollBubbleReward(state) {
+export function rollBubbleReward(state, options = {}) {
   const now = state.engine.timing.timestamp;
   const level = state.level || 1;
   const multiplier = state.gameMultiplier || 1;
   const pointCoef = state.scoreCoef || 1;
   const moneyCoef = state.moneyCoef || 1;
+  const bonusUpgradeLevel = state.bonusUpgradeLevel || 0;
+  const source = options?.source || "collapse";
 
   const entries = [];
   const addEntry = (key, type, subtype) => {
@@ -126,6 +128,16 @@ export function rollBubbleReward(state) {
   }
   if (now >= (state.bubbleRewardCooldowns.gun || 0)) {
     addEntry("gun", "consumable", "machine");
+  }
+
+  applyBonusUpgradeModifiers(entries, bonusUpgradeLevel);
+  if (bonusUpgradeLevel >= 6 && source === "drop") {
+    const instantOnly = entries.filter((entry) => entry.type === "instant");
+    if (instantOnly.length === 0) {
+      return null;
+    }
+    entries.length = 0;
+    entries.push(...instantOnly);
   }
 
   const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
@@ -170,7 +182,8 @@ export function rollBubbleReward(state) {
     return { type: "instant", subtype: selected.subtype };
   }
   if (selected.type === "consumable") {
-    return { type: "consumable", subtype: selected.subtype };
+    const amount = bonusUpgradeLevel >= 7 ? 5 : 1;
+    return { type: "consumable", subtype: selected.subtype, amount };
   }
   return null;
 }
@@ -183,4 +196,49 @@ function pickColors(state, count) {
     picks.push(palette[Math.floor(Math.random() * palette.length)]);
   }
   return picks;
+}
+
+function applyBonusUpgradeModifiers(entries, bonusUpgradeLevel) {
+  if (!entries.length || bonusUpgradeLevel <= 0) {
+    return;
+  }
+
+  const instantEntries = entries.filter((entry) => entry.type === "instant");
+  const consumableEntries = entries.filter((entry) => entry.type === "consumable");
+
+  if (bonusUpgradeLevel >= 7 && consumableEntries.length > 0) {
+    for (const entry of consumableEntries) {
+      entry.weight *= 5;
+    }
+  }
+
+  if (instantEntries.length > 0) {
+    const targetInstantShare =
+      bonusUpgradeLevel >= 2 ? 0.2 : bonusUpgradeLevel >= 1 ? 0.15 : 0;
+    if (targetInstantShare > 0) {
+      const instantTotal = instantEntries.reduce((sum, entry) => sum + entry.weight, 0);
+      const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+      const otherTotal = total - instantTotal;
+      if (instantTotal > 0 && otherTotal > 0) {
+        const currentShare = instantTotal / total;
+        if (currentShare < targetInstantShare) {
+          const multiplier =
+            (targetInstantShare * otherTotal) / (instantTotal * (1 - targetInstantShare));
+          for (const entry of instantEntries) {
+            entry.weight *= multiplier;
+          }
+        }
+      }
+    }
+
+    if (bonusUpgradeLevel >= 3) {
+      const grenade = instantEntries.find((entry) => entry.subtype === "grenade");
+      const hail = instantEntries.find((entry) => entry.subtype === "hail");
+      if (grenade && hail) {
+        const instantTotal = instantEntries.reduce((sum, entry) => sum + entry.weight, 0);
+        grenade.weight = instantTotal * 0.4;
+        hail.weight = instantTotal * 0.6;
+      }
+    }
+  }
 }

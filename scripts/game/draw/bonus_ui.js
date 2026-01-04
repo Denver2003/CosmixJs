@@ -1,6 +1,7 @@
-import { BONUS_COOLDOWN_MS, WALL_THICKNESS } from "../../config.js";
+import { WALL_THICKNESS } from "../../config.js";
 import { drawBubbleIcon } from "../bubbles.js";
 import { getBonusSlots } from "../bonus_ui.js";
+import { getBonusCooldownMs } from "../bonuses.js";
 
 export function drawBonusButtons(state, ctx, getGlassRect) {
   const slots = getBonusSlots(state, getGlassRect);
@@ -37,7 +38,8 @@ export function drawBonusButtons(state, ctx, getGlassRect) {
 
     if (cooling) {
       const remaining = Math.max(0, cooldownUntil - now);
-      const progress = Math.min(1, remaining / BONUS_COOLDOWN_MS);
+      const cooldownMs = getBonusCooldownMs(state);
+      const progress = Math.min(1, remaining / cooldownMs);
       ctx.fillStyle = "rgba(15, 17, 21, 0.45)";
       ctx.beginPath();
       ctx.moveTo(slot.x, slot.y);

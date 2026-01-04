@@ -12,6 +12,7 @@ import { getSpawnWaitMs } from "./state.js";
 import { addEnergyOnDrop, updateCosmometerMultiplier } from "./cosmometer.js";
 import { clampWaitingBody, setBodyScale } from "./utils.js";
 import { removePreview, setPreview } from "./preview.js";
+import { trySpawnBubble } from "./bubbles.js";
 
 const { Body, World } = Matter;
 
@@ -35,7 +36,7 @@ export function spawnBlock(state, getSpawnPoint) {
   setPreview(state, state.nextSpec, getSpawnPoint);
 }
 
-export function dropActiveBody(state, getSpawnPoint) {
+export function dropActiveBody(state, getSpawnPoint, getGlassRect) {
   if (!state.waitingBody || state.gameOver) {
     return;
   }
@@ -61,6 +62,11 @@ export function dropActiveBody(state, getSpawnPoint) {
   state.waitingState = "none";
   state.waitStartMs = 0;
   spawnBlock(state, getSpawnPoint);
+  if (state.bonusUpgradeLevel >= 4 && getGlassRect) {
+    if (Math.random() < 0.05) {
+      trySpawnBubble(state, getGlassRect, "drop");
+    }
+  }
 }
 
 export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
@@ -96,7 +102,7 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     state.engine.timing.timestamp - state.waitStartMs >= getSpawnWaitMs(state.level)
   ) {
     if (!touchActive) {
-      dropActiveBody(state, getSpawnPoint);
+      dropActiveBody(state, getSpawnPoint, getGlassRect);
     }
   }
 

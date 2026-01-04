@@ -1,5 +1,6 @@
 const COINS_KEY = "cosmix.coins";
 const BONUSES_KEY = "cosmix.bonuses";
+const BEST_SCORE_KEY = "cosmix.best_score";
 
 function getStorage() {
   if (typeof window === "undefined") {
@@ -25,6 +26,19 @@ export function loadCoins() {
   return value;
 }
 
+export function loadBestScore() {
+  const storage = getStorage();
+  if (!storage) {
+    return 0;
+  }
+  const raw = storage.getItem(BEST_SCORE_KEY);
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return value;
+}
+
 export function saveCoins(coins) {
   const storage = getStorage();
   if (!storage) {
@@ -32,6 +46,16 @@ export function saveCoins(coins) {
   }
   const safeCoins = Math.max(0, Math.floor(coins || 0));
   storage.setItem(COINS_KEY, String(safeCoins));
+  return true;
+}
+
+export function saveBestScore(score) {
+  const storage = getStorage();
+  if (!storage) {
+    return false;
+  }
+  const safeScore = Math.max(0, Math.floor(score || 0));
+  storage.setItem(BEST_SCORE_KEY, String(safeScore));
   return true;
 }
 

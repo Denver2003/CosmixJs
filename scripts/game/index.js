@@ -1,4 +1,5 @@
 import { applyLevelProgress, createGameState } from "./state.js";
+import { applyShopToGameState } from "../shop/progression.js";
 import { attachControls } from "./controls.js";
 import { drawLines } from "./lines.js";
 import { updateChains } from "./chains/index.js";
@@ -7,7 +8,7 @@ import { updatePreview, repositionPreview } from "./preview.js";
 import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
 import { createPauseController } from "./pause.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
-import { saveBonusInventory, saveCoins } from "./storage.js";
+import { loadBestScore, saveBestScore, saveBonusInventory, saveCoins } from "./storage.js";
 import { spawnScoreParticles, updateScoreParticles } from "./score_particles.js";
 import { recordCombo } from "./combo.js";
 import { spawnComboPopup, updateComboPopups } from "./combo_popup.js";
@@ -41,6 +42,13 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       if (!state.gameOverHandled) {
         saveCoins(state.coins);
         saveBonusInventory(state.bonusInventory);
+        const prevBest = loadBestScore();
+        if (state.score > prevBest) {
+          saveBestScore(state.score);
+          if (typeof window !== "undefined" && window.__setBestScore) {
+            window.__setBestScore(state.score);
+          }
+        }
         state.gameOverHandled = true;
         if (typeof window !== "undefined" && window.shellGameOver?.open) {
           window.shellGameOver.open();
@@ -179,6 +187,21 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     spawnBlock(state, getSpawnPoint);
   }
 
+  function applyShopState(payload) {
+    if (payload?.progress) {
+      applyShopToGameState(state, payload.progress);
+    }
+    if (Number.isFinite(payload?.coins)) {
+      state.coins = payload.coins;
+    }
+    if (payload?.inventory) {
+      state.bonusInventory = {
+        ...state.bonusInventory,
+        ...payload.inventory,
+      };
+    }
+  }
+
   return {
     start,
     onResize,
@@ -189,6 +212,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     resumeIfAuto: pause.resumeIfAuto,
     tickAutoResume: pause.tickAutoResume,
     getPauseInfo: pause.getPauseInfo,
+    applyShopState,
   };
 }
 

@@ -40,6 +40,8 @@
 - **Bubbles**: spawn chance uses legacy tables (count+combo); rewards roll on spawn with per-type cooldowns; bubbles pop on tap with VFX + reward icons.
 - **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
 - **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
+- **Shop & progression**: upgrades for score/coin multiplier, bonus drop chance, and bonus upgrades (localStorage). Shop allows purchasing consumable bonuses with coins; real-money items are mocked (remove ads, coin pack) and applied immediately.
+- **Bonus upgrades**: bonus drop adds to bubble spawn chance; upgrade level 4 enables bubble spawn on drop (5%); level 5 reduces consumable cooldown to 2 min; level 6 forces instant rewards on drop bubbles; level 7 increases consumable rewards to x5 and boosts their weights.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
@@ -47,7 +49,7 @@
 - **Background layer**: placeholder space background image is drawn behind the glass, scaled to the full view height, with a light twinkling star field.
 - **Glass frame overlay**: PNG frame (`assets/levelUI/glass_frame.png`) is drawn over the glass for visual alignment checks.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
-- **Score/Coins HUD**: live score display; coins persist between sessions (saved on game over).
+- **Score/Coins HUD**: live score display; coins and best score persist between sessions (saved on game over).
 
 ## File layout
 

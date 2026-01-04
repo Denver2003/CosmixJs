@@ -28,7 +28,9 @@ export function trySpawnBubble(
       return null;
     }
     const totalCount = removedCount + comboCount;
-    const percent = getPercent(SPAWN_BY_FIGURE_COUNT, totalCount);
+    const basePercent = getPercent(SPAWN_BY_FIGURE_COUNT, totalCount);
+    const bonusPercent = Math.max(0, (state.bonusDropChance || 0) * 100);
+    const percent = Math.min(100, basePercent + bonusPercent);
     if (Math.random() * 100 >= percent) {
       return null;
     }
@@ -36,7 +38,7 @@ export function trySpawnBubble(
   if (state.bubbles.length >= BUBBLE_MAX_COUNT) {
     return null;
   }
-  const reward = rollBubbleReward(state);
+  const reward = rollBubbleReward(state, { source });
   if (!reward) {
     return null;
   }

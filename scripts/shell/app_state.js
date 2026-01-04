@@ -1,9 +1,11 @@
 const subscribers = new Set();
 
+import { loadBestScore, loadCoins } from "../game/storage.js";
+
 const state = {
   userName: "Guest",
-  coins: 1882,
-  bestScore: 12450,
+  coins: loadCoins(),
+  bestScore: loadBestScore(),
 };
 
 export function getAppState() {
