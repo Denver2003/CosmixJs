@@ -19,6 +19,9 @@ export function attachControls(
 
   function onKeyDown(event) {
     if (event.key === "p" || event.key === "P") {
+      if (state.mode === "shell" || state.mode === "gameover") {
+        return;
+      }
       if (typeof window !== "undefined" && window.openPauseMenu) {
         window.openPauseMenu();
       } else {
@@ -28,6 +31,9 @@ export function attachControls(
       return;
     }
     if (event.key === "e" || event.key === "E" || event.key === "ArrowUp") {
+      if (state.mode === "shell" || state.mode === "gameover") {
+        return;
+      }
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         const reward = popTopBubble(state, getGlassRect);
         if (reward) {
@@ -37,6 +43,9 @@ export function attachControls(
       }
     }
     if (event.key === "1") {
+      if (state.mode === "shell" || state.mode === "gameover") {
+        return;
+      }
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         if (activateTouchBonus(state)) {
           event.preventDefault();
@@ -45,6 +54,9 @@ export function attachControls(
       }
     }
     if (event.key === "2") {
+      if (state.mode === "shell" || state.mode === "gameover") {
+        return;
+      }
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         if (activateGunBonus(state, getGlassRect)) {
           event.preventDefault();
@@ -115,6 +127,9 @@ export function attachControls(
   }
 
   function onPointerDown(event) {
+    if (state.mode === "shell" || state.mode === "gameover") {
+      return;
+    }
     const target = event.target || canvas;
     const rect = target?.getBoundingClientRect?.();
     if (rect) {

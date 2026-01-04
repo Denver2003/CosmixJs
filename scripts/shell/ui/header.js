@@ -47,6 +47,19 @@ export function createIconButton({ label, icon, onClick } = {}) {
   return button;
 }
 
+export function setIconButtonLabel(button, label) {
+  if (!button) {
+    return;
+  }
+  let labelNode = button.querySelector(".icon-button__label");
+  if (!labelNode) {
+    labelNode = document.createElement("span");
+    labelNode.className = "icon-button__label";
+    button.appendChild(labelNode);
+  }
+  labelNode.textContent = label;
+}
+
 export function createPill({ label, value, icon } = {}) {
   const pill = document.createElement("div");
   pill.className = "header-pill";

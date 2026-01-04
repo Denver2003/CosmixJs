@@ -1,12 +1,12 @@
 import { applyLevelProgress, createGameState } from "./state.js";
 import { applyShopToGameState } from "../shop/progression.js";
+import { createGameStateMachine } from "./state_machine.js";
 import { attachControls } from "./controls.js";
 import { drawLines } from "./lines.js";
 import { updateChains } from "./chains/index.js";
 import { updateKillLine } from "./kill.js";
 import { updatePreview, repositionPreview } from "./preview.js";
 import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
-import { createPauseController } from "./pause.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
 import { loadBestScore, saveBestScore, saveBonusInventory, saveCoins } from "./storage.js";
 import { spawnScoreParticles, updateScoreParticles } from "./score_particles.js";
@@ -27,7 +27,9 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   state.engine = engine;
   state.world = world;
   state.render = render;
-  const pause = createPauseController(state, runner);
+  state.spawnBlockResumeAt = 0;
+  const mode = createGameStateMachine(state, runner);
+  mode.openShell();
 
   function getSpawnPoint() {
     const { left, top } = getGlassRect();
@@ -38,7 +40,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function update() {
-    if (state.gameOver) {
+    if (state.gameOver && mode.getMode() !== mode.MODES.GAMEOVER) {
+      mode.setGameOver();
+    }
+    if (mode.getMode() === mode.MODES.GAMEOVER) {
       if (!state.gameOverHandled) {
         saveCoins(state.coins);
         saveBonusInventory(state.bonusInventory);
@@ -50,13 +55,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
           }
         }
         state.gameOverHandled = true;
-        if (typeof window !== "undefined" && window.shellGameOver?.open) {
-          window.shellGameOver.open();
-        }
       }
       return;
     }
-    if (state.paused) {
+    if (mode.getMode() !== mode.MODES.GAMEPLAY) {
       return;
     }
     const deltaMs = engine.timing.lastDelta;
@@ -164,7 +166,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     state,
     getSpawnPoint,
     getGlassRect,
-    pause.togglePause,
+    mode.togglePause,
     render,
     render?.canvas
   );
@@ -184,7 +186,53 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function start() {
+    mode.startGame();
+    state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
+  }
+
+  function resumeAfterContinue() {
+    state.gameOver = false;
+    state.gameOverHandled = false;
+    state.paused = false;
+    state.spawnBlockResumeAt = 0;
+    mode.startGame();
+    if (!state.waitingBody) {
+      spawnBlock(state, getSpawnPoint);
+    }
+  }
+
+  function restartSession() {
+    clearDynamicBodies();
+    const fresh = createGameState();
+    const preserved = {
+      engine: state.engine,
+      world: state.world,
+      render: state.render,
+      viewScale: state.viewScale,
+      viewWidth: state.viewWidth,
+      viewHeight: state.viewHeight,
+      coins: state.coins,
+      bonusInventory: state.bonusInventory,
+    };
+    Object.assign(state, fresh, preserved);
+    applyShopToGameState(state);
+    mode.startGame();
+    state.spawnBlockResumeAt = 0;
+    spawnBlock(state, getSpawnPoint);
+  }
+
+  function clearDynamicBodies() {
+    const bodies = Matter.Composite.allBodies(world);
+    for (const body of bodies) {
+      if (body.parent !== body) {
+        continue;
+      }
+      if (body.plugin?.isGlass) {
+        continue;
+      }
+      Matter.World.remove(world, body);
+    }
   }
 
   function applyShopState(payload) {
@@ -203,16 +251,24 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   return {
+    state,
     start,
     onResize,
     detachControls,
     setViewScale,
     setViewSize,
-    setPaused: pause.setPaused,
-    resumeIfAuto: pause.resumeIfAuto,
-    tickAutoResume: pause.tickAutoResume,
-    getPauseInfo: pause.getPauseInfo,
+    setPaused: mode.setPaused,
+    resumeIfAuto: mode.resumeIfAuto,
+    tickAutoResume: mode.tickAutoResume,
+    getPauseInfo: mode.getPauseInfo,
+    setGameOver: mode.setGameOver,
+    openShell: mode.openShell,
+    startGame: mode.startGame,
+    getMode: mode.getMode,
     applyShopState,
+    resumeAfterContinue,
+    restartSession,
+    state,
   };
 }
 

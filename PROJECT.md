@@ -41,9 +41,11 @@
 - **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
 - **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
 - **Shop & progression**: upgrades for score/coin multiplier, bonus drop chance, and bonus upgrades (localStorage). Shop allows purchasing consumable bonuses with coins; real-money items are mocked (remove ads, coin pack) and applied immediately.
+- **Ads (mock)**: rewarded continue on Game Over (up to 3 per run) clears 70/50/30% of shapes with 2.5s kill-line grace; interstitials show only on Retry with 3-session warmup and 180s cooldown (disabled by remove ads); shop rewarded grants coins with 5/hour limit and 2 min cooldown (reward scales by total spent coins and MoneyCoef, rounded to 50).
 - **Bonus upgrades**: bonus drop adds to bubble spawn chance; upgrade level 4 enables bubble spawn on drop (5%); level 5 reduces consumable cooldown to 2 min; level 6 forces instant rewards on drop bubbles; level 7 increases consumable rewards to x5 and boosts their weights.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
+- **State machine**: gameplay modes are explicit (shell/gameplay/paused/gameover) to prevent desync; leaving game screens moves to shell mode and stops the runner; pause/game over overlays sync with state.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
 - **Canvas shell UI**: Home/Shop/Settings/Leaderboards now render in canvas; DOM layers are hidden.
 - **Background layer**: placeholder space background image is drawn behind the glass, scaled to the full view height, with a light twinkling star field.

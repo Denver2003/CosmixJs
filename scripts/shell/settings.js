@@ -11,7 +11,7 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
       createIconButton({
         icon: "←",
         label: "Back",
-        onClick: () => router.showScreen("home"),
+        onClick: () => router.back?.(),
       }),
     ],
     title: "Settings",

@@ -13,6 +13,7 @@ export class ScreenRouter {
     this.overlays = new Map();
     this.activeScreen = null;
     this.overlayStack = [];
+    this.history = [];
   }
 
   registerScreen(id, element) {
@@ -45,10 +46,14 @@ export class ScreenRouter {
     return this.overlays.get(id) || null;
   }
 
-  showScreen(id) {
+  showScreen(id, options = {}) {
     const target = id || this.defaultScreen;
     if (this.activeScreen === target) {
       return;
+    }
+    const recordHistory = options.recordHistory !== false;
+    if (this.activeScreen && recordHistory) {
+      this.history.push(this.activeScreen);
     }
     for (const [screenId, element] of this.screens) {
       element.classList.toggle("is-active", screenId === target);
@@ -84,10 +89,19 @@ export class ScreenRouter {
     if (this.overlayStack.length > 0) {
       return this.popOverlay();
     }
+    if (this.history.length > 0) {
+      const prev = this.history.pop();
+      this.showScreen(prev, { recordHistory: false });
+      return true;
+    }
     if (this.activeScreen && this.activeScreen !== "home") {
-      this.showScreen("home");
+      this.showScreen("home", { recordHistory: false });
       return true;
     }
     return false;
+  }
+
+  back() {
+    return this.handleBack();
   }
 }

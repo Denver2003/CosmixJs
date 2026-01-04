@@ -1,5 +1,5 @@
 import { OverlayId } from "./overlays.js";
-import { createIconButton } from "./ui/header.js";
+import { createIconButton, setIconButtonLabel } from "./ui/header.js";
 
 export function setupGameOverMenu(router, handlers = {}) {
   const overlay = router.getOverlay?.(OverlayId.GAME_OVER);
@@ -18,6 +18,13 @@ export function setupGameOverMenu(router, handlers = {}) {
   const buttons = document.createElement("div");
   buttons.className = "gameover-menu__buttons";
 
+  const continueButton = createIconButton({
+    icon: "▶",
+    label: "Continue (watch ad)",
+    onClick: () => {
+      handlers.onContinue?.(continueButton);
+    },
+  });
   const retry = createIconButton({
     icon: "⟲",
     label: "Retry",
@@ -45,6 +52,7 @@ export function setupGameOverMenu(router, handlers = {}) {
     },
   });
 
+  buttons.appendChild(continueButton);
   buttons.appendChild(retry);
   buttons.appendChild(home);
   buttons.appendChild(shop);
@@ -56,6 +64,16 @@ export function setupGameOverMenu(router, handlers = {}) {
   return {
     open() {
       router.pushOverlay(OverlayId.GAME_OVER);
+    },
+    close() {
+      router.popOverlay();
+    },
+    setContinueState({ visible = true, disabled = false, label } = {}) {
+      continueButton.style.display = visible ? "" : "none";
+      continueButton.disabled = Boolean(disabled);
+      if (label) {
+        setIconButtonLabel(continueButton, label);
+      }
     },
   };
 }

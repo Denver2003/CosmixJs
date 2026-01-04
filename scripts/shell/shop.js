@@ -59,7 +59,7 @@ export function setupShopScreen(screen, router) {
       createIconButton({
         icon: "←",
         label: "Back",
-        onClick: () => router.showScreen("home"),
+        onClick: () => router.back?.(),
       }),
     ],
     title: "Shop",

@@ -71,6 +71,9 @@ export function dropActiveBody(state, getSpawnPoint, getGlassRect) {
 
 export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
   const now = state.engine.timing.timestamp;
+  if (state.spawnBlockResumeAt && now < state.spawnBlockResumeAt) {
+    return;
+  }
   const touchActive = state.bonusTouchActiveUntil && now < state.bonusTouchActiveUntil;
   if (!state.waitingBody) {
     if (touchActive) {

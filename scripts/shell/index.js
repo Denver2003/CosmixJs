@@ -11,6 +11,22 @@ import { setupLoading } from "./loading.js";
 import { setupToast } from "./toast.js";
 import { setupPauseMenu } from "./pause_menu.js";
 import { setupGameOverMenu } from "./game_over_menu.js";
+import { createInterstitialOverlay } from "../ads/interstitial_overlay.js";
+import {
+  canContinueRun,
+  canShowAds,
+  getContinueLabel,
+  getContinuePercent,
+  getAdsState,
+  incrementContinueCount,
+  incrementSessionCount,
+  markInterstitialShown,
+  playRewarded,
+  playInterstitial,
+  resetContinueCount,
+} from "../ads/index.js";
+import { applyContinueCleanup } from "../game/continue_cleanup.js";
+import { getShopProgress } from "../shop/progression.js";
 
 export function createShell({ onPlay, onPause, onGameOver } = {}) {
   const shellRoot = document.getElementById("shell-root");
@@ -51,6 +67,7 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
   for (const overlay of overlays) {
     router.registerOverlay(overlay.dataset.overlay, overlay);
   }
+  const interstitialOverlay = createInterstitialOverlay(router);
   setupToast(router);
   setupLoading(router);
   const confirmDialog = setupConfirmDialog(router);
@@ -66,10 +83,93 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
     onShop: onPause?.shop,
   });
   const gameOverMenu = setupGameOverMenu(router, {
-    onRetry: onGameOver?.retry,
+    onContinue: async () => {
+      if (!canContinueRun()) {
+        gameOverMenu.setContinueState({
+          visible: true,
+          disabled: true,
+          label: getContinueLabel(),
+        });
+        return;
+      }
+      const ok = await playRewarded();
+      if (!ok) {
+        return;
+      }
+      const percent = getContinuePercent();
+      incrementContinueCount();
+      const state = window.__gameState;
+      const getGlassRect = window.__getGlassRect;
+      if (state && getGlassRect) {
+        applyContinueCleanup(state, percent, getGlassRect);
+        state.killTouchMs = 0;
+        state.killGraceUntil = state.engine.timing.timestamp + 2500;
+      }
+      gameOverMenu.close();
+      if (typeof window.__setGameOver === "function") {
+        window.__setGameOver(false);
+      }
+      if (typeof window.__resumeAfterContinue === "function") {
+        window.__resumeAfterContinue();
+      }
+    },
+    onRetry: async () => {
+      resetContinueCount();
+      const progress = getShopProgress();
+      const now = Date.now();
+      const adsState = getAdsState();
+      const sessionCount = adsState?.sessionCount || 0;
+      const lastInterstitialAt = adsState?.lastInterstitialAt || 0;
+      const canShowInterstitial =
+        !progress?.removeAds &&
+        canShowAds() &&
+        sessionCount >= 3 &&
+        now - lastInterstitialAt >= 180000;
+
+      if (canShowInterstitial) {
+        interstitialOverlay?.open();
+        await playInterstitial();
+        interstitialOverlay?.close();
+        markInterstitialShown(now);
+      }
+
+      incrementSessionCount();
+      onGameOver?.retry?.();
+    },
     onHome: onGameOver?.home,
     onShop: onGameOver?.shop,
   });
+
+  const updateContinueUi = () => {
+    if (!gameOverMenu?.setContinueState) {
+      return;
+    }
+    if (!canShowAds()) {
+      gameOverMenu.setContinueState({ visible: false });
+      return;
+    }
+    if (!canContinueRun()) {
+      gameOverMenu.setContinueState({
+        visible: true,
+        disabled: true,
+        label: getContinueLabel(),
+      });
+      return;
+    }
+    gameOverMenu.setContinueState({
+      visible: true,
+      disabled: false,
+      label: getContinueLabel(),
+    });
+  };
+
+  if (gameOverMenu?.open) {
+    const originalOpen = gameOverMenu.open.bind(gameOverMenu);
+    gameOverMenu.open = () => {
+      updateContinueUi();
+      originalOpen();
+    };
+  }
 
   if (debugEnabled) {
     shellRoot.classList.remove("is-hidden");

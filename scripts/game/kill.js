@@ -5,6 +5,10 @@ const { Composite } = Matter;
 export function updateKillLine(state, getGlassRect, deltaMs) {
   const { top } = getGlassRect();
   const killY = top + KILL_OFFSET;
+  if (state.killGraceUntil && state.engine?.timing?.timestamp < state.killGraceUntil) {
+    state.killTouchMs = 0;
+    return;
+  }
   const bodies = Composite.allBodies(state.world);
   let touchingKill = false;
   for (const body of bodies) {
@@ -30,7 +34,14 @@ export function updateKillLine(state, getGlassRect, deltaMs) {
   }
 
   if (state.killTouchMs >= KILL_DURATION_MS) {
-    state.gameOver = true;
+    if (typeof window !== "undefined" && window.__setGameOver) {
+      window.__setGameOver();
+    } else {
+      state.gameOver = true;
+    }
+    if (state.waitingBody) {
+      Matter.World.remove(state.world, state.waitingBody);
+    }
     state.waitingBody = null;
     state.waitingState = "none";
     state.moveLeft = false;

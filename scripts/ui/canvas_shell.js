@@ -10,6 +10,7 @@ import {
   UPGRADE_TYPES,
   getUpgradePrice,
 } from "../shop/model.js";
+import { applyShopReward, getShopRewardStatus, playRewarded } from "../ads/index.js";
 import {
   getMaxUpgradeLevel,
   getShopProgress,
@@ -19,6 +20,7 @@ import {
   updateShopProgress,
 } from "../shop/progression.js";
 import { loadBonusInventory, saveBonusInventory, saveCoins } from "../game/storage.js";
+import { addTotalSpentCoins } from "../ads/runtime.js";
 
 const LEADERBOARD_ROWS = [
   { rank: "1", name: "You", score: "12 450" },
@@ -118,7 +120,7 @@ export function handleShellPointer(x, y, render) {
   if (router.activeScreen === ScreenId.SHOP) {
     const layout = lastLayout.shop;
     if (layout?.back && pointInRect(x, y, layout.back)) {
-      router.showScreen(ScreenId.HOME);
+      router.back?.();
       return true;
     }
     if (layout?.tabs) {
@@ -142,14 +144,14 @@ export function handleShellPointer(x, y, render) {
   if (router.activeScreen === ScreenId.SETTINGS) {
     const layout = lastLayout.settings;
     if (layout?.back && pointInRect(x, y, layout.back)) {
-      router.showScreen(ScreenId.HOME);
+      router.back?.();
       return true;
     }
   }
   if (router.activeScreen === ScreenId.LEADERBOARDS) {
     const layout = lastLayout.leaderboards;
     if (layout?.back && pointInRect(x, y, layout.back)) {
-      router.showScreen(ScreenId.HOME);
+      router.back?.();
       return true;
     }
     if (layout?.tabs) {
@@ -289,19 +291,40 @@ function buildUpgradeCards(progress, coins) {
 }
 
 function buildItemCards(progress, inventory, coins) {
-  const cards = SHOP_ITEMS.map((item) => {
-    const count = Math.max(0, Math.floor(inventory?.[item.id] || 0));
-    const canAfford = coins >= item.cost;
-    return {
-      id: item.id,
-      kind: "item",
-      title: item.title,
-      meta: "Consumable",
-      owned: `Owned: ${count}`,
-      actionLabel: `BUY ${item.cost}`,
-      actionDisabled: !canAfford,
-    };
-  });
+  const coinLevel = progress?.upgrades?.[UPGRADE_TYPES.COIN_MULTIPLIER] ?? 0;
+  const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
+  const rewardStatus = getShopRewardStatus(Date.now(), moneyCoef);
+  const rewardLabel = rewardStatus.available
+    ? `WATCH AD +${rewardStatus.reward}`
+    : "TRY LATER";
+  const rewardMeta = `+${rewardStatus.reward} coins`;
+  const rewardOwned = `${rewardStatus.count}/${rewardStatus.limit} this hour`;
+  const cards = [
+    {
+      id: "rewarded_shop",
+      kind: "reward",
+      title: "Watch Ad",
+      meta: rewardMeta,
+      owned: rewardOwned,
+      actionLabel: rewardLabel,
+      actionDisabled: !rewardStatus.available,
+    },
+  ];
+  cards.push(
+    ...SHOP_ITEMS.map((item) => {
+      const count = Math.max(0, Math.floor(inventory?.[item.id] || 0));
+      const canAfford = coins >= item.cost;
+      return {
+        id: item.id,
+        kind: "item",
+        title: item.title,
+        meta: "Consumable",
+        owned: `Owned: ${count}`,
+        actionLabel: `BUY ${item.cost}`,
+        actionDisabled: !canAfford,
+      };
+    })
+  );
 
   for (const item of REAL_MONEY_ITEMS) {
     if (item.id === "remove_ads") {
@@ -345,6 +368,7 @@ function handleShopAction(action) {
       return;
     }
     coins = result.coins;
+    addTotalSpentCoins(result.price || 0);
     const nextProgress = updateShopProgress({
       upgrades: progress.upgrades,
       removeAds: progress.removeAds,
@@ -361,6 +385,7 @@ function handleShopAction(action) {
       return;
     }
     coins = result.coins;
+    addTotalSpentCoins(result.item?.cost || 0);
     saveCoins(coins);
     setAppState({ coins });
     if (result.inventory) {
@@ -385,6 +410,26 @@ function handleShopAction(action) {
       removeAds: progress.removeAds,
     });
     applyShopStateToGame({ coins, progress: nextProgress, inventory });
+  }
+
+  if (action.kind === "reward") {
+    const coinLevel = progress?.upgrades?.[UPGRADE_TYPES.COIN_MULTIPLIER] ?? 0;
+    const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
+    const status = getShopRewardStatus(Date.now(), moneyCoef);
+    if (!status.available) {
+      return;
+    }
+    playRewarded().then((ok) => {
+      if (!ok) {
+        return;
+      }
+      const now = Date.now();
+      applyShopReward(now);
+      coins += status.reward;
+      saveCoins(coins);
+      setAppState({ coins });
+      applyShopStateToGame({ coins, progress, inventory });
+    });
   }
 }
 

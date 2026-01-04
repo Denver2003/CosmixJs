@@ -5,6 +5,7 @@ import { setAppState } from "./shell/app_state.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
 import { handleShellPointer } from "./ui/canvas_shell.js";
+import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
 
 const { Engine, Render } = Matter;
 
@@ -70,6 +71,8 @@ const shell = createShell({
     if (gameStarted) {
       return;
     }
+    resetContinueCount();
+    incrementSessionCount();
     game.start();
     gameStarted = true;
   },
@@ -78,30 +81,45 @@ const shell = createShell({
       game.setPaused(false, "manual");
     },
     restart: () => {
-      window.location.reload();
+      game.restartSession?.();
     },
     home: () => {
-      game.setPaused(true, "manual");
+      game.openShell?.();
       shell?.router?.showScreen?.("home");
     },
     shop: () => {
-      game.setPaused(true, "manual");
+      game.openShell?.();
       shell?.router?.showScreen?.("shop");
     },
   },
   onGameOver: {
     retry: () => {
-      window.location.reload();
+      game.restartSession?.();
     },
     home: () => {
+      game.openShell?.();
       shell?.router?.showScreen?.("home");
     },
     shop: () => {
+      game.openShell?.();
       shell?.router?.showScreen?.("shop");
     },
   },
 });
 if (shell?.router) {
+  const originalShow = shell.router.showScreen.bind(shell.router);
+  shell.router.showScreen = (id) => {
+    originalShow(id);
+    if (id === "game") {
+      if (gameStarted) {
+        game.startGame?.();
+      }
+    } else {
+      game.openShell?.();
+      shell.pauseMenu?.close?.();
+      shell.gameOverMenu?.close?.();
+    }
+  };
   window.__shellRouter = shell.router;
   window.__shellRoot = document.getElementById("shell-root");
   window.__overlayRoot = document.getElementById("overlay-root");
@@ -111,6 +129,8 @@ window.__canvasStartGame = () => {
     shell.router.showScreen("game");
   }
   if (!gameStarted) {
+    resetContinueCount();
+    incrementSessionCount();
     game.start();
     gameStarted = true;
   }
@@ -124,6 +144,18 @@ window.__setBestScore = (score) => {
   }
   setAppState({ bestScore: Math.max(0, Math.floor(score)) });
 };
+window.__setGameOver = (value = true) => {
+  if (value) {
+    game.setGameOver?.();
+  } else {
+    game.setPaused?.(false);
+  }
+};
+window.__resumeAfterContinue = () => {
+  game.resumeAfterContinue?.();
+};
+window.__gameState = game.state || null;
+window.__getGlassRect = glass.getRect;
 
 const canvasRect = () => canvas.getBoundingClientRect();
 canvas.addEventListener("pointerdown", (event) => {
@@ -144,8 +176,23 @@ if (shell) {
   window.shellGameOver = shell.gameOverMenu;
 }
 
+setAdCallbacks({
+  onOpen: () => {
+    game.setPaused(true, "ad");
+  },
+  onClose: () => {
+    const info = game.getPauseInfo?.();
+    if (info?.paused && info.reason === "ad") {
+      game.setPaused(false, "ad");
+    }
+  },
+});
+
 function openPauseMenu() {
   if (game.getPauseInfo?.().paused) {
+    return;
+  }
+  if (typeof game.getMode === "function" && game.getMode() !== "gameplay") {
     return;
   }
   game.setPaused(true, "manual");
