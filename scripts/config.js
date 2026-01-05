@@ -33,6 +33,11 @@ export const COLORS = [
 ];
 export const SHAPE_SCALE = Math.sqrt(0.8) * 0.9;
 export const TARGET_AREA = 4 * UNIT * UNIT * SHAPE_SCALE * SHAPE_SCALE;
+export const USE_SHAPE_SPRITES = true;
+export const SHAPE_SPRITE_PACK = "default";
+export const SHAPE_SPRITE_SCALE = 2;
+export const SHAPE_SPRITE_PADDING = 8;
+export const DEBUG_SHAPE_OUTLINES = true;
 export const KILL_DURATION_MS = 10000;
 export const CHAIN_MIN = 4;
 export const CHAIN_DURATION_MS = 1800;

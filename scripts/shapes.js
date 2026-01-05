@@ -4,6 +4,7 @@ import {
   ROTATE_RANGE,
   SHAPE_SCALE,
   UNIT,
+  USE_SHAPE_SPRITES,
 } from "./config.js";
 
 const { Bodies, Body } = Matter;
@@ -49,6 +50,9 @@ export function createShape(spec, spawnPoint, options = {}) {
 
   const body = shapes[spec.type]();
   applyStrokeStyle(body, spec.color, options.alpha);
+  if (USE_SHAPE_SPRITES) {
+    applySpriteStyle(body, spec.type);
+  }
   Body.rotate(body, spec.rotation);
   return body;
 }
@@ -65,6 +69,41 @@ function applyStrokeStyle(body, color, alpha) {
     part.render.fillStyle = "rgba(0, 0, 0, 0)";
   }
 }
+
+function applySpriteStyle(body, type) {
+  const size = {
+    width: body.bounds.max.x - body.bounds.min.x,
+    height: body.bounds.max.y - body.bounds.min.y,
+  };
+  const shapeName = SHAPE_NAMES[type] || "square";
+  body.plugin = {
+    ...(body.plugin || {}),
+    sprite: {
+      shapeName,
+      width: size.width,
+      height: size.height,
+      angleOffset: 0,
+    },
+  };
+  const parts = body.parts.length > 1 ? body.parts : [body];
+  for (const part of parts) {
+    part.render.visible = false;
+    part.render.strokeStyle = "rgba(0, 0, 0, 0)";
+    part.render.fillStyle = "rgba(0, 0, 0, 0)";
+    part.render.lineWidth = 0;
+  }
+}
+
+const SHAPE_NAMES = [
+  "rectangle",
+  "square",
+  "triangle",
+  "circle",
+  "diamond",
+  "oval",
+  "pentagon",
+];
+
 
 function hexToRgba(hex, alpha) {
   const value = hex.replace("#", "");

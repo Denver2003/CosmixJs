@@ -1,9 +1,13 @@
 import { getSpawnWaitMs } from "../state.js";
+import { DEBUG_SHAPE_OUTLINES, USE_SHAPE_SPRITES } from "../../config.js";
 import { hexToRgba } from "../utils.js";
 
 const { Composite } = Matter;
 
 export function drawCustomOutlines(state, ctx) {
+  if (USE_SHAPE_SPRITES && !DEBUG_SHAPE_OUTLINES) {
+    return;
+  }
   const bodies = Composite.allBodies(state.world);
   ctx.save();
   ctx.lineWidth = 2;
