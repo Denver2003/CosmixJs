@@ -1,7 +1,33 @@
+import { SHAPE_SPRITE_SCALE } from "../../config.js";
 import { getSpawnWaitMs } from "../state.js";
+import { getShapeSprite } from "../shape_sprites.js";
 import { hexToRgba } from "../utils.js";
 
 const { Composite } = Matter;
+const SPRITE_TINT_CACHE = new Map();
+
+function getTintedSprite(sprite, stroke) {
+  if (!sprite || !stroke) {
+    return null;
+  }
+  const key = `${sprite.src || "inline"}|${stroke}`;
+  const cached = SPRITE_TINT_CACHE.get(key);
+  if (cached && cached.width === sprite.width && cached.height === sprite.height) {
+    return cached;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = sprite.width;
+  canvas.height = sprite.height;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(sprite, 0, 0);
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = stroke;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.globalCompositeOperation = "source-over";
+  SPRITE_TINT_CACHE.set(key, canvas);
+  return canvas;
+}
 
 export function drawCustomOutlines(state, ctx) {
   const bodies = Composite.allBodies(state.world);
@@ -11,7 +37,11 @@ export function drawCustomOutlines(state, ctx) {
     const outlineEdges = body.plugin?.outlineEdges;
     const cellRects = body.plugin?.cellRects;
     const color = body.plugin?.color;
-    if (!outlineEdges || !color) {
+    const shapeType = body.plugin?.shapeType;
+    const sprite = shapeType ? getShapeSprite(shapeType) : null;
+    const spriteReady =
+      sprite && !sprite._broken && sprite.complete && sprite.naturalWidth > 0;
+    if ((!outlineEdges && !sprite) || !color) {
       continue;
     }
     const scale = body.plugin?.scaleCurrent || 1;
@@ -32,13 +62,35 @@ export function drawCustomOutlines(state, ctx) {
       }
     }
 
-    ctx.beginPath();
-    for (const edge of outlineEdges) {
-      ctx.moveTo(edge.x1, edge.y1);
-      ctx.lineTo(edge.x2, edge.y2);
+    if (spriteReady) {
+      if (!body.plugin.spriteReady) {
+        const parts = body.parts.length > 1 ? body.parts : [body];
+        for (const part of parts) {
+          part.render.strokeStyle = "rgba(0, 0, 0, 0)";
+        }
+      }
+      body.plugin = { ...(body.plugin || {}), spriteReady: true };
+      const tinted = getTintedSprite(sprite, stroke);
+      if (tinted) {
+        const drawWidth = tinted.width / SHAPE_SPRITE_SCALE;
+        const drawHeight = tinted.height / SHAPE_SPRITE_SCALE;
+        ctx.drawImage(tinted, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      }
+    } else if (body.plugin?.spriteReady) {
+      const parts = body.parts.length > 1 ? body.parts : [body];
+      for (const part of parts) {
+        part.render.strokeStyle = stroke;
+      }
+      body.plugin = { ...(body.plugin || {}), spriteReady: false };
+    } else if (outlineEdges) {
+      ctx.beginPath();
+      for (const edge of outlineEdges) {
+        ctx.moveTo(edge.x1, edge.y1);
+        ctx.lineTo(edge.x2, edge.y2);
+      }
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
     }
-    ctx.strokeStyle = stroke;
-    ctx.stroke();
     ctx.restore();
   }
   ctx.restore();

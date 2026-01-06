@@ -7,6 +7,15 @@ import {
 } from "./config.js";
 
 const { Bodies, Body } = Matter;
+const SHAPE_TYPE_NAMES = [
+  "rectangle",
+  "square",
+  "triangle",
+  "circle",
+  "diamond",
+  "oval",
+  "pentagon",
+];
 
 export function createRandomSpec(colorsCount, rotationRange) {
   const type = Math.floor(Math.random() * 7);
@@ -48,6 +57,8 @@ export function createShape(spec, spawnPoint, options = {}) {
   ];
 
   const body = shapes[spec.type]();
+  const shapeType = SHAPE_TYPE_NAMES[spec.type] || "unknown";
+  body.plugin = { ...(body.plugin || {}), shapeType, useSpriteOutline: true };
   applyStrokeStyle(body, spec.color, options.alpha);
   Body.rotate(body, spec.rotation);
   return body;
@@ -55,7 +66,13 @@ export function createShape(spec, spawnPoint, options = {}) {
 
 function applyStrokeStyle(body, color, alpha) {
   const customOutline = body.plugin?.customOutline;
-  body.plugin = { ...(body.plugin || {}), color, customOutline };
+  const useSpriteOutline = body.plugin?.useSpriteOutline;
+  body.plugin = {
+    ...(body.plugin || {}),
+    color,
+    customOutline,
+    useSpriteOutline,
+  };
   const parts = body.parts.length > 1 ? body.parts : [body];
   const stroke =
     typeof alpha === "number" ? hexToRgba(color, alpha) : color;
