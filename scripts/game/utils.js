@@ -25,6 +25,18 @@ export function setBodyScale(body, scale) {
   body.plugin = { ...(body.plugin || {}), scaleCurrent: scale };
 }
 
+export function setBodyFillAlpha(body, alpha) {
+  if (!body) {
+    return;
+  }
+  const color = body.plugin?.color;
+  const fill = color ? hexToRgba(color, alpha) : "rgba(0, 0, 0, 0)";
+  const parts = body.parts.length > 1 ? body.parts : [body];
+  for (const part of parts) {
+    part.render.fillStyle = fill;
+  }
+}
+
 export function hexToRgba(hex, alpha) {
   const value = hex.replace("#", "");
   const r = parseInt(value.slice(0, 2), 16);

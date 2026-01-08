@@ -4,7 +4,7 @@ import {
   SPAWN_START_OFFSET,
 } from "../config.js";
 import { createShape } from "../shapes.js";
-import { hexToRgba, setBodyScale } from "./utils.js";
+import { hexToRgba, setBodyFillAlpha, setBodyScale } from "./utils.js";
 
 const { World, Body } = Matter;
 
@@ -24,7 +24,10 @@ export function setPreview(state, spec, getSpawnPoint) {
     ...(previewBody.plugin || {}),
     preview: true,
     previewAlpha: 0,
+    fillLocked: 0.15,
+    fillAlpha: 0.15,
   };
+  setBodyFillAlpha(previewBody, 0.15);
   state.previewStartMs = state.engine.timing.timestamp;
   state.previewBody = previewBody;
   World.add(state.world, previewBody);
@@ -51,8 +54,8 @@ export function updatePreview(state, timestamp) {
     part.render.strokeStyle = state.previewBody.plugin?.customOutline
       ? "rgba(0, 0, 0, 0)"
       : stroke;
-    part.render.fillStyle = "rgba(0, 0, 0, 0)";
   }
+  setBodyFillAlpha(state.previewBody, 0.15);
 }
 
 export function removePreview(state) {

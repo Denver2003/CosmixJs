@@ -10,7 +10,7 @@ import {
 import { createRandomSpec, createShape } from "../shapes.js";
 import { getSpawnWaitMs } from "./state.js";
 import { addEnergyOnDrop, updateCosmometerMultiplier } from "./cosmometer.js";
-import { clampWaitingBody, setBodyScale } from "./utils.js";
+import { clampWaitingBody, setBodyFillAlpha, setBodyScale } from "./utils.js";
 import { removePreview, setPreview } from "./preview.js";
 import { trySpawnBubble } from "./bubbles.js";
 
@@ -24,7 +24,13 @@ export function spawnBlock(state, getSpawnPoint) {
   const spawnY = spawn.y - SPAWN_START_OFFSET;
   const spawnPoint = { x: spawn.x, y: spawnY };
   const body = createShape(state.nextSpec, spawnPoint);
-  body.plugin = { ...(body.plugin || {}), stopAtSpawn: true };
+  body.plugin = {
+    ...(body.plugin || {}),
+    stopAtSpawn: true,
+    fillLocked: 0.15,
+    fillAlpha: 0.15,
+  };
+  setBodyFillAlpha(body, 0.15);
   setBodyScale(body, 0.5);
   body.plugin.scaleTarget = 1;
   body.plugin.scaleStartY = spawnY;
@@ -49,6 +55,10 @@ export function dropActiveBody(state, getSpawnPoint, getGlassRect) {
   setBodyScale(state.waitingBody, 1);
   removePreview(state);
   state.waitingBody.plugin.stopAtSpawn = false;
+  state.waitingBody.plugin = {
+    ...(state.waitingBody.plugin || {}),
+    fillLocked: null,
+  };
   Body.setStatic(state.waitingBody, false);
   Body.setVelocity(state.waitingBody, {
     x: state.waitingBody.velocity.x,
@@ -96,6 +106,12 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     Body.setVelocity(state.waitingBody, { x: 0, y: 0 });
     Body.setAngularVelocity(state.waitingBody, 0);
     Body.setStatic(state.waitingBody, true);
+    state.waitingBody.plugin = {
+      ...(state.waitingBody.plugin || {}),
+      fillLocked: 0.3,
+      fillAlpha: 0.3,
+    };
+    setBodyFillAlpha(state.waitingBody, 0.3);
     state.waitingState = "armed";
     state.waitStartMs = state.engine.timing.timestamp;
   }

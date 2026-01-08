@@ -4,29 +4,10 @@ import { getShapeSprite } from "../shape_sprites.js";
 import { hexToRgba } from "../utils.js";
 
 const { Composite } = Matter;
-const SPRITE_TINT_CACHE = new Map();
+const OUTLINE_FALLBACK_COLOR = "#ffffff";
 
-function getTintedSprite(sprite, stroke) {
-  if (!sprite || !stroke) {
-    return null;
-  }
-  const key = `${sprite.src || "inline"}|${stroke}`;
-  const cached = SPRITE_TINT_CACHE.get(key);
-  if (cached && cached.width === sprite.width && cached.height === sprite.height) {
-    return cached;
-  }
-  const canvas = document.createElement("canvas");
-  canvas.width = sprite.width;
-  canvas.height = sprite.height;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(sprite, 0, 0);
-  ctx.globalCompositeOperation = "source-in";
-  ctx.fillStyle = stroke;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.globalCompositeOperation = "source-over";
-  SPRITE_TINT_CACHE.set(key, canvas);
-  return canvas;
+function isSpriteReady(sprite) {
+  return sprite && !sprite._broken && sprite.complete && sprite.naturalWidth > 0;
 }
 
 export function drawCustomOutlines(state, ctx) {
@@ -38,15 +19,17 @@ export function drawCustomOutlines(state, ctx) {
     const cellRects = body.plugin?.cellRects;
     const color = body.plugin?.color;
     const shapeType = body.plugin?.shapeType;
-    const sprite = shapeType ? getShapeSprite(shapeType) : null;
-    const spriteReady =
-      sprite && !sprite._broken && sprite.complete && sprite.naturalWidth > 0;
-    if ((!outlineEdges && !sprite) || !color) {
+    const outlineSprite = shapeType ? getShapeSprite(shapeType, "outline") : null;
+    const detailsSprite = shapeType ? getShapeSprite(shapeType, "details") : null;
+    const outlineReady = isSpriteReady(outlineSprite);
+    const detailsReady = isSpriteReady(detailsSprite);
+    if ((!outlineEdges && !outlineSprite) || !color) {
       continue;
     }
     const scale = body.plugin?.scaleCurrent || 1;
-    const alpha = body.plugin?.preview ? body.plugin?.previewAlpha ?? 0.4 : null;
-    const stroke = alpha === null ? color : hexToRgba(color, alpha);
+    const outlineAlpha =
+      body.plugin?.preview ? body.plugin?.previewAlpha ?? 0.4 : 1;
+    const stroke = hexToRgba(color, outlineAlpha);
     const fillAlpha = body.plugin?.fillAlpha ?? 0;
     const fill =
       fillAlpha > 0 ? hexToRgba(color, Math.min(fillAlpha, 1)) : null;
@@ -62,7 +45,7 @@ export function drawCustomOutlines(state, ctx) {
       }
     }
 
-    if (spriteReady) {
+    if (outlineReady) {
       if (!body.plugin.spriteReady) {
         const parts = body.parts.length > 1 ? body.parts : [body];
         for (const part of parts) {
@@ -70,12 +53,18 @@ export function drawCustomOutlines(state, ctx) {
         }
       }
       body.plugin = { ...(body.plugin || {}), spriteReady: true };
-      const tinted = getTintedSprite(sprite, stroke);
-      if (tinted) {
-        const drawWidth = tinted.width / SHAPE_SPRITE_SCALE;
-        const drawHeight = tinted.height / SHAPE_SPRITE_SCALE;
-        ctx.drawImage(tinted, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-      }
+      const drawWidth = outlineSprite.width / SHAPE_SPRITE_SCALE;
+      const drawHeight = outlineSprite.height / SHAPE_SPRITE_SCALE;
+      ctx.save();
+      ctx.globalAlpha = outlineAlpha;
+      ctx.drawImage(
+        outlineSprite,
+        -drawWidth / 2,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight
+      );
+      ctx.restore();
     } else if (body.plugin?.spriteReady) {
       const parts = body.parts.length > 1 ? body.parts : [body];
       for (const part of parts) {
@@ -88,8 +77,20 @@ export function drawCustomOutlines(state, ctx) {
         ctx.moveTo(edge.x1, edge.y1);
         ctx.lineTo(edge.x2, edge.y2);
       }
-      ctx.strokeStyle = stroke;
+      ctx.strokeStyle = hexToRgba(OUTLINE_FALLBACK_COLOR, outlineAlpha);
       ctx.stroke();
+    }
+
+    if (detailsReady) {
+      const drawWidth = detailsSprite.width / SHAPE_SPRITE_SCALE;
+      const drawHeight = detailsSprite.height / SHAPE_SPRITE_SCALE;
+      ctx.drawImage(
+        detailsSprite,
+        -drawWidth / 2,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight
+      );
     }
     ctx.restore();
   }

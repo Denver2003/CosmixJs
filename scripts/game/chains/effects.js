@@ -29,16 +29,24 @@ export function applyChainFillStyles(state, bodies, components, deltaMs) {
     const size = sizeById.get(body.id) || 1;
     const color = body.plugin?.color;
     const parts = body.parts.length > 1 ? body.parts : [body];
-    let targetAlpha = CHAIN_BASE_ALPHA;
-    if (size >= CHAIN_MIN) {
-      const pulse = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 90);
-      targetAlpha = 0.8 * pulse;
-    } else {
-      const denom = Math.max(1, CHAIN_MIN - 1);
-      const t = Math.max(0, Math.min(1, (size - 1) / denom));
-      const maxAlpha = 0.35;
-      targetAlpha = CHAIN_BASE_ALPHA + (maxAlpha - CHAIN_BASE_ALPHA) * t;
+    const lockedAlpha = body.plugin?.fillLocked;
+    if (typeof lockedAlpha === "number") {
+      body.plugin.fillAlpha = lockedAlpha;
+      if (body.plugin.customOutline || body.plugin.useSpriteFill) {
+        for (const part of parts) {
+          part.render.fillStyle = "rgba(0, 0, 0, 0)";
+        }
+      } else {
+        const fill = color ? hexToRgba(color, lockedAlpha) : "rgba(0, 0, 0, 0)";
+        for (const part of parts) {
+          part.render.fillStyle = fill;
+        }
+      }
+      continue;
     }
+    const baseAlpha = 0.3;
+    const extra = 0.05 * Math.max(0, size - 1);
+    let targetAlpha = Math.min(1, baseAlpha + extra);
     const flashAlpha = body.plugin?.flashAlpha || 0;
     if (flashAlpha > targetAlpha) {
       targetAlpha = flashAlpha;

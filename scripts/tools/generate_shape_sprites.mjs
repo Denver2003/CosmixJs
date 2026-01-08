@@ -20,6 +20,7 @@ const OUTPUT_DIR = path.join(
 const SPRITE_SCALE = SHAPE_SPRITE_SCALE;
 const LINE_WIDTH_PX = 3;
 const STROKE_COLOR = "#ffffff";
+const FILL_COLOR = "#ffffff";
 
 function loadMatter() {
   const code = fs.readFileSync(MATTER_PATH, "utf8");
@@ -144,21 +145,42 @@ function drawShape(body, name) {
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
 
-  ctx.beginPath();
-  if (circleRadius) {
-    ctx.arc(0, 0, circleRadius, 0, Math.PI * 2);
-  } else {
-    const local = getLocalVertices(body);
-    ctx.moveTo(local[0].x, local[0].y);
-    for (let i = 1; i < local.length; i += 1) {
-      ctx.lineTo(local[i].x, local[i].y);
+  const pathForShape = () => {
+    ctx.beginPath();
+    if (circleRadius) {
+      ctx.arc(0, 0, circleRadius, 0, Math.PI * 2);
+    } else {
+      const local = getLocalVertices(body);
+      ctx.moveTo(local[0].x, local[0].y);
+      for (let i = 1; i < local.length; i += 1) {
+        ctx.lineTo(local[i].x, local[i].y);
+      }
+      ctx.closePath();
     }
-    ctx.closePath();
-  }
+  };
+
+  ctx.strokeStyle = STROKE_COLOR;
+  pathForShape();
   ctx.stroke();
 
   const outPath = path.join(OUTPUT_DIR, `${name}_outline.png`);
   fs.writeFileSync(outPath, canvas.toBuffer("image/png"));
+
+  ctx.clearRect(-width / 2, -height / 2, width, height);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.translate(width / 2, height / 2);
+  ctx.scale(SPRITE_SCALE, SPRITE_SCALE);
+
+  ctx.fillStyle = FILL_COLOR;
+  pathForShape();
+  ctx.fill();
+
+  const fillPath = path.join(OUTPUT_DIR, `${name}_fill.png`);
+  fs.writeFileSync(fillPath, canvas.toBuffer("image/png"));
+
+  const detailsCanvas = createCanvas(width, height);
+  const detailsPath = path.join(OUTPUT_DIR, `${name}_details.png`);
+  fs.writeFileSync(detailsPath, detailsCanvas.toBuffer("image/png"));
 }
 
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });

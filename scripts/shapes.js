@@ -58,7 +58,12 @@ export function createShape(spec, spawnPoint, options = {}) {
 
   const body = shapes[spec.type]();
   const shapeType = SHAPE_TYPE_NAMES[spec.type] || "unknown";
-  body.plugin = { ...(body.plugin || {}), shapeType, useSpriteOutline: true };
+  body.plugin = {
+    ...(body.plugin || {}),
+    shapeType,
+    useSpriteOutline: true,
+    useSpriteFill: false,
+  };
   applyStrokeStyle(body, spec.color, options.alpha);
   Body.rotate(body, spec.rotation);
   return body;
