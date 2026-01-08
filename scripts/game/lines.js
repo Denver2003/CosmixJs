@@ -22,7 +22,7 @@ import {
   drawBubbleKeyHint,
 } from "./draw/bonus_ui.js";
 import { drawLevelUpPopups } from "./level_up_popup.js";
-import { drawCustomOutlines, drawWaitFill } from "./lines/world.js";
+import { drawAimGuides, drawCustomOutlines, drawWaitFill } from "./lines/world.js";
 import { drawCanvasUiScreen, drawCanvasUiWorld } from "../ui/canvas_ui.js";
 
 const { Render } = Matter;
@@ -62,6 +62,7 @@ export function drawLines(state, render, getGlassRect) {
   }
 
   drawWaitFill(state, ctx);
+  drawAimGuides(state, ctx, getGlassRect);
   drawCustomOutlines(state, ctx);
   drawBonusButtons(state, ctx, getGlassRect);
   drawBubbles(state, ctx);

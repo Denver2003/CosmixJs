@@ -28,6 +28,7 @@
 - **Scoring**: collapse score uses NR formula with a chain-size bonus (+10% per piece above 4); level-up grants NLR bonus.
 - **Score particles**: per-figure `+N` texts spawn on collapse, burst outward, then magnetize to the SCORE HUD and fade; color matches the collapsed figure.
 - **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in) with 30% fill.
+- **Active piece focus**: active piece has a soft white glow outline (pulsing). Aim guides draw two gradient vertical lines at min/max X of the active piece; they fade in when the piece settles on the line, fade out on drop, and stop at the nearest body below (per-line). Guides are drawn as a single line with transparent ends and a brighter midpoint near the piece bottom.
 - **Levels**: L1=10 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
 - **Colors**: start 4, +1 per 5 levels, max 7; palette updated to neon, high-contrast colors.
 - **Rotation**: no random rotation for L1-5; L6-9 ramps to max; L10+ capped; a discrete 0/90/180/‑90 offset is always added.

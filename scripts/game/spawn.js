@@ -52,6 +52,10 @@ export function dropActiveBody(state, getSpawnPoint, getGlassRect) {
   addEnergyOnDrop(state);
   updateCosmometerMultiplier(state, state.engine.timing.timestamp);
 
+  state.aimGuideBody = state.waitingBody;
+  state.aimGuideFadeOutStartMs = state.engine.timing.timestamp;
+  state.aimGuideFadeInStartMs = 0;
+
   setBodyScale(state.waitingBody, 1);
   removePreview(state);
   state.waitingBody.plugin.stopAtSpawn = false;
@@ -106,6 +110,9 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     Body.setVelocity(state.waitingBody, { x: 0, y: 0 });
     Body.setAngularVelocity(state.waitingBody, 0);
     Body.setStatic(state.waitingBody, true);
+    state.aimGuideBody = state.waitingBody;
+    state.aimGuideFadeInStartMs = state.engine.timing.timestamp;
+    state.aimGuideFadeOutStartMs = 0;
     state.waitingBody.plugin = {
       ...(state.waitingBody.plugin || {}),
       fillLocked: 0.45,
