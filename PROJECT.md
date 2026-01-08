@@ -24,16 +24,22 @@
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
 - **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
-- **Chain burst**: matched chains now play a 0.5s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst.
+- **Chain burst**: matched chains now play a 1.0s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst. Burst adds spin: rightward -> clockwise, leftward -> counterclockwise, random speed.
 - **Scoring**: collapse score uses NR formula with a chain-size bonus (+10% per piece above 4); level-up grants NLR bonus.
 - **Score particles**: per-figure `+N` texts spawn on collapse, burst outward, then magnetize to the SCORE HUD and fade; color matches the collapsed figure.
-- **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in).
+- **Next preview**: next piece appears at spawn point as a ghost (0.5 scale, fade-in) with 30% fill.
 - **Levels**: L1=10 required, then `floor(prev * 1.2)` per level; tracks cleared figures.
 - **Colors**: start 4, +1 per 5 levels, max 7; palette updated to neon, high-contrast colors.
 - **Rotation**: no random rotation for L1-5; L6-9 ramps to max; L10+ capped; a discrete 0/90/180/‑90 offset is always added.
 - **Diamond**: one diagonal ~40% shorter than the other.
 - **Debug overlay**: optional top-right telemetry (level, cleared, angle, colors).
 - **Impact flash**: first collision after a drop triggers a fast full-body fill blink.
+- **Shape sprites**: outline + details sprites per shape from `assets/shape_sprites/pack_default`. Outline is drawn as-is (white); details drawn on top (currently transparent). Fill uses regular Matter fill (no fill sprite).
+- **Fill alpha rules**:
+  - Spawn/preview: 30% fill (locked).
+  - Waiting on control line: +15% (45% fill locked).
+  - After drop: fill follows chain size: `alpha = 0.45 + 0.075 * min(chainSize, 4)` (max 75%).
+  - Chain blink: chains of 4+ blink (0.35–0.55 alpha) while timer runs; outline jitters by 1px during blink.
 - **Combo system**: each collapse opens a 4s window for the next; streak-based multiplier capped at x5 (Combo/Super/Mega/Cosmo).
 - **Combo popup**: combo label bursts from collapse center to glass center, blinks on peak (1–4), then floats up and fades; stacked vertically when overlapping.
 - **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups.
@@ -59,7 +65,9 @@
 - `scripts/main.js` — app bootstrap: engine, renderer, glass, game lifecycle, resize handler.
 - `scripts/config.js` — constants/tuning knobs (units, physics params, timings).
 - `scripts/glass.js` — playfield walls/floor construction and layout.
-- `scripts/shapes.js` — shape creation, colors, random rotation.
+- `scripts/shapes.js` — shape creation, colors, random rotation, sprite metadata.
+- `scripts/game/shape_sprites.js` — shape sprite loader/cache.
+- `scripts/tools/generate_shape_sprites.mjs` — generates outline/fill/details placeholder PNGs.
 - `scripts/view/viewport.js` — viewport sizing + fit-to-height canvas setup.
 - `scripts/view/fit.js` — view sizing helpers (fit height/reserves).
 - `scripts/game/index.js` — gameplay wiring and orchestration.

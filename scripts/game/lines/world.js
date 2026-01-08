@@ -55,12 +55,15 @@ export function drawCustomOutlines(state, ctx) {
       body.plugin = { ...(body.plugin || {}), spriteReady: true };
       const drawWidth = outlineSprite.width / SHAPE_SPRITE_SCALE;
       const drawHeight = outlineSprite.height / SHAPE_SPRITE_SCALE;
+      const jitter = body.plugin?.chainBlink ? 1 : 0;
+      const jitterX = body.plugin?.chainBlink ? (Math.random() < 0.5 ? -jitter : jitter) : 0;
+      const jitterY = body.plugin?.chainBlink ? (Math.random() < 0.5 ? -jitter : jitter) : 0;
       ctx.save();
       ctx.globalAlpha = outlineAlpha;
       ctx.drawImage(
         outlineSprite,
-        -drawWidth / 2,
-        -drawHeight / 2,
+        -drawWidth / 2 + jitterX,
+        -drawHeight / 2 + jitterY,
         drawWidth,
         drawHeight
       );

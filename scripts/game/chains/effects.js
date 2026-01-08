@@ -1,6 +1,7 @@
 import {
   CHAIN_ALPHA_LERP,
   CHAIN_BASE_ALPHA,
+  CHAIN_DURATION_MS,
   CHAIN_BURST_DURATION_MS,
   CHAIN_BURST_GRAVITY,
   CHAIN_BURST_SCALE_MAX,
@@ -19,6 +20,12 @@ export function applyChainFillStyles(state, bodies, components, deltaMs) {
   for (const component of components) {
     for (const id of component.ids) {
       sizeById.set(id, component.ids.size);
+    }
+  }
+  const timerById = new Map();
+  for (const chainState of state.chainStates || []) {
+    for (const id of chainState.ids) {
+      timerById.set(id, chainState.timerMs || 0);
     }
   }
 
@@ -44,20 +51,28 @@ export function applyChainFillStyles(state, bodies, components, deltaMs) {
       }
       continue;
     }
-    const baseAlpha = 0.3;
-    const extra = 0.05 * Math.max(0, size - 1);
-    let targetAlpha = Math.min(1, baseAlpha + extra);
+    const cappedSize = Math.min(4, size);
+    let targetAlpha = Math.min(0.75, 0.45 + 0.075 * cappedSize);
+    const timerMs = timerById.get(body.id) || 0;
+    const blinking = size >= 4;
+    if (!body.plugin) {
+      body.plugin = {};
+    }
+    body.plugin.chainBlink = blinking;
+    if (blinking) {
+      const blink = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 90);
+      targetAlpha = 0.35 + 0.2 * blink;
+    }
     const flashAlpha = body.plugin?.flashAlpha || 0;
     if (flashAlpha > targetAlpha) {
       targetAlpha = flashAlpha;
     }
-    if (!body.plugin) {
-      body.plugin = {};
-    }
     const currentAlpha = body.plugin.fillAlpha || CHAIN_BASE_ALPHA;
     const lerp = 1 - Math.pow(1 - CHAIN_ALPHA_LERP, deltaMs / 16.67);
     const nextAlpha =
-      flashAlpha > 0 ? targetAlpha : currentAlpha + (targetAlpha - currentAlpha) * lerp;
+      flashAlpha > 0 || blinking
+        ? targetAlpha
+        : currentAlpha + (targetAlpha - currentAlpha) * lerp;
     body.plugin.fillAlpha = nextAlpha;
     if (body.plugin.customOutline) {
       for (const part of parts) {
@@ -146,6 +161,11 @@ export function startBurst(state, bodies) {
       x: body.velocity.x,
       y: body.velocity.y - CHAIN_BURST_UPWARD_SPEED,
     });
+    const spinBase = 0.08;
+    const spinRange = 0.18;
+    const spin = spinBase + Math.random() * spinRange;
+    const spinDir = dirX >= 0 ? 1 : -1;
+    Body.setAngularVelocity(body, spin * spinDir);
     body.isSensor = true;
     body.collisionFilter.mask = 0;
 

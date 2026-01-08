@@ -24,10 +24,10 @@ export function setPreview(state, spec, getSpawnPoint) {
     ...(previewBody.plugin || {}),
     preview: true,
     previewAlpha: 0,
-    fillLocked: 0.15,
-    fillAlpha: 0.15,
+    fillLocked: 0.3,
+    fillAlpha: 0.3,
   };
-  setBodyFillAlpha(previewBody, 0.15);
+  setBodyFillAlpha(previewBody, 0.3);
   state.previewStartMs = state.engine.timing.timestamp;
   state.previewBody = previewBody;
   World.add(state.world, previewBody);
@@ -55,7 +55,7 @@ export function updatePreview(state, timestamp) {
       ? "rgba(0, 0, 0, 0)"
       : stroke;
   }
-  setBodyFillAlpha(state.previewBody, 0.15);
+  setBodyFillAlpha(state.previewBody, 0.3);
 }
 
 export function removePreview(state) {

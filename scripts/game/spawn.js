@@ -27,10 +27,10 @@ export function spawnBlock(state, getSpawnPoint) {
   body.plugin = {
     ...(body.plugin || {}),
     stopAtSpawn: true,
-    fillLocked: 0.15,
-    fillAlpha: 0.15,
+    fillLocked: 0.3,
+    fillAlpha: 0.3,
   };
-  setBodyFillAlpha(body, 0.15);
+  setBodyFillAlpha(body, 0.3);
   setBodyScale(body, 0.5);
   body.plugin.scaleTarget = 1;
   body.plugin.scaleStartY = spawnY;
@@ -108,10 +108,10 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     Body.setStatic(state.waitingBody, true);
     state.waitingBody.plugin = {
       ...(state.waitingBody.plugin || {}),
-      fillLocked: 0.3,
-      fillAlpha: 0.3,
+      fillLocked: 0.45,
+      fillAlpha: 0.45,
     };
-    setBodyFillAlpha(state.waitingBody, 0.3);
+    setBodyFillAlpha(state.waitingBody, 0.45);
     state.waitingState = "armed";
     state.waitStartMs = state.engine.timing.timestamp;
   }
