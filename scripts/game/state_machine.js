@@ -106,8 +106,16 @@ export function createGameStateMachine(state, runner) {
     }
     state.gameOver = true;
     applyMode(MODES.GAMEOVER);
-    if (typeof window !== "undefined" && window.shellGameOver?.open) {
-      window.shellGameOver.open();
+    if (typeof window !== "undefined") {
+      if (state.gameOverMenuTimer) {
+        window.clearTimeout(state.gameOverMenuTimer);
+        state.gameOverMenuTimer = 0;
+      }
+      state.gameOverMenuTimer = window.setTimeout(() => {
+        if (state.gameOver && mode === MODES.GAMEOVER) {
+          window.shellGameOver?.open?.();
+        }
+      }, 2000);
     }
   }
 

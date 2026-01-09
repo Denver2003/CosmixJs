@@ -186,12 +186,20 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function start() {
+    if (state.gameOverMenuTimer) {
+      window.clearTimeout(state.gameOverMenuTimer);
+      state.gameOverMenuTimer = 0;
+    }
     mode.startGame();
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
   }
 
   function resumeAfterContinue() {
+    if (state.gameOverMenuTimer) {
+      window.clearTimeout(state.gameOverMenuTimer);
+      state.gameOverMenuTimer = 0;
+    }
     state.gameOver = false;
     state.gameOverHandled = false;
     state.paused = false;
@@ -203,6 +211,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function restartSession() {
+    if (state.gameOverMenuTimer) {
+      window.clearTimeout(state.gameOverMenuTimer);
+      state.gameOverMenuTimer = 0;
+    }
     clearDynamicBodies();
     const fresh = createGameState();
     const preserved = {

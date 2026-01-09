@@ -53,6 +53,8 @@ export function createGameState() {
     pausedAtMs: 0,
     pausedResumeMs: 0,
     gameOverHandled: false,
+    gameOverBannerStartMs: 0,
+    gameOverMenuTimer: 0,
     mode: "shell",
     nextSpec: createRandomSpec(getColorsCount(level), getRotationRange(level)),
     previewBody: null,

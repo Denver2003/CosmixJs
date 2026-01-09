@@ -22,7 +22,9 @@
   - Pentagon: regular, area = 4L^2
 - **Colors**: 4 random stroke colors per piece; transparent fill.
 - **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
-- **Kill line pulse**: always visible (faint red); pulses smoothly once contact timer starts (slow 2-6s, fast 6-10s).
+- **Kill line pulse**: always visible; laser barrier shifts from cyan→purple→red with increased activity; alpha grows with cup fill (0.2→0.8) and forces 1.0 in last 5 seconds.
+- **Laser barrier danger logic**: 0–0.5 danger from stack height vs death line, 0.5–1.0 from kill timer progress; barrier ignores the current waiting piece and only reacts after first contact.
+- **Game Over banner**: large canvas banner appears above the death line with a fast scale+alpha pop and laser-text glow; the menu overlay shows 2 seconds later.
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
 - **Chain burst**: matched chains now play a 1.0s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst. Burst adds spin: rightward -> clockwise, leftward -> counterclockwise, random speed.
 - **Scoring**: collapse score uses NR formula with a chain-size bonus (+10% per piece above 4); level-up grants NLR bonus.

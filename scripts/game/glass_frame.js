@@ -22,7 +22,7 @@ function getFrameImage() {
   return frameImage;
 }
 
-export function drawGlassFrame(ctx, getGlassRect, render) {
+export function drawGlassFrame(ctx, getGlassRect, render, offset = { x: 0, y: 0 }) {
   const image = getFrameImage();
   if (image._broken || !image.complete || image.naturalWidth === 0) {
     return;
@@ -37,5 +37,5 @@ export function drawGlassFrame(ctx, getGlassRect, render) {
   const centerX = glass.left + GLASS_WIDTH / 2;
   const x = centerX - drawWidth / 2;
   const y = targetTop;
-  ctx.drawImage(image, x, y, drawWidth, drawHeight);
+  ctx.drawImage(image, x + (offset.x || 0), y + (offset.y || 0), drawWidth, drawHeight);
 }
