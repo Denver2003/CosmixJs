@@ -1,4 +1,5 @@
 import { subscribeAppState } from "./app_state.js";
+import { getAudioSettings, setAudioSettings } from "../audio/index.js";
 import { createHeaderBar, createIconButton } from "./ui/header.js";
 
 export function setupSettingsScreen(screen, router, confirmDialog) {
@@ -21,12 +22,13 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
 
   const content = document.createElement("div");
   content.className = "settings-content";
+  const audio = getAudioSettings();
 
   content.appendChild(
     createSection("Audio", [
-      createSliderRow("Music", 70),
-      createSliderRow("SFX", 80),
-      createToggleRow("Mute", false),
+      createSliderRow("Music", audio.music, "music"),
+      createSliderRow("SFX", audio.sfx, "sfx"),
+      createToggleRow("Mute", audio.mute, "mute"),
     ])
   );
 
@@ -96,19 +98,30 @@ function createRow(label, control) {
   return row;
 }
 
-function createSliderRow(label, value) {
+function createSliderRow(label, value, key) {
   const input = document.createElement("input");
   input.type = "range";
   input.min = "0";
   input.max = "100";
   input.value = String(value ?? 50);
+  if (key) {
+    input.addEventListener("input", () => {
+      const next = Number.parseInt(input.value, 10);
+      setAudioSettings({ [key]: Number.isFinite(next) ? next : 0 });
+    });
+  }
   return createRow(label, input);
 }
 
-function createToggleRow(label, checked) {
+function createToggleRow(label, checked, key) {
   const input = document.createElement("input");
   input.type = "checkbox";
   input.checked = Boolean(checked);
+  if (key) {
+    input.addEventListener("change", () => {
+      setAudioSettings({ [key]: input.checked });
+    });
+  }
   return createRow(label, input);
 }
 

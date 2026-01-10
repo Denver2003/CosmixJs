@@ -1,6 +1,7 @@
 import { ICON_PATHS } from "./constants.js";
 
 const ICON_CACHE = new Map();
+const TINT_CACHE = new Map();
 
 export function drawBubbleIcon(ctx, x, y, size, reward) {
   if (!reward) {
@@ -14,12 +15,15 @@ export function drawBubbleIcon(ctx, x, y, size, reward) {
   const half = size / 2;
   ctx.save();
   ctx.translate(x, y);
-  ctx.drawImage(icon, -half, -half, size, size);
   if (reward.type === "instant" && reward.subtype === "grenade" && reward.color) {
-    ctx.globalCompositeOperation = "source-atop";
-    ctx.fillStyle = hexToRgbaSafe(reward.color, 0.65);
-    ctx.fillRect(-half, -half, size, size);
-    ctx.globalCompositeOperation = "source-over";
+    const tinted = getTintedIcon(key, reward.color, 0.65);
+    if (tinted) {
+      ctx.drawImage(tinted, -half, -half, size, size);
+    } else {
+      ctx.drawImage(icon, -half, -half, size, size);
+    }
+  } else {
+    ctx.drawImage(icon, -half, -half, size, size);
   }
   ctx.restore();
 }
@@ -54,6 +58,30 @@ export function getIcon(key) {
   image.src = ICON_PATHS[key];
   ICON_CACHE.set(key, image);
   return image;
+}
+
+function getTintedIcon(key, color, alpha) {
+  if (!key || !color) {
+    return null;
+  }
+  const icon = getIcon(key);
+  if (!icon || icon._broken || !icon.complete || icon.naturalWidth === 0) {
+    return null;
+  }
+  const cacheKey = `${key}|${color}|${alpha}`;
+  if (TINT_CACHE.has(cacheKey)) {
+    return TINT_CACHE.get(cacheKey);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = icon.naturalWidth;
+  canvas.height = icon.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(icon, 0, 0);
+  ctx.globalCompositeOperation = "source-atop";
+  ctx.fillStyle = hexToRgbaSafe(color, alpha);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  TINT_CACHE.set(cacheKey, canvas);
+  return canvas;
 }
 
 function hexToRgbaSafe(hex, alpha) {

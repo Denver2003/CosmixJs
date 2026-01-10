@@ -1,3 +1,5 @@
+import { playSfx } from "../audio/index.js";
+
 const COMBO_WINDOW_MS = 4000;
 const COMBO_MAX_MULTIPLIER = 5;
 
@@ -14,6 +16,13 @@ export function recordCombo(state, nowMs) {
   state.comboMultiplier = multiplier;
   state.comboChainCount = state.comboStreak;
   state.comboWindowMs = COMBO_WINDOW_MS;
+  if (multiplier >= 5) {
+    playSfx("combo_cosmo");
+  } else if (multiplier >= 4) {
+    playSfx("combo_mega");
+  } else if (multiplier >= 3) {
+    playSfx("combo_super");
+  }
   return {
     multiplier,
     chainCount: state.comboStreak,

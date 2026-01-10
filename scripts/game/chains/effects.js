@@ -12,6 +12,7 @@ import {
   IMPACT_FLASH_ALPHA,
 } from "../../config.js";
 import { hexToRgba, setBodyScale } from "../utils.js";
+import { playSfx } from "../../audio/index.js";
 
 const { Body, Composite, World } = Matter;
 
@@ -115,6 +116,7 @@ export function startBurst(state, bodies) {
   if (!bodies.length) {
     return;
   }
+  playSfx("chain_burst");
   let centerX = 0;
   let centerY = 0;
   for (const body of bodies) {

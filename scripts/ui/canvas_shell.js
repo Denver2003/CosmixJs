@@ -1,5 +1,6 @@
 import { ScreenId } from "../shell/index.js";
 import { getAppState, setAppState } from "../shell/app_state.js";
+import { getAudioSettings, setAudioSettings } from "../audio/index.js";
 import {
   BONUS_DROP_LEVELS,
   BONUS_UPGRADE_LEVELS,
@@ -146,6 +147,24 @@ export function handleShellPointer(x, y, render) {
     if (layout?.back && pointInRect(x, y, layout.back)) {
       router.back?.();
       return true;
+    }
+    if (layout?.audio) {
+      const audio = layout.audio;
+      if (audio.music && pointInRect(x, y, audio.music)) {
+        const value = sliderValueAt(audio.music, x);
+        setAudioSettings({ music: value });
+        return true;
+      }
+      if (audio.sfx && pointInRect(x, y, audio.sfx)) {
+        const value = sliderValueAt(audio.sfx, x);
+        setAudioSettings({ sfx: value });
+        return true;
+      }
+      if (audio.mute && pointInRect(x, y, audio.mute)) {
+        const current = getAudioSettings();
+        setAudioSettings({ mute: !current.mute });
+        return true;
+      }
     }
   }
   if (router.activeScreen === ScreenId.LEADERBOARDS) {
@@ -465,26 +484,36 @@ function drawSettingsScreen(ctx, render) {
   const headerY = 48;
   const state = getAppState();
   const user = state.userName || "Guest";
+  const audio = state.audio || getAudioSettings();
 
   const backRect = drawBackButton(ctx, pad, headerY, "BACK");
   drawSettingsHeader(ctx, width, headerY, pad, user);
 
   let y = headerY + 90;
-  y = drawSettingsSection(ctx, pad, y, width - pad * 2, "Audio", [
-    { label: "Music", value: 70, type: "slider" },
-    { label: "SFX", value: 80, type: "slider" },
-    { label: "Mute", value: false, type: "toggle" },
-  ]);
-  y = drawSettingsSection(ctx, pad, y + 18, width - pad * 2, "Account", [
+  const audioSection = drawSettingsSection(
+    ctx,
+    pad,
+    y,
+    width - pad * 2,
+    "Audio",
+    [
+      { key: "music", label: "Music", value: audio.music ?? 70, type: "slider" },
+      { key: "sfx", label: "SFX", value: audio.sfx ?? 80, type: "slider" },
+      { key: "mute", label: "Mute", value: audio.mute ?? false, type: "toggle" },
+    ],
+    { capture: true }
+  );
+  y = audioSection.endY;
+  const accountSection = drawSettingsSection(ctx, pad, y + 18, width - pad * 2, "Account", [
     { label: "Status", value: "Guest", type: "info" },
     { label: "Login", value: "LOGIN", type: "action" },
   ]);
-  drawSettingsSection(ctx, pad, y + 18, width - pad * 2, "Data", [
+  drawSettingsSection(ctx, pad, accountSection.endY + 18, width - pad * 2, "Data", [
     { label: "Reset progress", value: "RESET", type: "action", danger: true },
     { label: "Restore purchases", value: "RESTORE", type: "action" },
   ]);
 
-  lastLayout.settings = { back: backRect };
+  lastLayout.settings = { back: backRect, audio: audioSection.rects };
 }
 
 function drawLeaderboardsScreen(ctx, render) {
@@ -600,7 +629,7 @@ function drawSettingsHeader(ctx, width, y, pad, user) {
   ctx.restore();
 }
 
-function drawSettingsSection(ctx, x, y, width, title, rows) {
+function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
   roundRect(ctx, x, y, width, 40 + rows.length * 44, 18);
@@ -612,13 +641,17 @@ function drawSettingsSection(ctx, x, y, width, title, rows) {
   ctx.textBaseline = "middle";
   ctx.fillText(title, x + 16, y + 22);
 
+  const rects = {};
   let rowY = y + 44;
   for (const row of rows) {
-    drawSettingsRow(ctx, x + 16, rowY, width - 32, row);
+    const controlRect = drawSettingsRow(ctx, x + 16, rowY, width - 32, row);
+    if (options.capture && row.key && controlRect) {
+      rects[row.key] = controlRect;
+    }
     rowY += 40;
   }
   ctx.restore();
-  return rowY;
+  return { endY: rowY, rects };
 }
 
 function drawSettingsRow(ctx, x, y, width, row) {
@@ -633,10 +666,27 @@ function drawSettingsRow(ctx, x, y, width, row) {
   ctx.textBaseline = "middle";
   ctx.fillText(row.label, x + 12, y + 17);
 
+  let controlRect = null;
   if (row.type === "slider") {
-    drawSlider(ctx, x + width - 140, y + 12, 120, 10, row.value || 0);
+    const sliderRect = {
+      x: x + width - 140,
+      y: y + 12,
+      width: 120,
+      height: 10,
+      type: "slider",
+    };
+    drawSlider(ctx, sliderRect.x, sliderRect.y, sliderRect.width, sliderRect.height, row.value || 0);
+    controlRect = sliderRect;
   } else if (row.type === "toggle") {
-    drawToggle(ctx, x + width - 60, y + 8, 42, 18, row.value);
+    const toggleRect = {
+      x: x + width - 60,
+      y: y + 8,
+      width: 42,
+      height: 18,
+      type: "toggle",
+    };
+    drawToggle(ctx, toggleRect.x, toggleRect.y, toggleRect.width, toggleRect.height, row.value);
+    controlRect = toggleRect;
   } else if (row.type === "action") {
     drawActionButton(ctx, x + width - 120, y + 6, 100, 24, row.value, row.danger);
   } else {
@@ -645,6 +695,7 @@ function drawSettingsRow(ctx, x, y, width, row) {
     ctx.fillText(String(row.value), x + width - 12, y + 17);
   }
   ctx.restore();
+  return controlRect;
 }
 
 function drawSlider(ctx, x, y, width, height, value) {
@@ -863,6 +914,14 @@ function pointInRect(x, y, rect) {
     y >= rect.y &&
     y <= rect.y + rect.height
   );
+}
+
+function sliderValueAt(rect, x) {
+  if (!rect || rect.width <= 0) {
+    return 0;
+  }
+  const t = (x - rect.x) / rect.width;
+  return Math.max(0, Math.min(100, Math.round(t * 100)));
 }
 
 function syncShellVisibility(showCanvasShell) {

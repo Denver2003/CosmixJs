@@ -1,11 +1,12 @@
 const subscribers = new Set();
 
-import { loadBestScore, loadCoins } from "../game/storage.js";
+import { loadAudioSettings, loadBestScore, loadCoins } from "../game/storage.js";
 
 const state = {
   userName: "Guest",
   coins: loadCoins(),
   bestScore: loadBestScore(),
+  audio: loadAudioSettings(),
 };
 
 export function getAppState() {

@@ -41,6 +41,7 @@ export function createGameState() {
     gameOver: false,
     killTouchMs: 0,
     killGraceUntil: 0,
+    killWarningActive: false,
     chainStates: [],
     debugLogMs: 0,
     chainGraceMs: 0,

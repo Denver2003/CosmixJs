@@ -7,6 +7,7 @@ import {
   COSMO_ENERGY_MAX,
   COSMO_ENERGY_MAX_INTERNAL,
 } from "../config.js";
+import { playSfx } from "../audio/index.js";
 
 const COSMO_COLOR_LEVELS = {
   1: "#2a6bd6",
@@ -80,6 +81,7 @@ export function updateCosmometerMultiplier(state, nowMs) {
       color: toColor,
       startMs: nowMs,
     });
+    playSfx("cosmo_level_up");
   }
   return state.gameMultiplier;
 }

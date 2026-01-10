@@ -106,22 +106,40 @@ export function drawBubbles(state, ctx) {
   if (!bubbles || bubbles.length === 0) {
     return;
   }
+  const now = state.engine.timing.timestamp;
   ctx.save();
   ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
   ctx.lineWidth = 2;
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   for (const bubble of bubbles) {
+    const t = (now - bubble.bornMs) / 1000;
+    const breath = Math.sin(t * 2.4 + bubble.phase * 0.6);
+    const scaleX = 1 + 0.05 * breath;
+    const scaleY = 1 - 0.04 * breath;
+    const driftX = Math.sin(t * 1.1 + bubble.phase) * 1;
+    const driftY = Math.cos(t * 0.9 + bubble.phase * 0.8) * 1;
+    const glossDrift = Math.sin(t * 0.8 + bubble.phase);
+    ctx.save();
+    ctx.translate(bubble.x + driftX, bubble.y + driftY);
+    ctx.scale(scaleX, scaleY);
     ctx.beginPath();
-    ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+    ctx.arc(0, 0, bubble.radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     const highlightRadius = bubble.radius * 0.25;
-    const highlightX = bubble.x - bubble.radius * 0.35;
-    const highlightY = bubble.y - bubble.radius * 0.35;
+    const highlightX = -bubble.radius * (0.35 + 0.06 * glossDrift);
+    const highlightY = -bubble.radius * 0.35;
     ctx.beginPath();
     ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
     ctx.arc(highlightX, highlightY, highlightRadius, 0, Math.PI * 2);
     ctx.fill();
+    const rimAlpha = 0.28 + 0.12 * (0.5 + 0.5 * Math.sin(t * 1.2));
+    ctx.strokeStyle = `rgba(160, 220, 255, ${rimAlpha.toFixed(3)})`;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, 0, bubble.radius * 1.02, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
     drawBubbleIcon(ctx, bubble.x, bubble.y, bubble.radius * 1.56, bubble.reward);
   }
   ctx.restore();

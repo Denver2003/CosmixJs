@@ -10,7 +10,6 @@ import {
 } from "../../config.js";
 import { getTopHudLayout } from "../../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../../ui/layout.js";
-import { getCosmoBaseColor } from "../cosmometer.js";
 import { drawBubbleIcon } from "../bubbles.js";
 import { drawPauseButton } from "../pause_button.js";
 import { getLevelColor } from "../level_up_popup.js";
@@ -75,26 +74,117 @@ export function drawCosmometer(state, ctx, getGlassRect) {
   const y = yTop;
   const radius = width / 2;
 
-  ctx.save();
-  ctx.fillStyle = hexToRgba("#000000", 0.2);
-  ctx.beginPath();
-  roundRectPath(ctx, x, y, width, height, radius);
-  ctx.fill();
-
   const energy = Math.max(0, Math.min(COSMO_ENERGY_MAX, state.energy || 0));
   const fillRatio = COSMO_ENERGY_MAX ? energy / COSMO_ENERGY_MAX : 0;
   const fillHeight = Math.max(0, Math.min(1, fillRatio)) * height;
   const fillY = y + height - fillHeight;
+  const level = getEnergyLevel(energy);
+  const timeSec = (state.engine?.timing?.timestamp || 0) / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(timeSec * (1.6 + level * 0.4));
+  const color = getCosmoLevelColor(level);
+  const rgb = hexToRgb(color);
 
-  const baseLevel = getEnergyLevel(energy);
-  const fillColor = getCosmoBaseColor(baseLevel);
+  ctx.save();
+  ctx.fillStyle = "rgba(6, 8, 12, 0.7)";
+  ctx.beginPath();
+  roundRectPath(ctx, x, y, width, height, radius);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
   if (fillHeight > 0) {
-    ctx.fillStyle = hexToRgba(fillColor, 0.8);
     ctx.save();
     ctx.beginPath();
     roundRectPath(ctx, x, y, width, height, radius);
     ctx.clip();
+
+    const coreGradient = ctx.createLinearGradient(0, fillY, 0, y + height);
+    coreGradient.addColorStop(
+      0,
+      `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.7, 1, pulse).toFixed(3)})`
+    );
+    coreGradient.addColorStop(
+      1,
+      `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.35, 0.55, pulse).toFixed(3)})`
+    );
+    ctx.fillStyle = coreGradient;
     ctx.fillRect(x, fillY, width, fillHeight);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.4, 0.75, pulse).toFixed(3)})`;
+    ctx.shadowBlur = 8 + level * 3;
+    ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.2, 0.45, pulse).toFixed(3)})`;
+    ctx.fillRect(x, fillY, width, fillHeight);
+    ctx.restore();
+
+    if (level >= 2) {
+      const scanCount = level >= 5 ? 4 : 3;
+      const scanSpeed = 28 + level * 8;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.2, 0.5, pulse).toFixed(3)})`;
+      for (let i = 0; i < scanCount; i += 1) {
+        const offset = (timeSec * scanSpeed + i * 18) % (fillHeight + 24);
+        const lineY = fillY + fillHeight - offset;
+        ctx.fillRect(x, lineY, width, 2);
+      }
+      ctx.restore();
+    }
+
+    if (level >= 3) {
+      const sparkCount = level >= 5 ? 4 : 2;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < sparkCount; i += 1) {
+        const sx = x + Math.random() * width;
+        const sy = fillY + Math.random() * fillHeight;
+        const radiusPx = 0.8 + Math.random() * 1.2;
+        ctx.fillStyle = `rgba(255, 255, 255, ${(0.4 + 0.3 * pulse).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, radiusPx, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    const capHeight = Math.min(10, Math.max(4, width * 1.4));
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const capGradient = ctx.createLinearGradient(0, fillY, 0, fillY + capHeight);
+    capGradient.addColorStop(
+      0,
+      `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.6, 0.9, pulse).toFixed(3)})`
+    );
+    capGradient.addColorStop(
+      1,
+      `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`
+    );
+    ctx.fillStyle = capGradient;
+    ctx.fillRect(x, fillY, width, capHeight);
+    ctx.restore();
+    ctx.restore();
+  }
+
+  if (fillHeight > 0) {
+    const glowPad = 4 + level * 1.5;
+    const glowRadius = radius + glowPad;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.shadowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.25, 0.5, pulse).toFixed(3)})`;
+    ctx.shadowBlur = 10 + level * 4;
+    ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${lerp(0.08, 0.18, pulse).toFixed(3)})`;
+    ctx.beginPath();
+    roundRectPath(
+      ctx,
+      x - glowPad,
+      fillY - 2,
+      width + glowPad * 2,
+      fillHeight + 4,
+      glowRadius
+    );
+    ctx.fill();
     ctx.restore();
   }
   ctx.restore();
@@ -168,6 +258,32 @@ function getEnergyLevel(energy) {
     return 2;
   }
   return 1;
+}
+
+function getCosmoLevelColor(level) {
+  if (level >= 5) {
+    return "#FF7A4A";
+  }
+  if (level >= 3) {
+    return "#B07CFF";
+  }
+  if (level >= 2) {
+    return "#7B9BFF";
+  }
+  return "#7AD9FF";
+}
+
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16),
+  };
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
 }
 
 function updateCosmoPopups(state) {

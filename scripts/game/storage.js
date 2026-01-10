@@ -1,6 +1,7 @@
 const COINS_KEY = "cosmix.coins";
 const BONUSES_KEY = "cosmix.bonuses";
 const BEST_SCORE_KEY = "cosmix.best_score";
+const AUDIO_KEY = "cosmix.audio";
 
 function getStorage() {
   if (typeof window === "undefined") {
@@ -92,10 +93,53 @@ export function saveBonusInventory(inventory) {
   return true;
 }
 
+export function loadAudioSettings() {
+  const storage = getStorage();
+  if (!storage) {
+    return { music: 70, sfx: 80, mute: false };
+  }
+  const raw = storage.getItem(AUDIO_KEY);
+  if (!raw) {
+    return { music: 70, sfx: 80, mute: false };
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      music: sanitizePercent(parsed?.music, 70),
+      sfx: sanitizePercent(parsed?.sfx, 80),
+      mute: Boolean(parsed?.mute),
+    };
+  } catch (error) {
+    return { music: 70, sfx: 80, mute: false };
+  }
+}
+
+export function saveAudioSettings(settings) {
+  const storage = getStorage();
+  if (!storage) {
+    return false;
+  }
+  const payload = {
+    music: sanitizePercent(settings?.music, 70),
+    sfx: sanitizePercent(settings?.sfx, 80),
+    mute: Boolean(settings?.mute),
+  };
+  storage.setItem(AUDIO_KEY, JSON.stringify(payload));
+  return true;
+}
+
 function sanitizeCount(value) {
   const count = Number.parseInt(value, 10);
   if (!Number.isFinite(count) || count < 0) {
     return 0;
   }
   return count;
+}
+
+function sanitizePercent(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(0, Math.min(100, Math.round(parsed)));
 }

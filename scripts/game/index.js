@@ -19,6 +19,7 @@ import { spawnLevelUpPopup, updateLevelUpPopups } from "./level_up_popup.js";
 import { updateRewardFloaters } from "./reward_floaters.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 import { updateBackgroundStars } from "./background.js";
+import { playSfx } from "../audio/index.js";
 
 const { Events } = Matter;
 
@@ -124,6 +125,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       if (leveledUp) {
         applyLevelUpReward(state, prevToNextLevel);
         spawnLevelUpPopup(state, getGlassRect, state.level);
+        playSfx("level_up");
       }
     }
     updatePreview(state, engine.timing.timestamp);
@@ -294,4 +296,5 @@ function armFlash(body, nowMs) {
     flashStartMs: nowMs,
     flashDurationMs: IMPACT_FLASH_DURATION_MS,
   };
+  playSfx("impact_first");
 }

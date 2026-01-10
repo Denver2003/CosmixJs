@@ -14,6 +14,7 @@ import { spawnScoreParticles } from "../score_particles.js";
 import { spawnComboPopup } from "../combo_popup.js";
 import { spawnLevelUpPopup } from "../level_up_popup.js";
 import { buildGunRays } from "./gun_marks.js";
+import { playSfx } from "../../audio/index.js";
 
 const { Composite } = Matter;
 
@@ -87,6 +88,7 @@ export function tryTouchKill(state, x, y, getGlassRect) {
 }
 
 function fireGunShot(state, x, y, getGlassRect) {
+  playSfx("bonus_gun_shot");
   state.bonusGunMarks.push({
     x,
     y,

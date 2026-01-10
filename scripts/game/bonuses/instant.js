@@ -16,6 +16,7 @@ import { applyChainRewards, applyLevelUpReward } from "../rewards.js";
 import { spawnScoreParticles } from "../score_particles.js";
 import { spawnComboPopup } from "../combo_popup.js";
 import { spawnLevelUpPopup } from "../level_up_popup.js";
+import { playSfx } from "../../audio/index.js";
 
 const { Body, Composite, World } = Matter;
 
@@ -80,6 +81,7 @@ export function triggerGrenade(state, targetColor, getGlassRect) {
   if (!bodies.length) {
     return 0;
   }
+  playSfx("bonus_grenade");
   startBurst(state, bodies);
   const removedCount = bodies.length;
   const now = state.engine.timing.timestamp;
@@ -100,6 +102,7 @@ export function triggerGrenade(state, targetColor, getGlassRect) {
     if (getGlassRect) {
       spawnLevelUpPopup(state, getGlassRect, state.level);
     }
+    playSfx("level_up");
   }
   return removedCount;
 }
