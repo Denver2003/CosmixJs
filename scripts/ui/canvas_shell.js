@@ -2,6 +2,14 @@ import { ScreenId } from "../shell/index.js";
 import { getAppState, setAppState } from "../shell/app_state.js";
 import { getAudioSettings, setAudioSettings } from "../audio/index.js";
 import {
+  FLOOR_THICKNESS,
+  GLASS_HEIGHT,
+  GLASS_WIDTH,
+  WALL_THICKNESS,
+} from "../config.js";
+import { getGlassFrame } from "./layout.js";
+import { formatNumber } from "./format.js";
+import {
   BONUS_DROP_LEVELS,
   BONUS_UPGRADE_LEVELS,
   COIN_MULTIPLIER_LEVELS,
@@ -24,15 +32,15 @@ import { loadBonusInventory, saveBonusInventory, saveCoins } from "../game/stora
 import { addTotalSpentCoins } from "../ads/runtime.js";
 
 const LEADERBOARD_ROWS = [
-  { rank: "1", name: "You", score: "12 450" },
-  { rank: "2", name: "Guest_42", score: "10 880" },
-  { rank: "3", name: "PlayerX", score: "9 640" },
-  { rank: "4", name: "Guest_9", score: "8 210" },
-  { rank: "5", name: "Neo", score: "7 980" },
-  { rank: "-", name: "You", score: "5 020", highlight: true },
+  { rank: 1, name: "You", score: 12450 },
+  { rank: 2, name: "Guest_42", score: 10880 },
+  { rank: 3, name: "PlayerX", score: 9640 },
+  { rank: 4, name: "Guest_9", score: 8210 },
+  { rank: 5, name: "Neo", score: 7980 },
+  { rank: "-", name: "You", score: 5020, highlight: true },
 ];
 
-export function drawShellUi(ctx, render) {
+export function drawShellUi(ctx, render, getGlassRect) {
   const router = getShellRouter();
   if (!router) {
     return;
@@ -47,6 +55,15 @@ export function drawShellUi(ctx, render) {
   const width = render.options.width;
   const height = render.options.height;
   ctx.save();
+  if (active === ScreenId.HOME) {
+    const capsule = getCapsuleLayout(render, getGlassRect);
+    if (capsule) {
+      drawGlobalDim(ctx, width, height);
+      drawHomeScreen(ctx, render, capsule);
+      ctx.restore();
+      return;
+    }
+  }
   ctx.fillStyle = "#0b0d12";
   ctx.fillRect(0, 0, width, height);
 
@@ -61,7 +78,7 @@ export function drawShellUi(ctx, render) {
   ctx.fillText(title, width / 2, 80);
 
   if (active === ScreenId.HOME) {
-    drawHomeScreen(ctx, render);
+    drawHomeScreen(ctx, render, null);
   }
   if (active === ScreenId.SHOP) {
     drawShopScreen(ctx, render);
@@ -201,25 +218,73 @@ const leaderboardsState = {
 };
 const shopActions = [];
 
-function drawHomeScreen(ctx, render) {
-  const { width, height } = render.options;
-  const safePad = 32;
-  const headerY = 48;
+function drawHomeScreen(ctx, render, capsule) {
+  if (!capsule) {
+    const { width, height } = render.options;
+    const safePad = 32;
+    const headerY = 48;
+    const state = getAppState();
+    const coins = state.coins ?? 0;
+    const best = state.bestScore ?? 0;
+    const user = state.userName || "Guest";
+
+    drawHeader(ctx, width, headerY, safePad, { user, coins, best });
+
+    const playRect = drawPrimaryButton(ctx, width / 2, height * 0.55, 240, 70, "PLAY");
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.font = "16px \"RussoOne\", sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("Tap bubbles • Make combos", width / 2, playRect.y + playRect.height + 16);
+
+    const footer = drawFooter(ctx, width, height - 90, 260);
+    lastLayout.home = { play: playRect, footer };
+    return;
+  }
+
   const state = getAppState();
   const coins = state.coins ?? 0;
   const best = state.bestScore ?? 0;
   const user = state.userName || "Guest";
+  const { inner } = capsule;
+  const chipHeight = clamp(inner.height * 0.06, 28, 48);
+  const profileY = inner.y - 52;
 
-  drawHeader(ctx, width, headerY, safePad, { user, coins, best });
+  drawCapsuleTint(ctx, inner);
+  drawProfileChip(ctx, inner.x - 40, profileY, chipHeight, user);
+  drawPrismTitle(ctx, inner, "COSMIX");
+  const chipWidth = clamp(inner.width * 0.26, 120, 170);
+  const coinsX = inner.x + inner.width - chipWidth + 40;
+  drawCoinChip(ctx, coinsX, profileY, chipWidth, chipHeight, coins);
+  const bestY = inner.y + inner.height * 0.15;
+  const bestX = inner.x + (inner.width - chipWidth) / 2;
+  drawHudChip(ctx, bestX, bestY, chipWidth, chipHeight, "Best", best);
 
-  const playRect = drawPrimaryButton(ctx, width / 2, height * 0.55, 240, 70, "PLAY");
-  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = "16px \"RussoOne\", sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText("Tap bubbles • Make combos", width / 2, playRect.y + playRect.height + 16);
+  const playY = inner.y + inner.height * 0.65;
+  const playWidth = inner.width * 0.6;
+  const playHeight = clamp(inner.height * 0.1, 52, 72);
+  const playRect = drawPrismPrimaryButton(
+    ctx,
+    inner.x + inner.width / 2,
+    playY,
+    playWidth,
+    playHeight,
+    "PLAY",
+    getUiButtonImage("play")
+  );
+  drawSubtext(ctx, inner.x + inner.width / 2, playRect.y + playRect.height + inner.height * 0.035);
 
-  const footer = drawFooter(ctx, width, height - 90, 260);
+  const panelHeight = clamp(inner.height * 0.09, 44, 64);
+  const panelWidth = inner.width * 0.88;
+  const panelY = inner.y + inner.height - panelHeight - inner.height * 0.02;
+  const footer = drawBottomPanel(
+    ctx,
+    inner.x + (inner.width - panelWidth) / 2,
+    panelY,
+    panelWidth,
+    panelHeight
+  );
+
   lastLayout.home = { play: playRect, footer };
 }
 
@@ -280,7 +345,7 @@ function buildUpgradeCards(progress, coins) {
       id: UPGRADE_TYPES.BONUS_UPGRADE,
       title: "Bonus Upgrades",
       levels: BONUS_UPGRADE_LEVELS,
-      formatter: (value, level) => `Level ${level}`,
+      formatter: (value, level) => `Level ${formatNumber(level)}`,
     },
   ];
   return upgrades.map((upgrade) => {
@@ -303,7 +368,8 @@ function buildUpgradeCards(progress, coins) {
       title: upgrade.title,
       current,
       next,
-      actionLabel: level >= maxLevel ? "MAX" : `UPGRADE ${priceValue}`,
+      actionLabel:
+        level >= maxLevel ? "MAX" : `UPGRADE ${formatNumber(priceValue)}`,
       actionDisabled: level >= maxLevel || !canAfford,
     };
   });
@@ -314,10 +380,12 @@ function buildItemCards(progress, inventory, coins) {
   const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
   const rewardStatus = getShopRewardStatus(Date.now(), moneyCoef);
   const rewardLabel = rewardStatus.available
-    ? `WATCH AD +${rewardStatus.reward}`
+    ? `WATCH AD +${formatNumber(rewardStatus.reward)}`
     : "TRY LATER";
-  const rewardMeta = `+${rewardStatus.reward} coins`;
-  const rewardOwned = `${rewardStatus.count}/${rewardStatus.limit} this hour`;
+  const rewardMeta = `+${formatNumber(rewardStatus.reward)} coins`;
+  const rewardOwned = `${formatNumber(rewardStatus.count)}/${formatNumber(
+    rewardStatus.limit
+  )} this hour`;
   const cards = [
     {
       id: "rewarded_shop",
@@ -338,8 +406,8 @@ function buildItemCards(progress, inventory, coins) {
         kind: "item",
         title: item.title,
         meta: "Consumable",
-        owned: `Owned: ${count}`,
-        actionLabel: `BUY ${item.cost}`,
+        owned: `Owned: ${formatNumber(count)}`,
+        actionLabel: `BUY ${formatNumber(item.cost)}`,
         actionDisabled: !canAfford,
       };
     })
@@ -354,7 +422,7 @@ function buildItemCards(progress, inventory, coins) {
         title: "Remove Ads",
         meta: "All ads",
         owned: owned ? "Owned" : null,
-        actionLabel: owned ? "OWNED" : `BUY ${item.price} YAN`,
+        actionLabel: owned ? "OWNED" : `BUY ${formatNumber(item.price)} YAN`,
         actionDisabled: owned,
       });
     } else if (item.id === "coins_1000") {
@@ -362,9 +430,9 @@ function buildItemCards(progress, inventory, coins) {
         id: item.id,
         kind: "real",
         title: "Coins Pack",
-        meta: "1000 coins",
+        meta: `${formatNumber(1000)} coins`,
         owned: null,
-        actionLabel: `BUY ${item.price} YAN`,
+        actionLabel: `BUY ${formatNumber(item.price)} YAN`,
         actionDisabled: false,
       });
     }
@@ -606,7 +674,7 @@ function drawLeaderboardRow(ctx, x, y, width, height, row) {
   ctx.fillText(String(row.rank), x + 12, y + height / 2);
   ctx.fillText(row.name, x + 48, y + height / 2);
   ctx.textAlign = "right";
-  ctx.fillText(row.score, x + width - 12, y + height / 2);
+  ctx.fillText(formatValue(row.score), x + width - 12, y + height / 2);
   ctx.restore();
 }
 
@@ -692,7 +760,7 @@ function drawSettingsRow(ctx, x, y, width, row) {
   } else {
     ctx.textAlign = "right";
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.fillText(String(row.value), x + width - 12, y + 17);
+    ctx.fillText(formatValue(row.value), x + width - 12, y + 17);
   }
   ctx.restore();
   return controlRect;
@@ -876,7 +944,7 @@ function drawPill(ctx, x, y, w, h, label, value) {
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + 12, y + h / 2);
   ctx.textAlign = "right";
-  ctx.fillText(String(value), x + w - 12, y + h / 2);
+  ctx.fillText(formatValue(value), x + w - 12, y + h / 2);
   ctx.restore();
 }
 
@@ -982,6 +1050,307 @@ function drawPrimaryButton(ctx, cx, cy, width, height, label) {
   ctx.fillText(label, cx, cy);
   ctx.restore();
   return { x, y, width, height };
+}
+
+function getCapsuleLayout(render, getGlassRect) {
+  const glassGetter =
+    getGlassRect ||
+    (typeof window !== "undefined" ? window.__getGlassRect : null);
+  if (typeof glassGetter !== "function") {
+    return null;
+  }
+  const glass = glassGetter();
+  const frame = getGlassFrame(glass);
+  const frameScreen = worldRectToScreen(render, frame);
+  const innerScreen = worldRectToScreen(render, {
+    x: glass.left,
+    y: glass.top,
+    width: GLASS_WIDTH,
+    height: GLASS_HEIGHT,
+  });
+  const scaleX = frameScreen.width / frame.width;
+  const scaleY = frameScreen.height / frame.height;
+  return {
+    frame: frameScreen,
+    inner: innerScreen,
+    scaleX,
+    scaleY,
+    wall: Math.max(1, WALL_THICKNESS * scaleX),
+    floor: Math.max(1, FLOOR_THICKNESS * scaleY),
+  };
+}
+
+function worldRectToScreen(render, rect) {
+  const bounds = render.bounds;
+  const scaleX = render.options.width / (bounds.max.x - bounds.min.x);
+  const scaleY = render.options.height / (bounds.max.y - bounds.min.y);
+  return {
+    x: (rect.x - bounds.min.x) * scaleX,
+    y: (rect.y - bounds.min.y) * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  };
+}
+
+function drawGlobalDim(ctx, width, height) {
+  ctx.save();
+  ctx.fillStyle = "rgba(5, 8, 12, 0.35)";
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+}
+
+function drawCapsuleTint(ctx, inner) {
+  ctx.save();
+  ctx.fillStyle = "rgba(7, 12, 18, 0.35)";
+  ctx.fillRect(inner.x, inner.y, inner.width, inner.height);
+  ctx.restore();
+}
+
+function drawPrismTitle(ctx, inner, title) {
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${Math.max(24, Math.round(inner.height * 0.06))}px "RussoOne", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(title, inner.x + inner.width / 2, inner.y + inner.height * 0.09);
+  ctx.restore();
+}
+
+function drawSubtext(ctx, x, y) {
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.font = "14px \"RussoOne\", sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText("Tap • Stack • Combo", x, y);
+  ctx.restore();
+}
+
+function drawPrismPanel(ctx, x, y, width, height, radius, options = {}) {
+  const fill = options.fill || "rgba(10, 20, 30, 0.55)";
+  const stroke = options.stroke || "rgba(95, 227, 255, 0.6)";
+  ctx.save();
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + 1.5, y + 1.5, width - 3, height - 3, Math.max(2, radius - 1));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawProfileChip(ctx, x, y, size, label) {
+  const chipWidth = clamp(size * 3.6, 120, 180);
+  const chipHeight = size;
+  drawPrismPanel(ctx, x, y, chipWidth, chipHeight, chipHeight / 2);
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.beginPath();
+  ctx.arc(x + chipHeight / 2, y + chipHeight / 2, chipHeight * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${Math.max(12, Math.round(chipHeight * 0.38))}px "RussoOne", sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + chipHeight, y + chipHeight / 2);
+  ctx.restore();
+}
+
+function drawHudChip(ctx, x, y, width, height, label, value) {
+  drawPrismPanel(ctx, x, y, width, height, height / 2, {
+    fill: "rgba(12, 18, 26, 0.55)",
+    stroke: "rgba(95, 227, 255, 0.45)",
+  });
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.font = `${Math.max(10, Math.round(height * 0.32))}px "RussoOne", sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + height * 0.4, y + height / 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "right";
+  ctx.fillText(formatValue(value), x + width - height * 0.35, y + height / 2);
+  ctx.restore();
+}
+
+function drawCoinChip(ctx, x, y, width, height, value) {
+  drawPrismPanel(ctx, x, y, width, height, height / 2, {
+    fill: "rgba(12, 18, 26, 0.55)",
+    stroke: "rgba(95, 227, 255, 0.45)",
+  });
+  const icon = getCoinIcon();
+  const iconSize = Math.round(height * 0.62);
+  const iconX = x + height * 0.35;
+  const iconY = y + (height - iconSize) / 2;
+  if (icon && icon.complete && icon.naturalWidth > 0) {
+    ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+  }
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${Math.max(12, Math.round(height * 0.36))}px "RussoOne", sans-serif`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillText(formatValue(value), x + width - height * 0.35, y + height / 2);
+  ctx.restore();
+}
+
+let coinIconImage = null;
+const uiButtonImages = new Map();
+
+function getCoinIcon() {
+  if (coinIconImage) {
+    return coinIconImage;
+  }
+  if (typeof Image === "undefined") {
+    return null;
+  }
+  coinIconImage = new Image();
+  coinIconImage.src = "./assets/scaled/icon-coin.png";
+  return coinIconImage;
+}
+
+function getUiButtonImage(key) {
+  if (uiButtonImages.has(key)) {
+    return uiButtonImages.get(key);
+  }
+  if (typeof Image === "undefined") {
+    return null;
+  }
+  const image = new Image();
+  let src = "";
+  if (key === "play") src = "./assets/hud/ui_button_play.png";
+  if (key === "shop") src = "./assets/hud/ui_button_shop.png";
+  if (key === "leaders") src = "./assets/hud/ui_button_leaders.png";
+  if (key === "settings") src = "./assets/hud/ui_button_settings.png";
+  if (!src) {
+    return null;
+  }
+  image.src = src;
+  uiButtonImages.set(key, image);
+  return image;
+}
+
+function drawPrismPrimaryButton(ctx, cx, cy, width, height, label, sprite) {
+  const x = cx - width / 2;
+  const y = cy - height / 2;
+  const radius = Math.min(height / 2, 26);
+  ctx.save();
+  const hasSprite = sprite && sprite.complete && sprite.naturalWidth > 0;
+  if (!hasSprite) {
+    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+    gradient.addColorStop(0, "rgba(95, 227, 255, 0.45)");
+    gradient.addColorStop(1, "rgba(44, 150, 220, 0.6)");
+    roundRect(ctx, x, y, width, height, radius);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  if (hasSprite) {
+    const targetHeight = height * 1.2;
+    const scale = targetHeight / sprite.naturalHeight;
+    const targetWidth = sprite.naturalWidth * scale;
+    ctx.drawImage(
+      sprite,
+      cx - targetWidth / 2,
+      cy - targetHeight / 2,
+      targetWidth,
+      targetHeight
+    );
+  } else {
+    ctx.fillStyle = "#081018";
+    ctx.font = `${Math.max(18, Math.round(height * 0.45))}px "RussoOne", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, cx, cy);
+  }
+  ctx.restore();
+  return { x, y, width, height };
+}
+
+function drawBottomPanel(ctx, x, y, width, height) {
+  ctx.save();
+  roundRect(ctx, x, y, width, height, height / 2);
+  ctx.fillStyle = "rgba(8, 14, 22, 0.65)";
+  ctx.fill();
+  ctx.restore();
+  const buttonSize = Math.min(height * 0.72, 44);
+  const gap = (width - buttonSize * 3) / 4;
+  const labels = ["SHOP", "LEADERS", "SETTINGS"];
+  const rects = {};
+  for (let i = 0; i < labels.length; i += 1) {
+    const bx = x + gap + i * (buttonSize + gap);
+    const by = y + (height - buttonSize) / 2;
+    const rect = drawIconButton(
+      ctx,
+      bx,
+      by,
+      buttonSize,
+      labels[i],
+      getUiButtonImage(labels[i].toLowerCase())
+    );
+    if (labels[i] === "SHOP") rects.shop = rect;
+    if (labels[i] === "LEADERS") rects.leaders = rect;
+    if (labels[i] === "SETTINGS") rects.settings = rect;
+  }
+  return rects;
+}
+
+function drawIconButton(ctx, x, y, size, label, sprite) {
+  ctx.save();
+  const hasSprite = sprite && sprite.complete && sprite.naturalWidth > 0;
+  if (!hasSprite) {
+    drawPrismPanel(ctx, x, y, size, size, Math.min(14, size / 2), {
+      fill: "rgba(10, 18, 28, 0.6)",
+      stroke: "rgba(255, 255, 255, 0.35)",
+    });
+  }
+  if (hasSprite) {
+    const targetSize = size * 1.4;
+    const scale = targetSize / sprite.naturalHeight;
+    const targetWidth = sprite.naturalWidth * scale;
+    const targetHeight = sprite.naturalHeight * scale;
+    ctx.drawImage(
+      sprite,
+      x + size / 2 - targetWidth / 2,
+      y + size / 2 - targetHeight / 2,
+      targetWidth,
+      targetHeight
+    );
+  } else {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `${Math.max(10, Math.round(size * 0.22))}px "RussoOne", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, x + size / 2, y + size / 2);
+  }
+  ctx.restore();
+  return { x, y, width: size, height: size };
+}
+
+function formatValue(value) {
+  if (value === null || value === undefined) {
+    return "0";
+  }
+  if (typeof value === "number") {
+    return formatNumber(value);
+  }
+  if (typeof value === "string") {
+    const compact = value.replace(/\s+/g, "");
+    if (/^-?\d+(\.\d+)?$/.test(compact)) {
+      return formatNumber(Number(compact));
+    }
+  }
+  return String(value);
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function roundRect(ctx, x, y, width, height, radius) {

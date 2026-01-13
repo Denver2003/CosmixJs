@@ -1,4 +1,5 @@
 import { GLASS_HEIGHT, GLASS_WIDTH } from "../config.js";
+import { formatNumber } from "../ui/format.js";
 import { hexToRgba } from "./utils.js";
 
 export function spawnLevelUpPopup(state, getGlassRect, level) {
@@ -125,7 +126,7 @@ export function drawLevelUpPopups(state, ctx) {
     ctx.globalAlpha = alpha;
     ctx.fillStyle = hexToRgba(color, alpha);
     ctx.font = `${Math.round(baseFont * levelScale)}px "RussoOne", sans-serif`;
-    ctx.fillText(String(popup.level), levelPos.x, levelPos.y);
+    ctx.fillText(formatNumber(popup.level), levelPos.x, levelPos.y);
     ctx.restore();
 
     ctx.save();

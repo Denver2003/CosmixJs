@@ -1,12 +1,13 @@
 import { subscribeAppState } from "./app_state.js";
+import { formatNumber } from "../ui/format.js";
 import { createHeaderBar, createIconButton, createPill, updatePill } from "./ui/header.js";
 
 const SAMPLE_ROWS = [
-  { rank: 1, name: "You", score: "12 450" },
-  { rank: 2, name: "Guest_42", score: "10 880" },
-  { rank: 3, name: "PlayerX", score: "9 640" },
-  { rank: 4, name: "Guest_9", score: "8 210" },
-  { rank: 5, name: "Neo", score: "7 980" },
+  { rank: 1, name: "You", score: 12450 },
+  { rank: 2, name: "Guest_42", score: 10880 },
+  { rank: 3, name: "PlayerX", score: 9640 },
+  { rank: 4, name: "Guest_9", score: 8210 },
+  { rank: 5, name: "Neo", score: 7980 },
 ];
 
 export function setupLeaderboardsScreen(screen, router) {
@@ -100,7 +101,7 @@ function buildBoardList(rows, label) {
     list.appendChild(buildRow(row, row.name === "You"));
   }
 
-  const youRow = buildRow({ rank: "-", name: "You", score: "5 020" }, true);
+  const youRow = buildRow({ rank: "-", name: "You", score: 5020 }, true);
   youRow.classList.add("is-you");
   list.appendChild(youRow);
 
@@ -119,10 +120,24 @@ function buildRow({ rank, name, score }, highlight) {
   const nameNode = document.createElement("div");
   nameNode.textContent = name;
   const scoreNode = document.createElement("div");
-  scoreNode.textContent = score;
+  scoreNode.textContent = formatScore(score);
 
   row.appendChild(rankNode);
   row.appendChild(nameNode);
   row.appendChild(scoreNode);
   return row;
+}
+
+function formatScore(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "number") {
+    return formatNumber(value);
+  }
+  const compact = String(value).replace(/\s+/g, "");
+  if (/^-?\d+(\.\d+)?$/.test(compact)) {
+    return formatNumber(Number(compact));
+  }
+  return String(value);
 }

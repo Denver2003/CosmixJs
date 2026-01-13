@@ -1,4 +1,5 @@
 import { getTopHudLayout } from "../ui/hud.js";
+import { formatNumber } from "../ui/format.js";
 
 const DURATION_MS = 1200;
 
@@ -90,7 +91,7 @@ export function drawRewardFloaters(state, ctx) {
     } else {
       ctx.font = "28px \"RussoOne\", sans-serif";
     }
-    ctx.fillText(`+${floater.value}`, floater.x, floater.y);
+      ctx.fillText(`+${formatNumber(floater.value)}`, floater.x, floater.y);
   }
   ctx.restore();
 }

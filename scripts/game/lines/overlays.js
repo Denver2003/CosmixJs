@@ -1,4 +1,5 @@
 import { hexToRgba } from "../utils.js";
+import { formatNumber } from "../../ui/format.js";
 
 export function drawPauseOverlay(state, ctx, render) {
   if (!state.paused) {
@@ -37,7 +38,7 @@ export function drawPauseOverlay(state, ctx, render) {
     const remaining = Math.max(0, state.pausedResumeMs - nowMs);
     const seconds = Math.ceil(remaining / 1000);
     ctx.font = "12px \"RussoOne\", sans-serif";
-    ctx.fillText(`RESUMING IN ${seconds}`, centerX, centerY + 12);
+    ctx.fillText(`RESUMING IN ${formatNumber(seconds)}`, centerX, centerY + 12);
   } else {
     ctx.font = "12px \"RussoOne\", sans-serif";
     ctx.fillText("PRESS P TO RESUME", centerX, centerY + 12);

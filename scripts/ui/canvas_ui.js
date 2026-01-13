@@ -9,6 +9,9 @@ import { drawPauseOverlay } from "../game/lines/overlays.js";
 import { drawShellUi, isGameScreenActive } from "./canvas_shell.js";
 
 export function drawCanvasUiWorld({ ctx, state, render, getGlassRect }) {
+  if (!isGameScreenActive()) {
+    return;
+  }
   const { left, top } = getGlassRect();
   const spawnY = top + SPAWN_OFFSET;
   drawCosmometer(state, ctx, getGlassRect);
@@ -17,7 +20,7 @@ export function drawCanvasUiWorld({ ctx, state, render, getGlassRect }) {
 }
 
 export function drawCanvasUiScreen({ ctx, state, render, getGlassRect }) {
-  drawShellUi(ctx, render);
+  drawShellUi(ctx, render, getGlassRect);
   if (isGameScreenActive()) {
     drawTopHud(state, ctx, render, getGlassRect);
   }

@@ -62,6 +62,9 @@
 - **Glass frame overlay**: PNG frame (`assets/levelUI/glass_frame.png`) is drawn over the glass for visual alignment checks.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
 - **Score/Coins HUD**: live score display; coins and best score persist between sessions (saved on game over).
+- **Canvas shell Home**: menu now aligns to the glass capsule layout with Prism Edge HUD, PLAY CTA, and bottom nav inside the capsule.
+- **Canvas UI visibility**: gameplay-only elements (cosmometer, level progress, touch overlay) are hidden while the shell menu is active.
+- **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
 
 ## File layout
 

@@ -1,3 +1,5 @@
+import { formatNumber } from "../../ui/format.js";
+
 export function createHeaderBar({ title = "", left = [], right = [] } = {}) {
   const header = document.createElement("div");
   header.className = "header-bar";
@@ -78,7 +80,7 @@ export function createPill({ label, value, icon } = {}) {
   if (value !== undefined && value !== null) {
     const valueNode = document.createElement("span");
     valueNode.className = "header-pill__value";
-    valueNode.textContent = String(value);
+    valueNode.textContent = formatPillValue(value);
     pill.appendChild(valueNode);
   }
   return pill;
@@ -94,7 +96,7 @@ export function updatePill(pill, { label, value, icon } = {}) {
   }
   const valueNode = pill.querySelector(".header-pill__value");
   if (value !== undefined && valueNode) {
-    valueNode.textContent = String(value);
+    valueNode.textContent = formatPillValue(value);
   }
   const iconNode = pill.querySelector(".header-pill__icon");
   if (icon !== undefined && iconNode) {
@@ -112,4 +114,20 @@ function appendItems(target, items) {
     }
     target.appendChild(item);
   }
+}
+
+function formatPillValue(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "number") {
+    return formatNumber(value);
+  }
+  if (typeof value === "string") {
+    const compact = value.replace(/\s+/g, "");
+    if (/^-?\d+(\.\d+)?$/.test(compact)) {
+      return formatNumber(Number(compact));
+    }
+  }
+  return String(value);
 }

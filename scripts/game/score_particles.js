@@ -1,4 +1,5 @@
 import { getTopHudLayout } from "../ui/hud.js";
+import { formatNumber } from "../ui/format.js";
 
 function worldToScreen(render, x, y) {
   const bounds = render.bounds;
@@ -127,7 +128,7 @@ export function drawScoreParticles(state, ctx) {
     ctx.save();
     ctx.translate(particle.x, particle.y);
     ctx.scale(scale, scale);
-    ctx.fillText(`+${particle.value}`, 0, 0);
+    ctx.fillText(`+${formatNumber(particle.value)}`, 0, 0);
     ctx.restore();
   }
   ctx.restore();

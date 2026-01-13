@@ -233,6 +233,10 @@ Menu should:
 
 ## Open Decisions (need confirmation)
 1) Which frame style is the “signature” for UI components?
-   - Prism Edge / Pulse Nodes / Laser Cut
+   - Selected: Prism Edge
 2) Bottom nav: 3 buttons or 4 buttons (recommended 4: Shop/Upgrades/Skins/Settings).
+   - Selected: 3 buttons (Shop/Leaders/Settings)
 3) Do we show mascot character in menu or keep purely geometric?
+   - Pending
+4) Modals: keep DOM overlays or render inside capsule via canvas?
+   - Selected: Move modals to canvas (test transitions)

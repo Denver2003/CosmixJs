@@ -1,4 +1,5 @@
 import { GLASS_WIDTH } from "../../config.js";
+import { formatNumber } from "../../ui/format.js";
 
 export function drawTouchOverlay(state, ctx, getGlassRect, spawnY) {
   const now = state.engine.timing.timestamp;
@@ -29,6 +30,6 @@ export function drawTouchOverlay(state, ctx, getGlassRect, spawnY) {
   ctx.font = "11px \"RussoOne\", sans-serif";
   ctx.fillText("TAP FIGURES TO DESTROY", centerX, boxY + 34);
   ctx.font = "11px \"RussoOne\", sans-serif";
-  ctx.fillText(`ENDS IN ${seconds}s`, centerX, boxY + 48);
+  ctx.fillText(`ENDS IN ${formatNumber(seconds)}s`, centerX, boxY + 48);
   ctx.restore();
 }

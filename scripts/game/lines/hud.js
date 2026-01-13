@@ -10,6 +10,7 @@ import {
 } from "../../config.js";
 import { getTopHudLayout } from "../../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../../ui/layout.js";
+import { formatNumber } from "../../ui/format.js";
 import { drawBubbleIcon } from "../bubbles.js";
 import { drawPauseButton } from "../pause_button.js";
 import { getLevelColor } from "../level_up_popup.js";
@@ -31,7 +32,7 @@ export function drawTopHud(state, ctx, render, getGlassRect) {
   ctx.save();
   ctx.textBaseline = "middle";
 
-  const scoreText = Math.floor(state.score || 0).toString().padStart(5, "0");
+  const scoreText = formatNumber(Math.floor(state.score || 0));
   drawBubbleIcon(ctx, leftX + iconSize / 2, hudY, iconSize, {
     type: "points",
     subtype: "points1",
@@ -44,7 +45,7 @@ export function drawTopHud(state, ctx, render, getGlassRect) {
 
   drawPauseButton(ctx, pause);
 
-  const coinsText = Math.floor(state.coins || 0).toString().padStart(3, "0");
+  const coinsText = formatNumber(Math.floor(state.coins || 0));
   ctx.font = `${Math.round(16 * textScale)}px "RussoOne", sans-serif`;
   const coinsWidth = ctx.measureText(coinsText).width;
   const coinsGroupRight = pause.x - coinsGap;
@@ -211,7 +212,7 @@ export function drawBottomProgress(state, ctx, getGlassRect) {
   ctx.font = "15px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(
-    `LVL ${state.level}`,
+    `LVL ${formatNumber(state.level)}`,
     glassRect.left + GLASS_WIDTH / 2,
     barY - 32
   );
@@ -240,7 +241,7 @@ export function drawBottomProgress(state, ctx, getGlassRect) {
   ctx.fillStyle = "#ffffff";
   ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.fillText(
-    `${state.clearedThisLevel}/${state.toNextLevel}`,
+    `${formatNumber(state.clearedThisLevel)}/${formatNumber(state.toNextLevel)}`,
     glassRect.left + GLASS_WIDTH - padding - 25,
     barY + barHeight - 2
   );
@@ -349,7 +350,7 @@ function drawCosmoPopups(state, ctx, bar) {
     ctx.translate(x, y);
     ctx.scale(scale, scale);
     ctx.fillStyle = hexToRgba(popup.color || "#ffffff", alpha);
-    ctx.fillText(`${popup.multiplier}x`, 0, 0);
+    ctx.fillText(`${formatNumber(popup.multiplier)}x`, 0, 0);
     ctx.restore();
   }
   ctx.restore();

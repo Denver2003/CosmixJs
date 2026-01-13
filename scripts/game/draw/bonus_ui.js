@@ -1,4 +1,5 @@
 import { WALL_THICKNESS } from "../../config.js";
+import { formatNumber } from "../../ui/format.js";
 import { drawBubbleIcon } from "../bubbles.js";
 import { getBonusSlots } from "../bonus_ui.js";
 import { getBonusCooldownMs } from "../bonuses.js";
@@ -76,7 +77,7 @@ export function drawBonusButtons(state, ctx, getGlassRect) {
       ctx.font = "10px \"RussoOne\", sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(count), badgeX, badgeY + 0.5);
+      ctx.fillText(formatNumber(count), badgeX, badgeY + 0.5);
     }
   }
   ctx.restore();
