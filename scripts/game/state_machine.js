@@ -107,18 +107,12 @@ export function createGameStateMachine(state, runner) {
       return;
     }
     state.gameOver = true;
+    state.gameOverAtMs = getNowMs();
     playSfx("game_over");
     applyMode(MODES.GAMEOVER);
-    if (typeof window !== "undefined") {
-      if (state.gameOverMenuTimer) {
-        window.clearTimeout(state.gameOverMenuTimer);
-        state.gameOverMenuTimer = 0;
-      }
-      state.gameOverMenuTimer = window.setTimeout(() => {
-        if (state.gameOver && mode === MODES.GAMEOVER) {
-          window.shellGameOver?.open?.();
-        }
-      }, 2000);
+    if (typeof window !== "undefined" && state.gameOverMenuTimer) {
+      window.clearTimeout(state.gameOverMenuTimer);
+      state.gameOverMenuTimer = 0;
     }
   }
 

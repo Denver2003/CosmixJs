@@ -70,7 +70,16 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
   const interstitialOverlay = createInterstitialOverlay(router);
   setupToast(router);
   setupLoading(router);
-  const confirmDialog = setupConfirmDialog(router);
+  const domConfirmDialog = setupConfirmDialog(router);
+  const confirmDialog = {
+    open: (payload) => {
+      if (typeof window !== "undefined" && window.__canvasConfirm?.open) {
+        window.__canvasConfirm.open(payload);
+        return;
+      }
+      domConfirmDialog?.open?.(payload);
+    },
+  };
   const settingsScreen = screens.find((screen) => screen.dataset.screen === ScreenId.SETTINGS);
   setupSettingsScreen(settingsScreen, router, confirmDialog);
   const leaderboardsScreen = screens.find((screen) => screen.dataset.screen === ScreenId.LEADERBOARDS);
@@ -179,7 +188,13 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
     pauseButton.type = "button";
     pauseButton.className = "icon-button debug-panel__button";
     pauseButton.textContent = "PAUSE";
-    pauseButton.addEventListener("click", () => pauseMenu?.open());
+    pauseButton.addEventListener("click", () => {
+      if (typeof window !== "undefined" && window.openPauseMenu) {
+        window.openPauseMenu();
+      } else {
+        pauseMenu?.open();
+      }
+    });
     shellRoot.querySelector(".debug-panel")?.appendChild(pauseButton);
   }
 

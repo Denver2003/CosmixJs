@@ -5,6 +5,12 @@ export function drawPauseOverlay(state, ctx, render) {
   if (!state.paused) {
     return;
   }
+  if (state.pausedReason === "manual") {
+    return;
+  }
+  if (state.gameOver) {
+    return;
+  }
   const viewWidth = render.options.width;
   const viewHeight = render.options.height;
   const centerX = viewWidth / 2;

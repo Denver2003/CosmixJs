@@ -83,7 +83,9 @@ export function drawLines(state, render, getGlassRect) {
   drawScoreParticles(state, ctx);
   drawComboPopups(state, ctx);
   drawCanvasUiScreen({ ctx, state, render, getGlassRect });
-  drawGameOverBanner(ctx, state, render, getGlassRect, killY);
+  if (!state.gameOver) {
+    drawGameOverBanner(ctx, state, render, getGlassRect, killY);
+  }
   ctx.restore();
 }
 

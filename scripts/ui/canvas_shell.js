@@ -19,7 +19,21 @@ import {
   UPGRADE_TYPES,
   getUpgradePrice,
 } from "../shop/model.js";
-import { applyShopReward, getShopRewardStatus, playRewarded } from "../ads/index.js";
+import {
+  applyShopReward,
+  canContinueRun,
+  canShowAds,
+  getAdsState,
+  getContinueLabel,
+  getContinuePercent,
+  incrementContinueCount,
+  getShopRewardStatus,
+  incrementSessionCount,
+  markInterstitialShown,
+  playInterstitial,
+  playRewarded,
+  resetContinueCount,
+} from "../ads/index.js";
 import {
   getMaxUpgradeLevel,
   getShopProgress,
@@ -30,6 +44,7 @@ import {
 } from "../shop/progression.js";
 import { loadBonusInventory, saveBonusInventory, saveCoins } from "../game/storage.js";
 import { addTotalSpentCoins } from "../ads/runtime.js";
+import { applyContinueCleanup } from "../game/continue_cleanup.js";
 
 const LEADERBOARD_ROWS = [
   { rank: 1, name: "You", score: 12450 },
@@ -204,11 +219,60 @@ export function handleShellPointer(x, y, render) {
   return false;
 }
 
+export function drawCanvasModals(ctx, render, getGlassRect, state) {
+  const capsule = getCapsuleLayout(render, getGlassRect);
+  if (!capsule) {
+    return;
+  }
+  const router = getShellRouter();
+  const isGameScreen = router?.activeScreen === ScreenId.GAME;
+  resetModalLayout();
+  const confirmState = getCanvasConfirmState();
+  if (confirmState?.open) {
+    drawConfirmModal(ctx, capsule, confirmState);
+    return;
+  }
+  if (isGameScreen && state?.gameOver) {
+    if (shouldShowGameOverMenu(state)) {
+      drawGameOverModal(ctx, capsule, state);
+    }
+    return;
+  }
+  if (isGameScreen && state?.paused && state.pausedReason === "manual") {
+    drawPauseModal(ctx, capsule);
+  }
+}
+
+export function handleCanvasModalPointer(x, y, render, state) {
+  const modal = lastLayout.modals;
+  const confirmState = getCanvasConfirmState();
+  const router = getShellRouter();
+  const isGameScreen = router?.activeScreen === ScreenId.GAME;
+  if (confirmState?.open && modal?.confirm) {
+    handleConfirmPointer(x, y, confirmState, modal.confirm);
+    return true;
+  }
+  if (isGameScreen && state?.gameOver && modal?.gameover) {
+    handleGameOverPointer(x, y, state, modal.gameover);
+    return true;
+  }
+  if (isGameScreen && state?.paused && state.pausedReason === "manual" && modal?.pause) {
+    handlePausePointer(x, y, modal.pause);
+    return true;
+  }
+  return false;
+}
+
 const lastLayout = {
   home: null,
   shop: null,
   settings: null,
   leaderboards: null,
+  modals: {
+    pause: null,
+    gameover: null,
+    confirm: null,
+  },
 };
 const shopState = {
   tab: "upgrades",
@@ -217,6 +281,14 @@ const leaderboardsState = {
   tab: "all",
 };
 const shopActions = [];
+const MODAL_DELAY_MS = 2000;
+const confirmState = {
+  open: false,
+  titleText: "",
+  bodyText: "",
+  onConfirm: null,
+  onCancel: null,
+};
 
 function drawHomeScreen(ctx, render, capsule) {
   if (!capsule) {
@@ -272,7 +344,12 @@ function drawHomeScreen(ctx, render, capsule) {
     "PLAY",
     getUiButtonImage("play")
   );
-  drawSubtext(ctx, inner.x + inner.width / 2, playRect.y + playRect.height + inner.height * 0.035);
+  drawSubtext(
+    ctx,
+    inner,
+    inner.x + inner.width / 2,
+    playRect.y + playRect.height + inner.height * 0.035
+  );
 
   const panelHeight = clamp(inner.height * 0.09, 44, 64);
   const panelWidth = inner.width * 0.88;
@@ -286,6 +363,21 @@ function drawHomeScreen(ctx, render, capsule) {
   );
 
   lastLayout.home = { play: playRect, footer };
+}
+
+function resetModalLayout() {
+  lastLayout.modals.pause = null;
+  lastLayout.modals.gameover = null;
+  lastLayout.modals.confirm = null;
+}
+
+function shouldShowGameOverMenu(state) {
+  if (!state?.gameOver) {
+    return false;
+  }
+  const now = getNowMs();
+  const startedAt = state.gameOverAtMs || 0;
+  return now - startedAt >= MODAL_DELAY_MS;
 }
 
 function drawShopScreen(ctx, render) {
@@ -704,7 +796,8 @@ function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   ctx.fill();
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "16px \"RussoOne\", sans-serif";
+  const scale = options.scale || 1;
+  ctx.font = `${Math.round(16 * scale)}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(title, x + 16, y + 22);
@@ -712,7 +805,7 @@ function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   const rects = {};
   let rowY = y + 44;
   for (const row of rows) {
-    const controlRect = drawSettingsRow(ctx, x + 16, rowY, width - 32, row);
+    const controlRect = drawSettingsRow(ctx, x + 16, rowY, width - 32, row, scale);
     if (options.capture && row.key && controlRect) {
       rects[row.key] = controlRect;
     }
@@ -722,14 +815,14 @@ function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   return { endY: rowY, rects };
 }
 
-function drawSettingsRow(ctx, x, y, width, row) {
+function drawSettingsRow(ctx, x, y, width, row, scale = 1) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
   roundRect(ctx, x, y, width, 34, 12);
   ctx.fill();
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.round(12 * scale)}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(row.label, x + 12, y + 17);
@@ -791,7 +884,7 @@ function drawToggle(ctx, x, y, width, height, on) {
   ctx.restore();
 }
 
-function drawActionButton(ctx, x, y, w, h, label, danger = false, disabled = false) {
+function drawActionButton(ctx, x, y, w, h, label, danger = false, disabled = false, scale = 1) {
   ctx.save();
   const baseFill = danger ? "rgba(255, 107, 107, 0.2)" : "rgba(95, 227, 255, 0.2)";
   const baseStroke = danger ? "rgba(255, 107, 107, 0.8)" : "rgba(95, 227, 255, 0.7)";
@@ -802,7 +895,8 @@ function drawActionButton(ctx, x, y, w, h, label, danger = false, disabled = fal
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = disabled ? "rgba(255, 255, 255, 0.6)" : "#ffffff";
-  ctx.font = "11px \"RussoOne\", sans-serif";
+  const fontSize = Math.max(10, Math.round(h * 0.4 * scale));
+  ctx.font = `${fontSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + w / 2, y + h / 2);
@@ -1109,17 +1203,19 @@ function drawCapsuleTint(ctx, inner) {
 function drawPrismTitle(ctx, inner, title) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(24, Math.round(inner.height * 0.06))}px "RussoOne", sans-serif`;
+  const fontSize = clamp(inner.height * 0.06, 18, 36);
+  ctx.font = `${Math.round(fontSize)}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(title, inner.x + inner.width / 2, inner.y + inner.height * 0.09);
   ctx.restore();
 }
 
-function drawSubtext(ctx, x, y) {
+function drawSubtext(ctx, inner, x, y) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = "14px \"RussoOne\", sans-serif";
+  const fontSize = clamp(inner.height * 0.022, 11, 16);
+  ctx.font = `${Math.round(fontSize)}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.fillText("Tap • Stack • Combo", x, y);
@@ -1301,6 +1397,451 @@ function drawBottomPanel(ctx, x, y, width, height) {
   return rects;
 }
 
+function drawPauseModal(ctx, capsule) {
+  const { inner } = capsule;
+  const scale = getModalScale(inner);
+  drawModalBackdrop(ctx, inner);
+  const panel = drawModalPanel(ctx, inner, 0.82, 0.66);
+  drawModalTitle(ctx, panel, "PAUSED", scale);
+
+  const buttonWidth = panel.width * 0.42;
+  const buttonHeight = Math.min(44, panel.height * 0.12);
+  const gapX = panel.width * 0.06;
+  const startX = panel.x + (panel.width - (buttonWidth * 2 + gapX)) / 2;
+  const row1Y = panel.y + panel.height * 0.22;
+  const row2Y = row1Y + buttonHeight + panel.height * 0.06;
+
+  const resume = drawActionButton(
+    ctx,
+    startX,
+    row1Y,
+    buttonWidth,
+    buttonHeight,
+    "RESUME",
+    false,
+    false,
+    scale
+  );
+  const restart = drawActionButton(
+    ctx,
+    startX + buttonWidth + gapX,
+    row1Y,
+    buttonWidth,
+    buttonHeight,
+    "RESTART",
+    false,
+    false,
+    scale
+  );
+  const home = drawActionButton(
+    ctx,
+    startX,
+    row2Y,
+    buttonWidth,
+    buttonHeight,
+    "HOME",
+    false,
+    false,
+    scale
+  );
+  const shop = drawActionButton(
+    ctx,
+    startX + buttonWidth + gapX,
+    row2Y,
+    buttonWidth,
+    buttonHeight,
+    "SHOP",
+    false,
+    false,
+    scale
+  );
+
+  const audioTop = row2Y + buttonHeight + panel.height * 0.08;
+  const audioSection = drawSettingsSection(
+    ctx,
+    panel.x + panel.width * 0.07,
+    audioTop,
+    panel.width * 0.86,
+    "Audio",
+    [
+      { key: "music", label: "Music", value: getAudioSettings().music ?? 70, type: "slider" },
+      { key: "sfx", label: "SFX", value: getAudioSettings().sfx ?? 80, type: "slider" },
+      { key: "mute", label: "Mute", value: getAudioSettings().mute ?? false, type: "toggle" },
+    ],
+    { capture: true, scale }
+  );
+
+  lastLayout.modals.pause = {
+    resume,
+    restart,
+    home,
+    shop,
+    audio: audioSection.rects,
+  };
+}
+
+function drawGameOverModal(ctx, capsule, state) {
+  const { inner } = capsule;
+  const scale = getModalScale(inner);
+  drawModalBackdrop(ctx, inner);
+  const panel = drawModalPanel(ctx, inner, 0.82, 0.68);
+  drawModalTitle(ctx, panel, "GAME OVER", scale);
+
+  const scoreY = panel.y + panel.height * 0.2;
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.font = `${Math.round(12 * scale)}px "RussoOne", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SCORE", panel.x + panel.width / 2, scoreY);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${Math.round(22 * scale)}px "RussoOne", sans-serif`;
+  ctx.fillText(formatNumber(state?.score || 0), panel.x + panel.width / 2, scoreY + 24);
+  const best = getAppState().bestScore ?? 0;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.font = `${Math.round(12 * scale)}px "RussoOne", sans-serif`;
+  ctx.fillText("BEST", panel.x + panel.width / 2, scoreY + 54);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${Math.round(18 * scale)}px "RussoOne", sans-serif`;
+  ctx.fillText(formatNumber(best), panel.x + panel.width / 2, scoreY + 76);
+  ctx.restore();
+
+  const continueVisible = canShowAds();
+  const continueDisabled = !canContinueRun();
+  const continueLabel = getContinueLabel();
+
+  const buttonWidth = panel.width * 0.74;
+  const buttonHeight = Math.min(44, panel.height * 0.12);
+  const buttonX = panel.x + (panel.width - buttonWidth) / 2;
+  let buttonY = panel.y + panel.height * 0.56;
+  let continueRect = null;
+  if (continueVisible) {
+    continueRect = drawActionButton(
+      ctx,
+      buttonX,
+      buttonY,
+      buttonWidth,
+      buttonHeight,
+      continueLabel,
+      false,
+      continueDisabled,
+      scale
+    );
+    buttonY += buttonHeight + panel.height * 0.05;
+  }
+
+  const rowWidth = panel.width * 0.78;
+  const rowHeight = buttonHeight;
+  const rowX = panel.x + (panel.width - rowWidth) / 2;
+  const gap = rowWidth * 0.06;
+  const halfWidth = (rowWidth - gap) / 2;
+  const retry = drawActionButton(
+    ctx,
+    rowX,
+    buttonY,
+    halfWidth,
+    rowHeight,
+    "RETRY",
+    false,
+    false,
+    scale
+  );
+  const home = drawActionButton(
+    ctx,
+    rowX + halfWidth + gap,
+    buttonY,
+    halfWidth,
+    rowHeight,
+    "HOME",
+    false,
+    false,
+    scale
+  );
+  const shopY = Math.min(
+    buttonY + rowHeight + panel.height * 0.04,
+    panel.y + panel.height - rowHeight - panel.height * 0.08
+  );
+  const shop = drawActionButton(
+    ctx,
+    rowX,
+    shopY,
+    rowWidth,
+    rowHeight,
+    "SHOP",
+    false,
+    false,
+    scale
+  );
+
+  lastLayout.modals.gameover = {
+    continueRect,
+    continueVisible,
+    continueDisabled,
+    retry,
+    home,
+    shop,
+  };
+}
+
+function drawConfirmModal(ctx, capsule, confirmState) {
+  const { inner } = capsule;
+  const scale = getModalScale(inner);
+  drawModalBackdrop(ctx, inner);
+  const panel = drawModalPanel(ctx, inner, 0.74, 0.46);
+  drawModalTitle(ctx, panel, confirmState.titleText || "Confirm", scale);
+
+  const bodyX = panel.x + panel.width * 0.08;
+  const bodyY = panel.y + panel.height * 0.26;
+  const bodyWidth = panel.width * 0.84;
+  const lineHeight = 16 * scale;
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.font = `${Math.round(12 * scale)}px "RussoOne", sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  drawWrappedText(ctx, confirmState.bodyText || "", bodyX, bodyY, bodyWidth, lineHeight, 5);
+  ctx.restore();
+
+  const buttonWidth = panel.width * 0.36;
+  const buttonHeight = Math.min(40, panel.height * 0.18);
+  const gap = panel.width * 0.08;
+  const btnY = panel.y + panel.height - buttonHeight - panel.height * 0.12;
+  const cancel = drawActionButton(
+    ctx,
+    panel.x + (panel.width - (buttonWidth * 2 + gap)) / 2,
+    btnY,
+    buttonWidth,
+    buttonHeight,
+    "CANCEL",
+    false,
+    false,
+    scale
+  );
+  const confirm = drawActionButton(
+    ctx,
+    cancel.x + buttonWidth + gap,
+    btnY,
+    buttonWidth,
+    buttonHeight,
+    "CONFIRM",
+    false,
+    false,
+    scale
+  );
+
+  lastLayout.modals.confirm = { cancel, confirm };
+}
+
+function drawModalBackdrop(ctx, inner) {
+  ctx.save();
+  ctx.fillStyle = "rgba(6, 10, 16, 0.55)";
+  ctx.fillRect(inner.x, inner.y, inner.width, inner.height);
+  ctx.restore();
+}
+
+function drawModalPanel(ctx, inner, widthPct, heightPct) {
+  const width = inner.width * widthPct;
+  const height = inner.height * heightPct;
+  const x = inner.x + (inner.width - width) / 2;
+  const y = inner.y + (inner.height - height) / 2;
+  drawPrismPanel(
+    ctx,
+    x,
+    y,
+    width,
+    height,
+    Math.min(20, height * 0.12),
+    {
+      fill: "rgba(10, 18, 28, 0.75)",
+      stroke: "rgba(95, 227, 255, 0.4)",
+    }
+  );
+  return { x, y, width, height };
+}
+
+function drawModalTitle(ctx, panel, title, scale = 1) {
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${Math.round(18 * scale)}px "RussoOne", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(title, panel.x + panel.width / 2, panel.y + panel.height * 0.12);
+  ctx.restore();
+}
+
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+  if (!text) {
+    return;
+  }
+  const words = text.split(/\s+/);
+  let line = "";
+  let lineCount = 0;
+  let cursorY = y;
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    const width = ctx.measureText(test).width;
+    if (width > maxWidth && line) {
+      ctx.fillText(line, x, cursorY);
+      lineCount += 1;
+      if (maxLines && lineCount >= maxLines) {
+        return;
+      }
+      line = word;
+      cursorY += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  if (line && (!maxLines || lineCount < maxLines)) {
+    ctx.fillText(line, x, cursorY);
+  }
+}
+
+function handlePausePointer(x, y, layout) {
+  if (!layout) {
+    return;
+  }
+  const handlers = getCanvasHandlers().pause || {};
+  if (layout.resume && pointInRect(x, y, layout.resume)) {
+    handlers.resume?.();
+    return;
+  }
+  if (layout.restart && pointInRect(x, y, layout.restart)) {
+    handlers.restart?.();
+    return;
+  }
+  if (layout.home && pointInRect(x, y, layout.home)) {
+    handlers.home?.();
+    return;
+  }
+  if (layout.shop && pointInRect(x, y, layout.shop)) {
+    handlers.shop?.();
+    return;
+  }
+  if (layout.audio) {
+    const audio = layout.audio;
+    if (audio.music && pointInRect(x, y, audio.music)) {
+      const value = sliderValueAt(audio.music, x);
+      setAudioSettings({ music: value });
+      return;
+    }
+    if (audio.sfx && pointInRect(x, y, audio.sfx)) {
+      const value = sliderValueAt(audio.sfx, x);
+      setAudioSettings({ sfx: value });
+      return;
+    }
+    if (audio.mute && pointInRect(x, y, audio.mute)) {
+      const current = getAudioSettings();
+      setAudioSettings({ mute: !current.mute });
+    }
+  }
+}
+
+async function handleGameOverPointer(x, y, state, layout) {
+  if (!layout) {
+    return;
+  }
+  const handlers = getCanvasHandlers().gameOver || {};
+  if (layout.continueRect && pointInRect(x, y, layout.continueRect)) {
+    if (layout.continueDisabled) {
+      return;
+    }
+    if (!canContinueRun()) {
+      return;
+    }
+    const ok = await playRewarded();
+    if (!ok) {
+      return;
+    }
+    const percent = getContinuePercent();
+    incrementContinueCount();
+    const getGlassRect =
+      typeof window !== "undefined" ? window.__getGlassRect : null;
+    if (state && typeof getGlassRect === "function") {
+      applyContinueCleanup(state, percent, getGlassRect);
+      state.killTouchMs = 0;
+      state.killGraceUntil = state.engine.timing.timestamp + 2500;
+      state.gameOver = false;
+      state.gameOverHandled = false;
+      state.gameOverAtMs = 0;
+    }
+    if (typeof window !== "undefined") {
+      window.__setGameOver?.(false);
+      window.__resumeAfterContinue?.();
+    }
+    return;
+  }
+  if (layout.retry && pointInRect(x, y, layout.retry)) {
+    resetContinueCount();
+    const progress = getShopProgress();
+    const now = Date.now();
+    const adsState = getAdsState();
+    const sessionCount = adsState?.sessionCount || 0;
+    const lastInterstitialAt = adsState?.lastInterstitialAt || 0;
+    const canShowInterstitial =
+      !progress?.removeAds &&
+      canShowAds() &&
+      sessionCount >= 3 &&
+      now - lastInterstitialAt >= 180000;
+    if (canShowInterstitial) {
+      await playInterstitial();
+      markInterstitialShown(now);
+    }
+    incrementSessionCount();
+    handlers.retry?.();
+    return;
+  }
+  if (layout.home && pointInRect(x, y, layout.home)) {
+    handlers.home?.();
+    return;
+  }
+  if (layout.shop && pointInRect(x, y, layout.shop)) {
+    if (state) {
+      state.gameOverAtMs = getNowMs() - MODAL_DELAY_MS;
+    }
+    handlers.shop?.();
+  }
+}
+
+function handleConfirmPointer(x, y, confirmState, layout) {
+  if (!layout) {
+    return;
+  }
+  if (layout.cancel && pointInRect(x, y, layout.cancel)) {
+    confirmState.open = false;
+    confirmState.onCancel?.();
+    confirmState.onConfirm = null;
+    confirmState.onCancel = null;
+    return;
+  }
+  if (layout.confirm && pointInRect(x, y, layout.confirm)) {
+    confirmState.open = false;
+    confirmState.onConfirm?.();
+    confirmState.onConfirm = null;
+    confirmState.onCancel = null;
+  }
+}
+
+function getCanvasConfirmState() {
+  return confirmState;
+}
+
+function openCanvasConfirm({ titleText, bodyText, onConfirm, onCancel } = {}) {
+  confirmState.titleText = titleText || "Confirm";
+  confirmState.bodyText = bodyText || "";
+  confirmState.onConfirm = onConfirm || null;
+  confirmState.onCancel = onCancel || null;
+  confirmState.open = true;
+}
+
+function getCanvasHandlers() {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  return window.__canvasModalHandlers || {};
+}
+
+
 function drawIconButton(ctx, x, y, size, label, sprite) {
   ctx.save();
   const hasSprite = sprite && sprite.complete && sprite.naturalWidth > 0;
@@ -1351,6 +1892,23 @@ function formatValue(value) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+if (typeof window !== "undefined") {
+  window.__canvasConfirm = {
+    open: openCanvasConfirm,
+  };
+}
+
+function getNowMs() {
+  if (typeof performance !== "undefined" && performance.now) {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function getModalScale(inner) {
+  return clamp(inner.height / 800, 0.7, 1.2);
 }
 
 function roundRect(ctx, x, y, width, height, radius) {

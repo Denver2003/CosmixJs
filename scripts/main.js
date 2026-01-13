@@ -4,7 +4,7 @@ import { createShell } from "./shell/index.js";
 import { setAppState } from "./shell/app_state.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
-import { handleShellPointer } from "./ui/canvas_shell.js";
+import { handleCanvasModalPointer, handleShellPointer } from "./ui/canvas_shell.js";
 import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
 
 const { Engine, Render } = Matter;
@@ -68,7 +68,13 @@ game.setViewSize(viewport.getState().width, viewport.getState().height);
 let gameStarted = false;
 const shell = createShell({
   onPlay: () => {
+    const isGameOver = game.state?.gameOver || game.getMode?.() === "gameover";
     if (gameStarted) {
+      if (isGameOver) {
+        game.restartSession?.();
+      } else {
+        game.startGame?.();
+      }
       return;
     }
     resetContinueCount();
@@ -106,6 +112,37 @@ const shell = createShell({
     },
   },
 });
+window.__canvasModalHandlers = {
+  pause: {
+    resume: () => {
+      game.setPaused(false, "manual");
+    },
+    restart: () => {
+      game.restartSession?.();
+    },
+    home: () => {
+      game.openShell?.();
+      shell?.router?.showScreen?.("home");
+    },
+    shop: () => {
+      game.openShell?.();
+      shell?.router?.showScreen?.("shop");
+    },
+  },
+  gameOver: {
+    retry: () => {
+      game.restartSession?.();
+    },
+    home: () => {
+      game.openShell?.();
+      shell?.router?.showScreen?.("home");
+    },
+    shop: () => {
+      game.openShell?.();
+      shell?.router?.showScreen?.("shop");
+    },
+  },
+};
 if (shell?.router) {
   const originalShow = shell.router.showScreen.bind(shell.router);
   shell.router.showScreen = (id) => {
@@ -164,7 +201,10 @@ canvas.addEventListener("pointerdown", (event) => {
   const scaleY = render.options.height / rect.height;
   const x = (event.clientX - rect.left) * scaleX;
   const y = (event.clientY - rect.top) * scaleY;
-  if (handleShellPointer(x, y, render)) {
+  if (
+    handleCanvasModalPointer(x, y, render, game.state) ||
+    handleShellPointer(x, y, render)
+  ) {
     event.preventDefault();
     event.stopPropagation();
     return;
@@ -196,7 +236,6 @@ function openPauseMenu() {
     return;
   }
   game.setPaused(true, "manual");
-  shell?.pauseMenu?.open();
 }
 
 window.openPauseMenu = openPauseMenu;
