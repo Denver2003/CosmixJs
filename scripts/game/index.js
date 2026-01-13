@@ -19,7 +19,7 @@ import { spawnLevelUpPopup, updateLevelUpPopups } from "./level_up_popup.js";
 import { updateRewardFloaters } from "./reward_floaters.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 import { updateBackgroundStars } from "./background.js";
-import { playSfx } from "../audio/index.js";
+import { playMusic, playSfx, preloadAudio } from "../audio/index.js";
 
 const { Events } = Matter;
 
@@ -193,6 +193,8 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       state.gameOverMenuTimer = 0;
     }
     mode.startGame();
+    preloadAudio();
+    playMusic("bgm_main_loop");
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
   }
@@ -232,6 +234,8 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     Object.assign(state, fresh, preserved);
     applyShopToGameState(state);
     mode.startGame();
+    preloadAudio();
+    playMusic("bgm_main_loop");
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
   }

@@ -22,6 +22,8 @@ export function recordCombo(state, nowMs) {
     playSfx("combo_mega");
   } else if (multiplier >= 3) {
     playSfx("combo_super");
+  } else if (multiplier >= 2) {
+    playSfx("combo_basic");
   }
   return {
     multiplier,

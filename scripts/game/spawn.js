@@ -11,9 +11,9 @@ import { createRandomSpec, createShape } from "../shapes.js";
 import { getSpawnWaitMs } from "./state.js";
 import { addEnergyOnDrop, updateCosmometerMultiplier } from "./cosmometer.js";
 import { clampWaitingBody, setBodyFillAlpha, setBodyScale } from "./utils.js";
+import { playSfx } from "../audio/index.js";
 import { removePreview, setPreview } from "./preview.js";
 import { trySpawnBubble } from "./bubbles.js";
-import { playSfx } from "../audio/index.js";
 
 const { Body, World } = Matter;
 
@@ -39,7 +39,6 @@ export function spawnBlock(state, getSpawnPoint) {
   state.waitingBody = body;
   state.waitingState = "descending";
   World.add(state.world, body);
-  playSfx("spawn_pop");
   state.nextSpec = createRandomSpec(state.colorsCount, state.rotationRange);
   setPreview(state, state.nextSpec, getSpawnPoint);
 }

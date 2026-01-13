@@ -13,6 +13,7 @@ import {
 import { BONUS_TABLES } from "./constants.js";
 import { getPercent, randomInt } from "./utils.js";
 import { calcBubbleMoney, calcBubbleScore } from "../rewards.js";
+import { playSfx } from "../../audio/index.js";
 import { triggerGrenade, triggerHail } from "../bonuses.js";
 import { spawnRewardFloater } from "../reward_floaters.js";
 
@@ -25,6 +26,7 @@ export function applyBubbleReward(state, reward, getGlassRect) {
     case "coins":
       state.coins += reward.amount;
       state.bubbleRewardCooldowns.coins = now + BUBBLE_COOLDOWN_COINS_MS;
+      playSfx("bonus_coin_pick");
       if (state.render) {
         spawnRewardFloater(
           state,
@@ -39,6 +41,7 @@ export function applyBubbleReward(state, reward, getGlassRect) {
       break;
     case "points":
       state.score += reward.amount;
+      playSfx("bonus_points_pick");
       if (state.render) {
         spawnRewardFloater(
           state,
@@ -76,9 +79,11 @@ export function applyBubbleReward(state, reward, getGlassRect) {
       if (reward.subtype === "touch") {
         state.bubbleRewardCooldowns.touch = now + BUBBLE_COOLDOWN_TOUCH_MS;
         state.bonusInventory.touch += reward.amount || 1;
+        playSfx("bonus_instant_pick");
       } else if (reward.subtype === "machine") {
         state.bubbleRewardCooldowns.gun = now + BUBBLE_COOLDOWN_GUN_MS;
         state.bonusInventory.gun += reward.amount || 1;
+        playSfx("bonus_instant_pick");
       }
       console.log("[bubble] consumable:", reward.subtype);
       break;

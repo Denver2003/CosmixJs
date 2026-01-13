@@ -1,3 +1,5 @@
+import { playSfx } from "../audio/index.js";
+
 const MODES = {
   SHELL: "shell",
   GAMEPLAY: "gameplay",
@@ -105,6 +107,7 @@ export function createGameStateMachine(state, runner) {
       return;
     }
     state.gameOver = true;
+    playSfx("game_over");
     applyMode(MODES.GAMEOVER);
     if (typeof window !== "undefined") {
       if (state.gameOverMenuTimer) {

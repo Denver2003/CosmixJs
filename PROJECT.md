@@ -25,7 +25,7 @@
 - **Kill line pulse**: always visible; laser barrier shifts from cyan→purple→red with increased activity; alpha grows with cup fill (0.2→0.8) and forces 1.0 in last 5 seconds.
 - **Laser barrier danger logic**: 0–0.5 danger from stack height vs death line, 0.5–1.0 from kill timer progress; barrier ignores the current waiting piece and only reacts after first contact.
 - **Game Over banner**: large canvas banner appears above the death line with a fast scale+alpha pop and laser-text glow; the menu overlay shows 2 seconds later.
-- **Audio (mocked)**: AudioManager-style mocks with persisted settings (music/sfx/mute), placeholder assets in `assets/audio/`, and SFX hooks for spawn/drop, first impact, chain burst, bubble pop, grenade, gun shots, kill-line warning + timeout, combo (super/mega/cosmo), level up, and cosmo multiplier up.
+- **Audio (runtime)**: HTMLAudio-based manager with caching/pooling, persisted settings (music/sfx/mute), BGM loop, placeholder assets in `assets/audio/`, and SFX hooks for spawn/drop, first impact, chain burst, bubble pop + reward (coins/points/instant), grenade, hail drop, gun shots, kill-line warning + timeout, combo (basic/super/mega/cosmo), level up, and cosmo multiplier up.
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
 - **Chain burst**: matched chains now play a 1.0s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst. Burst adds spin: rightward -> clockwise, leftward -> counterclockwise, random speed.
 - **Scoring**: collapse score uses NR formula with a chain-size bonus (+10% per piece above 4); level-up grants NLR bonus.

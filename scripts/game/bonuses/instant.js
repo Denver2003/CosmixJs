@@ -34,6 +34,7 @@ export function triggerHail(state, getGlassRect) {
   if (fallCount <= 0) {
     return 0;
   }
+  playSfx("bonus_hail_fall");
   const indices = points.map((_, idx) => idx);
   let spawned = 0;
   for (let i = 0; i < fallCount; i += 1) {
