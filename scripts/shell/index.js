@@ -10,6 +10,7 @@ import { setupLeaderboardsScreen } from "./leaderboards.js";
 import { setupLoading } from "./loading.js";
 import { setupToast } from "./toast.js";
 import { createInterstitialOverlay } from "../ads/interstitial_overlay.js";
+import { subscribeLanguage } from "../ui/i18n.js";
 import {
   canContinueRun,
   canShowAds,
@@ -164,6 +165,10 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
       label: getContinueLabel(),
     });
   };
+
+  subscribeLanguage(() => {
+    updateContinueUi();
+  });
 
   if (gameOverMenu?.open) {
     const originalOpen = gameOverMenu.open.bind(gameOverMenu);

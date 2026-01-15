@@ -9,6 +9,7 @@ import {
 } from "../config.js";
 import { getCapsuleLayout } from "./layout.js";
 import { formatNumber } from "./format.js";
+import { getLanguage, setLanguage, t } from "./i18n.js";
 import { openCanvasConfirmDialog } from "./canvas_overlays.js";
 import {
   BONUS_DROP_LEVELS,
@@ -200,11 +201,16 @@ export function handleShellPointer(x, y, render) {
         return true;
       }
     }
+    if (layout?.account?.language && pointInRect(x, y, layout.account.language)) {
+      const next = getLanguage() === "en" ? "ru" : "en";
+      setLanguage(next);
+      return true;
+    }
     if (layout?.actions) {
       if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
         openCanvasConfirmDialog({
-          titleText: "Reset progress?",
-          bodyText: "This will clear local progress.",
+          titleText: t("confirm.reset_title"),
+          bodyText: t("confirm.reset_body"),
           onConfirm: () => {
             console.log("[shell] reset progress requested");
           },
@@ -250,6 +256,30 @@ const leaderboardsState = {
   tab: "all",
 };
 const shopActions = [];
+const UPGRADE_TITLE_KEYS = {
+  [UPGRADE_TYPES.SCORE_MULTIPLIER]: "label.score_multiplier",
+  [UPGRADE_TYPES.COIN_MULTIPLIER]: "label.coin_multiplier",
+  [UPGRADE_TYPES.BONUS_DROP]: "label.bonus_drop",
+  [UPGRADE_TYPES.BONUS_UPGRADE]: "label.bonus_upgrades",
+};
+const ITEM_TITLE_KEYS = {
+  touch: "item.touch",
+  gun: "item.gun",
+};
+const REAL_ITEM_TITLE_KEYS = {
+  remove_ads: "label.remove_ads",
+  coins_1000: "label.coins_pack",
+};
+const BONUS_UPGRADE_LABEL_KEYS = [
+  "bonus_upgrade.level_0",
+  "bonus_upgrade.level_1",
+  "bonus_upgrade.level_2",
+  "bonus_upgrade.level_3",
+  "bonus_upgrade.level_4",
+  "bonus_upgrade.level_5",
+  "bonus_upgrade.level_6",
+  "bonus_upgrade.level_7",
+];
 
 function drawHomeScreen(ctx, render, capsule) {
   if (!capsule) {
@@ -259,16 +289,23 @@ function drawHomeScreen(ctx, render, capsule) {
     const state = getAppState();
     const coins = state.coins ?? 0;
     const best = state.bestScore ?? 0;
-    const user = state.userName || "Guest";
+    const user = resolveUserLabel(state.userName);
 
     drawHeader(ctx, width, headerY, safePad, { user, coins, best });
 
-    const playRect = drawPrimaryButton(ctx, width / 2, height * 0.55, 240, 70, "PLAY");
+    const playRect = drawPrimaryButton(
+      ctx,
+      width / 2,
+      height * 0.55,
+      240,
+      70,
+      t("nav.play")
+    );
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
     ctx.font = "16px \"RussoOne\", sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText("Tap bubbles • Make combos", width / 2, playRect.y + playRect.height + 16);
+    ctx.fillText(t("home.subtitle_alt"), width / 2, playRect.y + playRect.height + 16);
 
     const footer = drawFooter(ctx, width, height - 90, 260);
     lastLayout.home = { play: playRect, footer };
@@ -278,14 +315,14 @@ function drawHomeScreen(ctx, render, capsule) {
   const state = getAppState();
   const coins = state.coins ?? 0;
   const best = state.bestScore ?? 0;
-  const user = state.userName || "Guest";
+  const user = resolveUserLabel(state.userName);
   const { inner } = capsule;
   const chipHeight = clamp(inner.height * 0.06, 22, 48);
   const profileY = inner.y - chipHeight - inner.height * 0.02;
 
   drawCapsuleTint(ctx, inner);
   drawProfileChip(ctx, inner.x - 40, profileY, chipHeight, user);
-  drawPrismTitle(ctx, inner, "COSMIX");
+  drawPrismTitle(ctx, inner, t("app.title"));
   const chipWidth = clamp(inner.width * 0.26, 96, 170);
   const coinWidth = clamp(chipWidth * 1.3, chipWidth, inner.width + 80);
   const coinsX = inner.x + inner.width - coinWidth + 40;
@@ -293,7 +330,7 @@ function drawHomeScreen(ctx, render, capsule) {
   const bestY = inner.y + inner.height * 0.15;
   const bestWidth = clamp(chipWidth * 2, chipWidth, inner.width + 80);
   const bestX = inner.x + (inner.width - bestWidth) / 2;
-  drawHudChip(ctx, bestX, bestY, bestWidth, chipHeight, "Best", best);
+  drawHudChip(ctx, bestX, bestY, bestWidth, chipHeight, t("label.best"), best);
 
   const playY = inner.y + inner.height * 0.65;
   const playWidth = inner.width * 0.6;
@@ -304,7 +341,7 @@ function drawHomeScreen(ctx, render, capsule) {
     playY,
     playWidth,
     playHeight,
-    "PLAY",
+    t("nav.play"),
     getUiButtonImage("play")
   );
   const subtextSize = Math.max(10, Math.round(14 * getUiScale(inner)));
@@ -312,7 +349,8 @@ function drawHomeScreen(ctx, render, capsule) {
     ctx,
     inner.x + inner.width / 2,
     playRect.y + playRect.height + inner.height * 0.035,
-    subtextSize
+    subtextSize,
+    t("home.subtitle")
   );
 
   const panelHeight = clamp(inner.height * 0.09, 36, 64);
@@ -339,7 +377,7 @@ function drawShopScreen(ctx, render, capsule) {
     const progress = getShopProgress();
     const inventory = loadBonusInventory();
 
-    const backRect = drawBackButton(ctx, pad, headerY, "BACK");
+    const backRect = drawBackButton(ctx, pad, headerY, t("nav.back"));
     drawShopHeader(ctx, width, headerY, pad, coins);
 
     const tabs = drawShopTabs(ctx, width / 2, headerY + 70, shopState.tab);
@@ -404,7 +442,7 @@ function drawShopScreen(ctx, render, capsule) {
   ctx.font = `${titleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("SHOP", panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  ctx.fillText(t("shop.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
   ctx.restore();
 
   const chipHeight = backSize;
@@ -462,27 +500,27 @@ function buildUpgradeCards(progress, coins) {
   const upgrades = [
     {
       id: UPGRADE_TYPES.SCORE_MULTIPLIER,
-      title: "Score Multiplier",
+      title: t(UPGRADE_TITLE_KEYS[UPGRADE_TYPES.SCORE_MULTIPLIER]),
       levels: SCORE_MULTIPLIER_LEVELS,
       formatter: (value) => `+${Math.round((value - 1) * 100)}%`,
     },
     {
       id: UPGRADE_TYPES.COIN_MULTIPLIER,
-      title: "Coin Multiplier",
+      title: t(UPGRADE_TITLE_KEYS[UPGRADE_TYPES.COIN_MULTIPLIER]),
       levels: COIN_MULTIPLIER_LEVELS,
       formatter: (value) => `+${Math.round((value - 1) * 100)}%`,
     },
     {
       id: UPGRADE_TYPES.BONUS_DROP,
-      title: "Bonus Drop Chance",
+      title: t(UPGRADE_TITLE_KEYS[UPGRADE_TYPES.BONUS_DROP]),
       levels: BONUS_DROP_LEVELS,
       formatter: (value) => `${Math.round(value * 100)}%`,
     },
     {
       id: UPGRADE_TYPES.BONUS_UPGRADE,
-      title: "Bonus Upgrades",
+      title: t(UPGRADE_TITLE_KEYS[UPGRADE_TYPES.BONUS_UPGRADE]),
       levels: BONUS_UPGRADE_LEVELS,
-      formatter: (value, level) => `Level ${formatNumber(level)}`,
+      formatter: (value, level) => t("label.level", { level: formatNumber(level) }),
     },
   ];
   return upgrades.map((upgrade) => {
@@ -493,9 +531,9 @@ function buildUpgradeCards(progress, coins) {
     const nextValue = upgrade.levels[nextLevel];
     const next =
       level >= maxLevel
-        ? "MAX"
+        ? t("button.max")
         : upgrade.id === UPGRADE_TYPES.BONUS_UPGRADE
-          ? BONUS_UPGRADE_LEVELS[nextLevel]?.label || "Next"
+          ? getBonusUpgradeLabel(nextLevel)
           : upgrade.formatter(nextValue ?? 0, nextLevel);
     const priceValue = getUpgradePrice(level);
     const canAfford = Number.isFinite(priceValue) ? coins >= priceValue : false;
@@ -506,10 +544,20 @@ function buildUpgradeCards(progress, coins) {
       current,
       next,
       actionLabel:
-        level >= maxLevel ? "MAX" : `UPGRADE ${formatNumber(priceValue)}`,
+        level >= maxLevel
+          ? t("button.max")
+          : t("button.upgrade", { price: formatNumber(priceValue) }),
       actionDisabled: level >= maxLevel || !canAfford,
     };
   });
+}
+
+function getBonusUpgradeLabel(level) {
+  const key = BONUS_UPGRADE_LABEL_KEYS[level];
+  if (key) {
+    return t(key);
+  }
+  return BONUS_UPGRADE_LEVELS[level]?.label || t("label.next");
 }
 
 function buildItemCards(progress, inventory, coins) {
@@ -517,17 +565,18 @@ function buildItemCards(progress, inventory, coins) {
   const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
   const rewardStatus = getShopRewardStatus(Date.now(), moneyCoef);
   const rewardLabel = rewardStatus.available
-    ? `WATCH AD +${formatNumber(rewardStatus.reward)}`
-    : "TRY LATER";
-  const rewardMeta = `+${formatNumber(rewardStatus.reward)} coins`;
-  const rewardOwned = `${formatNumber(rewardStatus.count)}/${formatNumber(
-    rewardStatus.limit
-  )} this hour`;
+    ? t("button.watch_ad_reward", { reward: formatNumber(rewardStatus.reward) })
+    : t("button.try_later");
+  const rewardMeta = t("label.reward_meta", { reward: formatNumber(rewardStatus.reward) });
+  const rewardOwned = t("label.reward_owned", {
+    count: formatNumber(rewardStatus.count),
+    limit: formatNumber(rewardStatus.limit),
+  });
   const cards = [
     {
       id: "rewarded_shop",
       kind: "reward",
-      title: "Watch Ad",
+      title: t("label.watch_ad"),
       meta: rewardMeta,
       owned: rewardOwned,
       actionLabel: rewardLabel,
@@ -538,13 +587,14 @@ function buildItemCards(progress, inventory, coins) {
     ...SHOP_ITEMS.map((item) => {
       const count = Math.max(0, Math.floor(inventory?.[item.id] || 0));
       const canAfford = coins >= item.cost;
+      const titleKey = ITEM_TITLE_KEYS[item.id];
       return {
         id: item.id,
         kind: "item",
-        title: item.title,
-        meta: "Consumable",
-        owned: `Owned: ${formatNumber(count)}`,
-        actionLabel: `BUY ${formatNumber(item.cost)}`,
+        title: titleKey ? t(titleKey) : item.title,
+        meta: t("label.consumable"),
+        owned: t("label.owned_prefix", { count: formatNumber(count) }),
+        actionLabel: t("button.buy", { price: formatNumber(item.cost) }),
         actionDisabled: !canAfford,
       };
     })
@@ -553,23 +603,27 @@ function buildItemCards(progress, inventory, coins) {
   for (const item of REAL_MONEY_ITEMS) {
     if (item.id === "remove_ads") {
       const owned = Boolean(progress?.removeAds);
+      const titleKey = REAL_ITEM_TITLE_KEYS[item.id];
       cards.push({
         id: item.id,
         kind: "real",
-        title: "Remove Ads",
-        meta: "All ads",
-        owned: owned ? "Owned" : null,
-        actionLabel: owned ? "OWNED" : `BUY ${formatNumber(item.price)} YAN`,
+        title: titleKey ? t(titleKey) : item.title,
+        meta: t("label.all_ads"),
+        owned: owned ? t("label.owned") : null,
+        actionLabel: owned
+          ? t("button.owned")
+          : t("button.buy_currency", { price: formatNumber(item.price) }),
         actionDisabled: owned,
       });
     } else if (item.id === "coins_1000") {
+      const titleKey = REAL_ITEM_TITLE_KEYS[item.id];
       cards.push({
         id: item.id,
         kind: "real",
-        title: "Coins Pack",
-        meta: `${formatNumber(1000)} coins`,
+        title: titleKey ? t(titleKey) : item.title,
+        meta: t("label.coins_amount", { amount: formatNumber(1000) }),
         owned: null,
-        actionLabel: `BUY ${formatNumber(item.price)} YAN`,
+        actionLabel: t("button.buy_currency", { price: formatNumber(item.price) }),
         actionDisabled: false,
       });
     }
@@ -689,10 +743,10 @@ function drawSettingsScreen(ctx, render, capsule) {
     const pad = 32;
     const headerY = 48;
     const state = getAppState();
-    const user = state.userName || "Guest";
+    const user = resolveUserLabel(state.userName);
     const audio = state.audio || getAudioSettings();
 
-    const backRect = drawBackButton(ctx, pad, headerY, "BACK");
+    const backRect = drawBackButton(ctx, pad, headerY, t("nav.back"));
     drawSettingsHeader(ctx, width, headerY, pad, user);
 
     let y = headerY + 90;
@@ -701,28 +755,48 @@ function drawSettingsScreen(ctx, render, capsule) {
       pad,
       y,
       width - pad * 2,
-      "Audio",
+      t("label.audio"),
       [
-        { key: "music", label: "Music", value: audio.music ?? 70, type: "slider" },
-        { key: "sfx", label: "SFX", value: audio.sfx ?? 80, type: "slider" },
-        { key: "mute", label: "Mute", value: audio.mute ?? false, type: "toggle" },
+        { key: "music", label: t("label.music"), value: audio.music ?? 70, type: "slider" },
+        { key: "sfx", label: t("label.sfx"), value: audio.sfx ?? 80, type: "slider" },
+        { key: "mute", label: t("label.mute"), value: audio.mute ?? false, type: "toggle" },
       ],
       { capture: true }
     );
     y = audioSection.endY;
-    const accountSection = drawSettingsSection(ctx, pad, y + 18, width - pad * 2, "Account", [
-      { label: "Status", value: "Guest", type: "info" },
-      { label: "Login", value: "LOGIN", type: "action" },
-    ]);
+    const accountSection = drawSettingsSection(
+      ctx,
+      pad,
+      y + 18,
+      width - pad * 2,
+      t("label.account"),
+      [
+        { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
+        { label: t("label.login"), value: t("button.login"), type: "action" },
+        {
+          key: "language",
+          label: t("label.language"),
+          value: getLanguage().toUpperCase(),
+          type: "action",
+        },
+      ],
+      { capture: true }
+    );
     const dataSection = drawSettingsSection(
       ctx,
       pad,
       accountSection.endY + 18,
       width - pad * 2,
-      "Data",
+      t("label.data"),
       [
-        { key: "reset", label: "Reset progress", value: "RESET", type: "action", danger: true },
-        { key: "restore", label: "Restore purchases", value: "RESTORE", type: "action" },
+        {
+          key: "reset",
+          label: t("label.reset_progress"),
+          value: t("button.reset"),
+          type: "action",
+          danger: true,
+        },
+        { key: "restore", label: t("label.restore_purchases"), value: t("button.restore"), type: "action" },
       ],
       { capture: true }
     );
@@ -730,6 +804,7 @@ function drawSettingsScreen(ctx, render, capsule) {
     lastLayout.settings = {
       back: backRect,
       audio: audioSection.rects,
+      account: accountSection.rects,
       actions: dataSection.rects,
     };
     return;
@@ -738,7 +813,7 @@ function drawSettingsScreen(ctx, render, capsule) {
   const { inner } = capsule;
   const scale = getUiScale(inner);
   const state = getAppState();
-  const user = state.userName || "Guest";
+  const user = resolveUserLabel(state.userName);
   const audio = state.audio || getAudioSettings();
 
   const basePanelWidth = inner.width * 0.9;
@@ -773,7 +848,7 @@ function drawSettingsScreen(ctx, render, capsule) {
   ctx.font = `${titleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("SETTINGS", panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  ctx.fillText(t("settings.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
   ctx.restore();
 
   const chipHeight = backSize;
@@ -798,11 +873,11 @@ function drawSettingsScreen(ctx, render, capsule) {
     panelX + pad,
     y,
     sectionWidth,
-    "Audio",
+    t("label.audio"),
     [
-      { key: "music", label: "Music", value: audio.music ?? 70, type: "slider" },
-      { key: "sfx", label: "SFX", value: audio.sfx ?? 80, type: "slider" },
-      { key: "mute", label: "Mute", value: audio.mute ?? false, type: "toggle" },
+      { key: "music", label: t("label.music"), value: audio.music ?? 70, type: "slider" },
+      { key: "sfx", label: t("label.sfx"), value: audio.sfx ?? 80, type: "slider" },
+      { key: "mute", label: t("label.mute"), value: audio.mute ?? false, type: "toggle" },
     ],
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
@@ -812,22 +887,34 @@ function drawSettingsScreen(ctx, render, capsule) {
     panelX + pad,
     y,
     sectionWidth,
-    "Account",
+    t("label.account"),
     [
-      { label: "Status", value: "Guest", type: "info" },
-      { label: "Login", value: "LOGIN", type: "action" },
+      { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
+      { label: t("label.login"), value: t("button.login"), type: "action" },
+      {
+        key: "language",
+        label: t("label.language"),
+        value: getLanguage().toUpperCase(),
+        type: "action",
+      },
     ],
-    { rowHeight, headerHeight: headerSize, scale, prism: true }
+    { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
   const dataSection = drawSettingsSection(
     ctx,
     panelX + pad,
     accountSection.endY + sectionGap,
     sectionWidth,
-    "Data",
+    t("label.data"),
     [
-      { key: "reset", label: "Reset progress", value: "RESET", type: "action", danger: true },
-      { key: "restore", label: "Restore purchases", value: "RESTORE", type: "action" },
+      {
+        key: "reset",
+        label: t("label.reset_progress"),
+        value: t("button.reset"),
+        type: "action",
+        danger: true,
+      },
+      { key: "restore", label: t("label.restore_purchases"), value: t("button.restore"), type: "action" },
     ],
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
@@ -835,6 +922,7 @@ function drawSettingsScreen(ctx, render, capsule) {
   lastLayout.settings = {
     back: backRect,
     audio: audioSection.rects,
+    account: accountSection.rects,
     actions: dataSection.rects,
   };
 }
@@ -845,9 +933,9 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     const pad = 32;
     const headerY = 48;
     const state = getAppState();
-    const user = state.userName || "Guest";
+    const user = resolveUserLabel(state.userName);
 
-    const backRect = drawBackButton(ctx, pad, headerY, "BACK");
+    const backRect = drawBackButton(ctx, pad, headerY, t("nav.back"));
     drawLeaderboardsHeader(ctx, width, headerY, pad, user);
 
     const tabs = drawLeaderboardsTabs(ctx, width / 2, headerY + 70, leaderboardsState.tab);
@@ -858,7 +946,7 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
       listTop,
       width - pad * 2,
       height - listTop - pad,
-      leaderboardsState.tab === "all" ? "ALL-TIME" : "WEEKLY",
+      leaderboardsState.tab === "all" ? t("label.all_time_title") : t("label.week_01"),
       LEADERBOARD_ROWS
     );
 
@@ -869,7 +957,7 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
   const { inner } = capsule;
   const scale = getUiScale(inner);
   const state = getAppState();
-  const user = state.userName || "Guest";
+  const user = resolveUserLabel(state.userName);
 
   const basePanelWidth = inner.width * 0.9;
   const basePanelHeight = inner.height * 0.78;
@@ -903,7 +991,7 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
   ctx.font = `${titleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("LEADERBOARDS", panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  ctx.fillText(t("leaderboards.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
   ctx.restore();
 
   const chipHeight = backSize;
@@ -936,7 +1024,7 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     listTop,
     panelWidth - pad * 2,
     panelY + panelHeight - pad - listTop,
-    leaderboardsState.tab === "all" ? "ALL-TIME" : "WEEKLY",
+    leaderboardsState.tab === "all" ? t("label.all_time_title") : t("label.week_01"),
     LEADERBOARD_ROWS,
     { scale, prism: true }
   );
@@ -950,7 +1038,7 @@ function drawLeaderboardsHeader(ctx, width, y, pad, user) {
   ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("LEADERBOARDS", width / 2, y + 16);
+  ctx.fillText(t("leaderboards.title"), width / 2, y + 16);
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.beginPath();
@@ -969,8 +1057,8 @@ function drawLeaderboardsTabs(ctx, cx, y, activeTab, options = {}) {
   const gap = options.gap ?? 12;
   const leftX = cx - w - gap / 2;
   const rightX = cx + gap / 2;
-  const allTime = drawTabButton(ctx, leftX, y, w, h, "ALL-TIME", activeTab === "all");
-  const weekly = drawTabButton(ctx, rightX, y, w, h, "WEEKLY", activeTab === "weekly");
+  const allTime = drawTabButton(ctx, leftX, y, w, h, t("label.all_time"), activeTab === "all");
+  const weekly = drawTabButton(ctx, rightX, y, w, h, t("label.weekly"), activeTab === "weekly");
   return { allTime, weekly };
 }
 
@@ -1031,7 +1119,7 @@ function drawSettingsHeader(ctx, width, y, pad, user) {
   ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("SETTINGS", width / 2, y + 16);
+  ctx.fillText(t("settings.title"), width / 2, y + 16);
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.beginPath();
@@ -1204,8 +1292,8 @@ function drawShopHeader(ctx, width, y, pad, coins) {
   ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("SHOP", width / 2, y + 16);
-  drawPill(ctx, width - pad - 120, y, 120, 36, "Coins", coins);
+  ctx.fillText(t("shop.title"), width / 2, y + 16);
+  drawPill(ctx, width - pad - 120, y, 120, 36, t("label.coins"), coins);
   ctx.restore();
 }
 
@@ -1251,8 +1339,24 @@ function drawShopTabs(ctx, cx, y, activeTab, options = {}) {
   const gap = options.gap ?? 12;
   const leftX = cx - w - gap / 2;
   const rightX = cx + gap / 2;
-  const upgrades = drawTabButton(ctx, leftX, y, w, h, "UPGRADES", activeTab === "upgrades");
-  const items = drawTabButton(ctx, rightX, y, w, h, "ITEMS", activeTab === "items");
+  const upgrades = drawTabButton(
+    ctx,
+    leftX,
+    y,
+    w,
+    h,
+    t("shop.tab.upgrades"),
+    activeTab === "upgrades"
+  );
+  const items = drawTabButton(
+    ctx,
+    rightX,
+    y,
+    w,
+    h,
+    t("shop.tab.items"),
+    activeTab === "items"
+  );
   return { upgrades, items };
 }
 
@@ -1337,8 +1441,8 @@ function drawHeader(ctx, width, y, pad, { user, coins, best }) {
   const gap = 10;
   const bestX = width - pad - pillWidth;
   const coinsX = bestX - gap - pillWidth;
-  drawPill(ctx, coinsX, y + 2, pillWidth, pillHeight, "Coins", coins);
-  drawPill(ctx, bestX, y + 2, pillWidth, pillHeight, "Best", best);
+  drawPill(ctx, coinsX, y + 2, pillWidth, pillHeight, t("label.coins"), coins);
+  drawPill(ctx, bestX, y + 2, pillWidth, pillHeight, t("label.best"), best);
   ctx.restore();
 }
 
@@ -1361,13 +1465,17 @@ function drawFooter(ctx, width, y, totalWidth) {
   const buttonWidth = totalWidth / 3;
   const buttonHeight = 38;
   const startX = width / 2 - totalWidth / 2;
-  const labels = ["SHOP", "LEADERS", "SETTINGS"];
+  const items = [
+    { key: "shop", label: t("nav.shop") },
+    { key: "leaders", label: t("nav.leaders") },
+    { key: "settings", label: t("nav.settings") },
+  ];
   const rects = {};
   ctx.save();
   ctx.font = "14px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  for (let i = 0; i < labels.length; i += 1) {
+  for (let i = 0; i < items.length; i += 1) {
     const x = startX + i * buttonWidth;
     const rect = { x, y, width: buttonWidth, height: buttonHeight };
     roundRect(ctx, rect.x, rect.y, rect.width, rect.height, 12);
@@ -1375,10 +1483,8 @@ function drawFooter(ctx, width, y, totalWidth) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(labels[i], rect.x + rect.width / 2, rect.y + rect.height / 2);
-    if (labels[i] === "SHOP") rects.shop = rect;
-    if (labels[i] === "LEADERS") rects.leaders = rect;
-    if (labels[i] === "SETTINGS") rects.settings = rect;
+    ctx.fillText(items[i].label, rect.x + rect.width / 2, rect.y + rect.height / 2);
+    rects[items[i].key] = rect;
   }
   ctx.restore();
   return rects;
@@ -1433,15 +1539,15 @@ function syncShellVisibility(showCanvasShell) {
 
 function getScreenTitle(screenId) {
   if (screenId === ScreenId.SHOP) {
-    return "SHOP";
+    return t("shop.title");
   }
   if (screenId === ScreenId.SETTINGS) {
-    return "SETTINGS";
+    return t("settings.title");
   }
   if (screenId === ScreenId.LEADERBOARDS) {
-    return "LEADERBOARDS";
+    return t("leaderboards.title");
   }
-  return "HOME";
+  return t("nav.home");
 }
 
 function drawPrimaryButton(ctx, cx, cy, width, height, label) {
@@ -1485,13 +1591,13 @@ function drawPrismTitle(ctx, inner, title) {
   ctx.restore();
 }
 
-function drawSubtext(ctx, x, y, size = 14) {
+function drawSubtext(ctx, x, y, size = 14, text = "") {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
   ctx.font = `${size}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("Tap • Stack • Combo", x, y);
+  ctx.fillText(text, x, y);
   ctx.restore();
 }
 
@@ -1650,9 +1756,13 @@ function drawBottomPanel(ctx, x, y, width, height) {
   ctx.restore();
   const buttonSize = Math.min(height * 0.72, 44);
   const gap = (width - buttonSize * 3) / 4;
-  const labels = ["SHOP", "LEADERS", "SETTINGS"];
+  const items = [
+    { key: "shop", label: t("nav.shop"), icon: "shop" },
+    { key: "leaders", label: t("nav.leaders"), icon: "leaders" },
+    { key: "settings", label: t("nav.settings"), icon: "settings" },
+  ];
   const rects = {};
-  for (let i = 0; i < labels.length; i += 1) {
+  for (let i = 0; i < items.length; i += 1) {
     const bx = x + gap + i * (buttonSize + gap);
     const by = y + (height - buttonSize) / 2;
     const rect = drawIconButton(
@@ -1660,12 +1770,10 @@ function drawBottomPanel(ctx, x, y, width, height) {
       bx,
       by,
       buttonSize,
-      labels[i],
-      getUiButtonImage(labels[i].toLowerCase())
+      items[i].label,
+      getUiButtonImage(items[i].icon)
     );
-    if (labels[i] === "SHOP") rects.shop = rect;
-    if (labels[i] === "LEADERS") rects.leaders = rect;
-    if (labels[i] === "SETTINGS") rects.settings = rect;
+    rects[items[i].key] = rect;
   }
   return rects;
 }
@@ -1700,6 +1808,13 @@ function drawIconButton(ctx, x, y, size, label, sprite) {
   }
   ctx.restore();
   return { x, y, width: size, height: size };
+}
+
+function resolveUserLabel(value) {
+  if (!value || value === "Guest") {
+    return t("user.guest");
+  }
+  return value;
 }
 
 function formatValue(value) {

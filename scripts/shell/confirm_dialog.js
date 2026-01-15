@@ -1,4 +1,5 @@
 import { OverlayId } from "./overlays.js";
+import { subscribeLanguage, t } from "../ui/i18n.js";
 
 export function setupConfirmDialog(router) {
   const overlay = router.getOverlay?.(OverlayId.CONFIRM);
@@ -21,12 +22,12 @@ export function setupConfirmDialog(router) {
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.className = "icon-button confirm-dialog__cancel";
-  cancelBtn.textContent = "Cancel";
+  cancelBtn.textContent = t("button.cancel");
 
   const confirmBtn = document.createElement("button");
   confirmBtn.type = "button";
   confirmBtn.className = "icon-button confirm-dialog__confirm";
-  confirmBtn.textContent = "Confirm";
+  confirmBtn.textContent = t("button.confirm");
 
   actions.appendChild(cancelBtn);
   actions.appendChild(confirmBtn);
@@ -59,7 +60,7 @@ export function setupConfirmDialog(router) {
 
   return {
     open({ titleText, bodyText, onConfirm: confirmCb, onCancel: cancelCb } = {}) {
-      title.textContent = titleText || "Confirm";
+      title.textContent = titleText || t("confirm.title");
       body.textContent = bodyText || "";
       onConfirm = confirmCb || null;
       onCancel = cancelCb || null;
@@ -67,3 +68,18 @@ export function setupConfirmDialog(router) {
     },
   };
 }
+
+subscribeLanguage(() => {
+  const overlay = document.querySelector(".confirm-overlay");
+  if (!overlay) {
+    return;
+  }
+  const cancelButton = overlay.querySelector(".confirm-dialog__cancel");
+  const confirmButton = overlay.querySelector(".confirm-dialog__confirm");
+  if (cancelButton) {
+    cancelButton.textContent = t("button.cancel");
+  }
+  if (confirmButton) {
+    confirmButton.textContent = t("button.confirm");
+  }
+});

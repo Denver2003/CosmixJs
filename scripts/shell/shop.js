@@ -1,68 +1,78 @@
 import { subscribeAppState } from "./app_state.js";
-import { createHeaderBar, createIconButton, createPill, updatePill } from "./ui/header.js";
+import {
+  createHeaderBar,
+  createIconButton,
+  createPill,
+  setIconButtonLabel,
+  updatePill,
+} from "./ui/header.js";
+import { subscribeLanguage, t } from "../ui/i18n.js";
 
-const UPGRADE_CARDS = [
-  {
-    id: "score",
-    title: "Score Multiplier",
-    current: "+0%",
-    next: "+10%",
-    price: "UPGRADE 100",
-  },
-  {
-    id: "coins",
-    title: "Coin Multiplier",
-    current: "+0%",
-    next: "+10%",
-    price: "UPGRADE 100",
-  },
-  {
-    id: "bonus",
-    title: "Bonus Drop Chance",
-    current: "5%",
-    next: "7%",
-    price: "UPGRADE 100",
-  },
-  {
-    id: "bonus_upgrades",
-    title: "Bonus Upgrades",
-    current: "Level 0",
-    next: "Details",
-    price: "OPEN",
-  },
-];
+function getUpgradeCards() {
+  return [
+    {
+      id: "score",
+      title: t("label.score_multiplier"),
+      current: "+0%",
+      next: "+10%",
+      price: t("button.upgrade", { price: "100" }),
+    },
+    {
+      id: "coins",
+      title: t("label.coin_multiplier"),
+      current: "+0%",
+      next: "+10%",
+      price: t("button.upgrade", { price: "100" }),
+    },
+    {
+      id: "bonus",
+      title: t("label.bonus_drop"),
+      current: "5%",
+      next: "7%",
+      price: t("button.upgrade", { price: "100" }),
+    },
+    {
+      id: "bonus_upgrades",
+      title: t("label.bonus_upgrades"),
+      current: t("label.level", { level: "0" }),
+      next: t("label.next"),
+      price: t("button.open"),
+    },
+  ];
+}
 
-const ITEM_CARDS = [
-  {
-    id: "touch",
-    title: "Touch-to-Kill",
-    description: "Consumable",
-    owned: "Owned: 0",
-    price: "BUY 5000",
-  },
-  {
-    id: "gun",
-    title: "Machine Gun",
-    description: "Consumable",
-    owned: "Owned: 0",
-    price: "BUY 5000",
-  },
-];
+function getItemCards() {
+  return [
+    {
+      id: "touch",
+      title: t("item.touch"),
+      description: t("label.consumable"),
+      owned: t("label.owned_prefix", { count: "0" }),
+      price: t("button.buy", { price: "5000" }),
+    },
+    {
+      id: "gun",
+      title: t("item.gun"),
+      description: t("label.consumable"),
+      owned: t("label.owned_prefix", { count: "0" }),
+      price: t("button.buy", { price: "5000" }),
+    },
+  ];
+}
 
 export function setupShopScreen(screen, router) {
   if (!screen) {
     return;
   }
-  const coinsPill = createPill({ icon: "💰", label: "Coins", value: "0" });
+  const coinsPill = createPill({ icon: "💰", label: t("label.coins"), value: "0" });
+  const backButton = createIconButton({
+    icon: "←",
+    label: t("nav.back"),
+    onClick: () => router.back?.(),
+  });
   const header = createHeaderBar({
-    left: [
-      createIconButton({
-        icon: "←",
-        label: "Back",
-        onClick: () => router.back?.(),
-      }),
-    ],
-    title: "Shop",
+    left: [backButton],
+    title: t("shop.title"),
     right: [coinsPill],
   });
   screen.headerBar.replaceChildren(header.header);
@@ -70,19 +80,19 @@ export function setupShopScreen(screen, router) {
   const tabs = document.createElement("div");
   tabs.className = "tabs";
 
-  const upgradesTab = createTabButton("UPGRADES", true);
-  const itemsTab = createTabButton("ITEMS", false);
+  const upgradesTab = createTabButton(t("shop.tab.upgrades"), true);
+  const itemsTab = createTabButton(t("shop.tab.items"), false);
 
   tabs.appendChild(upgradesTab.button);
   tabs.appendChild(itemsTab.button);
 
   const upgradesContent = document.createElement("div");
   upgradesContent.className = "tab-panel is-active";
-  upgradesContent.appendChild(buildCardGrid(UPGRADE_CARDS, true));
+  upgradesContent.appendChild(buildCardGrid(getUpgradeCards(), true));
 
   const itemsContent = document.createElement("div");
   itemsContent.className = "tab-panel";
-  itemsContent.appendChild(buildCardGrid(ITEM_CARDS, false));
+  itemsContent.appendChild(buildCardGrid(getItemCards(), false));
 
   upgradesTab.button.addEventListener("click", () => {
     setTabActive(upgradesTab, itemsTab, upgradesContent, itemsContent);
@@ -100,6 +110,21 @@ export function setupShopScreen(screen, router) {
   screen.contentArea.replaceChildren(content);
   screen.footerNav.replaceChildren();
 
+  const headerTitle = header.header.querySelector(".header-title");
+  const renderCards = () => {
+    upgradesContent.replaceChildren(buildCardGrid(getUpgradeCards(), true));
+    itemsContent.replaceChildren(buildCardGrid(getItemCards(), false));
+  };
+  const applyTranslations = () => {
+    setIconButtonLabel(backButton, t("nav.back"));
+    updatePill(coinsPill, { label: t("label.coins") });
+    if (headerTitle) headerTitle.textContent = t("shop.title");
+    upgradesTab.button.textContent = t("shop.tab.upgrades");
+    itemsTab.button.textContent = t("shop.tab.items");
+    renderCards();
+  };
+
+  subscribeLanguage(applyTranslations);
   subscribeAppState((next) => {
     updatePill(coinsPill, { value: next.coins });
   });

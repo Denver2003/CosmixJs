@@ -1,4 +1,5 @@
 import { getContinueCount } from "./runtime.js";
+import { t } from "../ui/i18n.js";
 
 const CONTINUE_PERCENTS = [0.7, 0.5, 0.3];
 
@@ -13,7 +14,7 @@ export function getContinuePercent() {
 
 export function getContinueLabel() {
   if (canContinueRun()) {
-    return "Continue (watch ad)";
+    return t("button.continue_ad");
   }
-  return "No more continues";
+  return t("label.no_more_continues");
 }

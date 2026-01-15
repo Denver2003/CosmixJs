@@ -1,6 +1,7 @@
 import { getAudioSettings, setAudioSettings } from "../audio/index.js";
 import { getCapsuleLayout } from "./layout.js";
 import { formatNumber } from "./format.js";
+import { t } from "./i18n.js";
 
 const overlayState = {
   pause: {
@@ -12,12 +13,13 @@ const overlayState = {
     continue: {
       visible: true,
       disabled: false,
-      label: "Continue (watch ad)",
+      labelKey: "button.continue_ad",
+      label: null,
     },
   },
   confirm: {
     open: false,
-    title: "Confirm",
+    title: t("confirm.title"),
     body: "",
     onConfirm: null,
     onCancel: null,
@@ -49,9 +51,13 @@ export function setupCanvasGameOverMenu(handlers = {}) {
     close() {
       overlayState.gameOver.visible = false;
     },
-    setContinueState({ visible = true, disabled = false, label } = {}) {
+    setContinueState({ visible = true, disabled = false, label, labelKey } = {}) {
       overlayState.gameOver.continue.visible = Boolean(visible);
       overlayState.gameOver.continue.disabled = Boolean(disabled);
+      if (labelKey) {
+        overlayState.gameOver.continue.labelKey = labelKey;
+        overlayState.gameOver.continue.label = null;
+      }
       if (label) {
         overlayState.gameOver.continue.label = label;
       }
@@ -73,7 +79,7 @@ export function openCanvasConfirmDialog({
   onCancel,
 } = {}) {
   overlayState.confirm.open = true;
-  overlayState.confirm.title = titleText || "Confirm";
+  overlayState.confirm.title = titleText || t("confirm.title");
   overlayState.confirm.body = bodyText || "";
   overlayState.confirm.onConfirm = onConfirm || null;
   overlayState.confirm.onCancel = onCancel || null;
@@ -293,7 +299,7 @@ function drawPauseMenu(ctx, inner) {
   const panelY = inner.y + (inner.height - panelHeight) / 2;
 
   drawModalPanel(ctx, panelX, panelY, panelWidth, panelHeight);
-  drawModalTitle(ctx, panelX, panelY, panelWidth, titleSize, "PAUSED");
+  drawModalTitle(ctx, panelX, panelY, panelWidth, titleSize, t("pause.title"));
 
   const buttonWidth = (panelWidth - pad * 2 - rowGap) / 2;
   const buttonsY = panelY + pad + titleSize + gap;
@@ -304,7 +310,7 @@ function drawPauseMenu(ctx, inner) {
     buttonsY,
     buttonWidth,
     buttonHeight,
-    "RESUME",
+    t("button.resume"),
     { primary: true }
   );
   const restart = drawModalButton(
@@ -313,7 +319,7 @@ function drawPauseMenu(ctx, inner) {
     buttonsY,
     buttonWidth,
     buttonHeight,
-    "RESTART"
+    t("button.restart")
   );
   const home = drawModalButton(
     ctx,
@@ -321,7 +327,7 @@ function drawPauseMenu(ctx, inner) {
     buttonsY + buttonHeight + rowGap,
     buttonWidth,
     buttonHeight,
-    "HOME"
+    t("button.home")
   );
   const shop = drawModalButton(
     ctx,
@@ -329,7 +335,7 @@ function drawPauseMenu(ctx, inner) {
     buttonsY + buttonHeight + rowGap,
     buttonWidth,
     buttonHeight,
-    "SHOP"
+    t("button.shop")
   );
 
   const audioY = buttonsY + buttonsHeight + gap;
@@ -349,7 +355,7 @@ function drawPauseMenu(ctx, inner) {
   ctx.font = `${audioTitleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText("AUDIO", panelX + pad + audioPad, audioY + audioPad);
+  ctx.fillText(t("label.audio_caps"), panelX + pad + audioPad, audioY + audioPad);
   ctx.restore();
 
   const audio = getAudioSettings();
@@ -365,7 +371,7 @@ function drawPauseMenu(ctx, inner) {
     controlX,
     rowStartY,
     audioRowHeight,
-    "MUSIC",
+    t("label.music_caps"),
     sliderWidth,
     sliderHeight,
     audio.music ?? 50
@@ -376,7 +382,7 @@ function drawPauseMenu(ctx, inner) {
     controlX,
     rowStartY + audioRowHeight,
     audioRowHeight,
-    "SFX",
+    t("label.sfx_caps"),
     sliderWidth,
     sliderHeight,
     audio.sfx ?? 50
@@ -387,7 +393,7 @@ function drawPauseMenu(ctx, inner) {
     controlX,
     rowStartY + audioRowHeight * 2,
     audioRowHeight,
-    "MUTE",
+    t("label.mute_caps"),
     sliderWidth,
     Boolean(audio.mute)
   );
@@ -412,7 +418,7 @@ function drawAutoPause(ctx, inner, state) {
   ctx.font = `${Math.max(10, Math.round(14 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("PAUSED (AUTO)", panelX + panelWidth / 2, panelY + panelHeight * 0.4);
+  ctx.fillText(t("pause.auto"), panelX + panelWidth / 2, panelY + panelHeight * 0.4);
   if (state?.pausedResumeMs) {
     const nowMs = getNowMs();
     const remaining = Math.max(0, state.pausedResumeMs - nowMs);
@@ -420,7 +426,7 @@ function drawAutoPause(ctx, inner, state) {
     ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
     ctx.font = `${Math.max(9, Math.round(12 * scale))}px "RussoOne", sans-serif`;
     ctx.fillText(
-      `RESUMING IN ${formatNumber(seconds)}`,
+      t("pause.resuming_in", { seconds: formatNumber(seconds) }),
       panelX + panelWidth / 2,
       panelY + panelHeight * 0.68
     );
@@ -443,16 +449,16 @@ function drawGameOverMenu(ctx, inner) {
   if (overlayState.gameOver.continue.visible) {
     buttons.push({
       key: "continue",
-      label: overlayState.gameOver.continue.label,
+      label: resolveContinueLabel(),
       primary: true,
       full: true,
       disabled: overlayState.gameOver.continue.disabled,
     });
   }
   buttons.push(
-    { key: "retry", label: "RETRY", primary: true },
-    { key: "home", label: "HOME" },
-    { key: "shop", label: "SHOP" }
+    { key: "retry", label: t("button.retry"), primary: true },
+    { key: "home", label: t("button.home") },
+    { key: "shop", label: t("button.shop") }
   );
 
   const fullButtonCount = buttons.filter((button) => button.full).length;
@@ -475,7 +481,7 @@ function drawGameOverMenu(ctx, inner) {
   const panelY = inner.y + (inner.height - panelHeight) / 2;
 
   drawModalPanel(ctx, panelX, panelY, panelWidth, panelHeight);
-  drawModalTitle(ctx, panelX, panelY, panelWidth, titleSize, "GAME OVER");
+  drawModalTitle(ctx, panelX, panelY, panelWidth, titleSize, t("game_over.title"));
 
   let buttonY = panelY + pad + titleSize + gap;
   const outButtons = {};
@@ -564,7 +570,7 @@ function drawConfirmDialog(ctx, inner) {
     buttonsY,
     buttonWidth,
     buttonHeight,
-    "CANCEL"
+    t("button.cancel")
   );
   const confirm = drawModalButton(
     ctx,
@@ -572,7 +578,7 @@ function drawConfirmDialog(ctx, inner) {
     buttonsY,
     buttonWidth,
     buttonHeight,
-    "CONFIRM",
+    t("button.confirm"),
     { primary: true }
   );
 
@@ -621,6 +627,17 @@ function drawAudioToggle(ctx, labelX, controlX, y, height, label, width, on) {
   const toggleY = y + (height - toggleHeight) / 2;
   drawToggle(ctx, toggleX, toggleY, toggleWidth, toggleHeight, on);
   return { x: toggleX, y: toggleY, width: toggleWidth, height: toggleHeight };
+}
+
+function resolveContinueLabel() {
+  if (overlayState.gameOver.continue.label) {
+    return overlayState.gameOver.continue.label;
+  }
+  const key = overlayState.gameOver.continue.labelKey;
+  if (key) {
+    return t(key);
+  }
+  return t("button.continue_ad");
 }
 
 function drawCapsuleDim(ctx, inner, alpha) {

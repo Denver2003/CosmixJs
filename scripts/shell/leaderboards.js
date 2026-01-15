@@ -1,6 +1,13 @@
 import { subscribeAppState } from "./app_state.js";
 import { formatNumber } from "../ui/format.js";
-import { createHeaderBar, createIconButton, createPill, updatePill } from "./ui/header.js";
+import {
+  createHeaderBar,
+  createIconButton,
+  createPill,
+  setIconButtonLabel,
+  updatePill,
+} from "./ui/header.js";
+import { subscribeLanguage, t } from "../ui/i18n.js";
 
 const SAMPLE_ROWS = [
   { rank: 1, name: "You", score: 12450 },
@@ -14,42 +21,39 @@ export function setupLeaderboardsScreen(screen, router) {
   if (!screen) {
     return;
   }
-  const userPill = createPill({ icon: "👤", label: "Guest", value: "" });
+  const userPill = createPill({ icon: "👤", label: t("user.guest"), value: "" });
+  const backButton = createIconButton({
+    icon: "←",
+    label: t("nav.back"),
+    onClick: () => router.back?.(),
+  });
+  const refreshButton = createIconButton({
+    icon: "⟳",
+    label: t("label.refresh"),
+  });
   const header = createHeaderBar({
-    left: [
-      createIconButton({
-        icon: "←",
-        label: "Back",
-        onClick: () => router.back?.(),
-      }),
-    ],
-    title: "Leaderboards",
-    right: [
-      createIconButton({
-        icon: "⟳",
-        label: "Refresh",
-      }),
-      userPill,
-    ],
+    left: [backButton],
+    title: t("leaderboards.title"),
+    right: [refreshButton, userPill],
   });
   screen.headerBar.replaceChildren(header.header);
 
   const tabs = document.createElement("div");
   tabs.className = "tabs";
 
-  const allTimeTab = createTabButton("ALL-TIME", true);
-  const weeklyTab = createTabButton("WEEKLY", false);
+  const allTimeTab = createTabButton(t("label.all_time"), true);
+  const weeklyTab = createTabButton(t("label.weekly"), false);
 
   tabs.appendChild(allTimeTab.button);
   tabs.appendChild(weeklyTab.button);
 
   const allTimePanel = document.createElement("div");
   allTimePanel.className = "tab-panel is-active";
-  allTimePanel.appendChild(buildBoardList(SAMPLE_ROWS, "All-time"));
+  allTimePanel.appendChild(buildBoardList(SAMPLE_ROWS, t("label.all_time_title")));
 
   const weeklyPanel = document.createElement("div");
   weeklyPanel.className = "tab-panel";
-  weeklyPanel.appendChild(buildBoardList(SAMPLE_ROWS, "Week #01"));
+  weeklyPanel.appendChild(buildBoardList(SAMPLE_ROWS, t("label.week_01")));
 
   allTimeTab.button.addEventListener("click", () => {
     setTabActive(allTimeTab, weeklyTab, allTimePanel, weeklyPanel);
@@ -67,10 +71,33 @@ export function setupLeaderboardsScreen(screen, router) {
   screen.contentArea.replaceChildren(content);
   screen.footerNav.replaceChildren();
 
+  const headerTitle = header.header.querySelector(".header-title");
+  const allTimePeriod = allTimePanel.querySelector(".leaderboards-period");
+  const weeklyPeriod = weeklyPanel.querySelector(".leaderboards-period");
+  let currentUserName = "";
+  const applyTranslations = () => {
+    setIconButtonLabel(backButton, t("nav.back"));
+    setIconButtonLabel(refreshButton, t("label.refresh"));
+    if (headerTitle) headerTitle.textContent = t("leaderboards.title");
+    allTimeTab.button.textContent = t("label.all_time");
+    weeklyTab.button.textContent = t("label.weekly");
+    if (allTimePeriod) allTimePeriod.textContent = t("label.all_time_title");
+    if (weeklyPeriod) weeklyPeriod.textContent = t("label.week_01");
+    updatePill(userPill, { label: resolveUserLabel(currentUserName), value: "" });
+  };
+
+  subscribeLanguage(applyTranslations);
   subscribeAppState((next) => {
-    const label = next.userName ? next.userName : "Guest";
-    updatePill(userPill, { label, value: "" });
+    currentUserName = next.userName || "";
+    updatePill(userPill, { label: resolveUserLabel(currentUserName), value: "" });
   });
+}
+
+function resolveUserLabel(value) {
+  if (!value || value === "Guest") {
+    return t("user.guest");
+  }
+  return value;
 }
 
 function createTabButton(label, active) {

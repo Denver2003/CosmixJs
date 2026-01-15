@@ -67,6 +67,7 @@
 - **Canvas shell Shop/Settings/Leaderboards**: screens render as Prism Edge panels inside the capsule with icon back buttons, capsule-bound tabs, and scaled cards/rows; background is dimmed around the capsule. Panels now scale down more on small screens and can expand up to +20% width/+30% height, with a 40px allowed overflow beyond the capsule.
 - **Canvas UI visibility**: gameplay-only elements (cosmometer, level progress, touch overlay) are hidden while the shell menu is active.
 - **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner. Modal UI scale now clamps down to 0.6 on small screens.
+- **Localization (menus/overlays)**: UI text for shell screens and overlays uses `i18n.t()` with EN/RU dictionaries; language toggle lives in Settings (canvas + DOM fallback), stored in `localStorage` as `cosmix.lang` with EN default.
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
 
 ## File layout

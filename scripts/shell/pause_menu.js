@@ -1,6 +1,7 @@
 import { OverlayId } from "./overlays.js";
-import { createIconButton } from "./ui/header.js";
+import { createIconButton, setIconButtonLabel } from "./ui/header.js";
 import { getAudioSettings, setAudioSettings } from "../audio/index.js";
+import { subscribeLanguage, t } from "../ui/i18n.js";
 
 export function setupPauseMenu(router, handlers = {}) {
   const overlay = router.getOverlay?.(OverlayId.PAUSE);
@@ -14,7 +15,7 @@ export function setupPauseMenu(router, handlers = {}) {
 
   const title = document.createElement("div");
   title.className = "pause-menu__title";
-  title.textContent = "Paused";
+  title.textContent = t("pause.title");
 
   const buttons = document.createElement("div");
   buttons.className = "pause-menu__buttons";
@@ -23,11 +24,11 @@ export function setupPauseMenu(router, handlers = {}) {
   audioBlock.className = "pause-menu__audio";
   const audioTitle = document.createElement("div");
   audioTitle.className = "pause-menu__audio-title";
-  audioTitle.textContent = "Audio";
+  audioTitle.textContent = t("label.audio");
   const audioSettings = getAudioSettings();
-  const musicRow = createSliderRow("Music", audioSettings.music, "music");
-  const sfxRow = createSliderRow("SFX", audioSettings.sfx, "sfx");
-  const muteRow = createToggleRow("Mute", audioSettings.mute, "mute");
+  const musicRow = createSliderRow(t("label.music"), audioSettings.music, "music");
+  const sfxRow = createSliderRow(t("label.sfx"), audioSettings.sfx, "sfx");
+  const muteRow = createToggleRow(t("label.mute"), audioSettings.mute, "mute");
   audioBlock.appendChild(audioTitle);
   audioBlock.appendChild(musicRow);
   audioBlock.appendChild(sfxRow);
@@ -35,7 +36,7 @@ export function setupPauseMenu(router, handlers = {}) {
 
   const resume = createIconButton({
     icon: "▶",
-    label: "Resume",
+    label: t("button.resume"),
     onClick: () => {
       router.popOverlay();
       handlers.onResume?.();
@@ -43,7 +44,7 @@ export function setupPauseMenu(router, handlers = {}) {
   });
   const restart = createIconButton({
     icon: "⟲",
-    label: "Restart",
+    label: t("button.restart"),
     onClick: () => {
       router.popOverlay();
       handlers.onRestart?.();
@@ -51,7 +52,7 @@ export function setupPauseMenu(router, handlers = {}) {
   });
   const home = createIconButton({
     icon: "⌂",
-    label: "Home",
+    label: t("button.home"),
     onClick: () => {
       router.popOverlay();
       router.showScreen("home");
@@ -60,7 +61,7 @@ export function setupPauseMenu(router, handlers = {}) {
   });
   const shop = createIconButton({
     icon: "🛒",
-    label: "Shop",
+    label: t("button.shop"),
     onClick: () => {
       router.popOverlay();
       router.showScreen("shop");
@@ -77,6 +78,24 @@ export function setupPauseMenu(router, handlers = {}) {
   panel.appendChild(buttons);
   panel.appendChild(audioBlock);
   overlay.appendChild(panel);
+
+  const musicLabel = musicRow.querySelector(".pause-menu__row-label");
+  const sfxLabel = sfxRow.querySelector(".pause-menu__row-label");
+  const muteLabel = muteRow.querySelector(".pause-menu__row-label");
+
+  const applyTranslations = () => {
+    title.textContent = t("pause.title");
+    audioTitle.textContent = t("label.audio");
+    if (musicLabel) musicLabel.textContent = t("label.music");
+    if (sfxLabel) sfxLabel.textContent = t("label.sfx");
+    if (muteLabel) muteLabel.textContent = t("label.mute");
+    setIconButtonLabel(resume, t("button.resume"));
+    setIconButtonLabel(restart, t("button.restart"));
+    setIconButtonLabel(home, t("button.home"));
+    setIconButtonLabel(shop, t("button.shop"));
+  };
+
+  subscribeLanguage(applyTranslations);
 
   return {
     open() {

@@ -1,21 +1,21 @@
 import { subscribeAppState } from "./app_state.js";
 import { getAudioSettings, setAudioSettings } from "../audio/index.js";
-import { createHeaderBar, createIconButton } from "./ui/header.js";
+import { createHeaderBar, createIconButton, setIconButtonLabel } from "./ui/header.js";
+import { getLanguage, setLanguage, subscribeLanguage, t } from "../ui/i18n.js";
 
 export function setupSettingsScreen(screen, router, confirmDialog) {
   if (!screen) {
     return;
   }
-  const userButton = createIconButton({ icon: "👤", label: "Guest" });
+  const userButton = createIconButton({ icon: "👤", label: t("user.guest") });
+  const backButton = createIconButton({
+    icon: "←",
+    label: t("nav.back"),
+    onClick: () => router.back?.(),
+  });
   const header = createHeaderBar({
-    left: [
-      createIconButton({
-        icon: "←",
-        label: "Back",
-        onClick: () => router.back?.(),
-      }),
-    ],
-    title: "Settings",
+    left: [backButton],
+    title: t("settings.title"),
     right: [userButton],
   });
   screen.headerBar.replaceChildren(header.header);
@@ -24,48 +24,98 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   content.className = "settings-content";
   const audio = getAudioSettings();
 
-  content.appendChild(
-    createSection("Audio", [
-      createSliderRow("Music", audio.music, "music"),
-      createSliderRow("SFX", audio.sfx, "sfx"),
-      createToggleRow("Mute", audio.mute, "mute"),
-    ])
-  );
+  const musicRow = createSliderRow(t("label.music"), audio.music, "music");
+  const sfxRow = createSliderRow(t("label.sfx"), audio.sfx, "sfx");
+  const muteRow = createToggleRow(t("label.mute"), audio.mute, "mute");
+  const audioSection = createSection(t("label.audio"), [musicRow, sfxRow, muteRow]);
 
-  content.appendChild(
-    createSection("Account", [
-      createInfoRow("Status", "Guest"),
-      createActionRow("Login", "LOGIN"),
-    ])
-  );
+  const statusRow = createInfoRow(t("label.status"), t("user.guest"));
+  const loginRow = createActionRow(t("label.login"), t("button.login"));
+  const languageRow = createActionRow(t("label.language"), getLanguage().toUpperCase());
+  const languageButton = languageRow.querySelector("button");
+  languageButton.addEventListener("click", () => {
+    const next = getLanguage() === "en" ? "ru" : "en";
+    setLanguage(next);
+  });
+  const accountSection = createSection(t("label.account"), [statusRow, loginRow, languageRow]);
 
-  const resetButton = createActionRow("Reset progress", "RESET");
+  const resetButton = createActionRow(t("label.reset_progress"), t("button.reset"));
   resetButton.querySelector("button").classList.add("danger");
   resetButton.querySelector("button").addEventListener("click", () => {
     confirmDialog?.open({
-      titleText: "Reset progress?",
-      bodyText: "This will clear local progress.",
+      titleText: t("confirm.reset_title"),
+      bodyText: t("confirm.reset_body"),
       onConfirm: () => {
         console.log("[shell] reset progress requested");
       },
     });
   });
 
-  const restoreButton = createActionRow("Restore purchases", "RESTORE");
-  content.appendChild(
-    createSection("Data", [resetButton, restoreButton])
-  );
+  const restoreButton = createActionRow(t("label.restore_purchases"), t("button.restore"));
+  const dataSection = createSection(t("label.data"), [resetButton, restoreButton]);
+
+  content.appendChild(audioSection);
+  content.appendChild(accountSection);
+  content.appendChild(dataSection);
 
   screen.contentArea.replaceChildren(content);
   screen.footerNav.replaceChildren();
 
+  const headerTitle = header.header.querySelector(".header-title");
+  const audioTitle = audioSection.querySelector(".settings-section__title");
+  const accountTitle = accountSection.querySelector(".settings-section__title");
+  const dataTitle = dataSection.querySelector(".settings-section__title");
+  const musicLabel = musicRow.querySelector(".settings-row__label");
+  const sfxLabel = sfxRow.querySelector(".settings-row__label");
+  const muteLabel = muteRow.querySelector(".settings-row__label");
+  const statusLabel = statusRow.querySelector(".settings-row__label");
+  const statusValue = statusRow.querySelector(".settings-row__control");
+  const loginLabel = loginRow.querySelector(".settings-row__label");
+  const loginButton = loginRow.querySelector("button");
+  const languageLabel = languageRow.querySelector(".settings-row__label");
+  const resetLabel = resetButton.querySelector(".settings-row__label");
+  const resetAction = resetButton.querySelector("button");
+  const restoreLabel = restoreButton.querySelector(".settings-row__label");
+  const restoreAction = restoreButton.querySelector("button");
+
+  let currentUserName = "";
+  const applyTranslations = () => {
+    setIconButtonLabel(userButton, resolveUserLabel(currentUserName));
+    if (headerTitle) headerTitle.textContent = t("settings.title");
+    setIconButtonLabel(backButton, t("nav.back"));
+    if (audioTitle) audioTitle.textContent = t("label.audio");
+    if (accountTitle) accountTitle.textContent = t("label.account");
+    if (dataTitle) dataTitle.textContent = t("label.data");
+    if (musicLabel) musicLabel.textContent = t("label.music");
+    if (sfxLabel) sfxLabel.textContent = t("label.sfx");
+    if (muteLabel) muteLabel.textContent = t("label.mute");
+    if (statusLabel) statusLabel.textContent = t("label.status");
+    if (statusValue) statusValue.textContent = resolveUserLabel(currentUserName);
+    if (loginLabel) loginLabel.textContent = t("label.login");
+    if (loginButton) loginButton.textContent = t("button.login");
+    if (languageLabel) languageLabel.textContent = t("label.language");
+    if (languageButton) languageButton.textContent = getLanguage().toUpperCase();
+    if (resetLabel) resetLabel.textContent = t("label.reset_progress");
+    if (resetAction) resetAction.textContent = t("button.reset");
+    if (restoreLabel) restoreLabel.textContent = t("label.restore_purchases");
+    if (restoreAction) restoreAction.textContent = t("button.restore");
+  };
+
+  subscribeLanguage(applyTranslations);
   subscribeAppState((next) => {
-    const label = next.userName ? next.userName : "Guest";
-    const labelNode = userButton.querySelector(".icon-button__label");
-    if (labelNode) {
-      labelNode.textContent = label;
+    currentUserName = next.userName || "";
+    setIconButtonLabel(userButton, resolveUserLabel(currentUserName));
+    if (statusValue) {
+      statusValue.textContent = resolveUserLabel(currentUserName);
     }
   });
+}
+
+function resolveUserLabel(value) {
+  if (!value || value === "Guest") {
+    return t("user.guest");
+  }
+  return value;
 }
 
 function createSection(title, rows) {

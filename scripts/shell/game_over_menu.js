@@ -1,5 +1,6 @@
 import { OverlayId } from "./overlays.js";
 import { createIconButton, setIconButtonLabel } from "./ui/header.js";
+import { subscribeLanguage, t } from "../ui/i18n.js";
 
 export function setupGameOverMenu(router, handlers = {}) {
   const overlay = router.getOverlay?.(OverlayId.GAME_OVER);
@@ -13,21 +14,21 @@ export function setupGameOverMenu(router, handlers = {}) {
 
   const title = document.createElement("div");
   title.className = "gameover-menu__title";
-  title.textContent = "Game Over";
+  title.textContent = t("game_over.title");
 
   const buttons = document.createElement("div");
   buttons.className = "gameover-menu__buttons";
 
   const continueButton = createIconButton({
     icon: "▶",
-    label: "Continue (watch ad)",
+    label: t("button.continue_ad"),
     onClick: () => {
       handlers.onContinue?.(continueButton);
     },
   });
   const retry = createIconButton({
     icon: "⟲",
-    label: "Retry",
+    label: t("button.retry"),
     onClick: () => {
       router.popOverlay();
       handlers.onRetry?.();
@@ -35,7 +36,7 @@ export function setupGameOverMenu(router, handlers = {}) {
   });
   const home = createIconButton({
     icon: "⌂",
-    label: "Home",
+    label: t("button.home"),
     onClick: () => {
       router.popOverlay();
       router.showScreen("home");
@@ -44,7 +45,7 @@ export function setupGameOverMenu(router, handlers = {}) {
   });
   const shop = createIconButton({
     icon: "🛒",
-    label: "Shop",
+    label: t("button.shop"),
     onClick: () => {
       router.popOverlay();
       router.showScreen("shop");
@@ -60,6 +61,15 @@ export function setupGameOverMenu(router, handlers = {}) {
   panel.appendChild(title);
   panel.appendChild(buttons);
   overlay.appendChild(panel);
+
+  const applyTranslations = () => {
+    title.textContent = t("game_over.title");
+    setIconButtonLabel(retry, t("button.retry"));
+    setIconButtonLabel(home, t("button.home"));
+    setIconButtonLabel(shop, t("button.shop"));
+  };
+
+  subscribeLanguage(applyTranslations);
 
   return {
     open() {
