@@ -5,6 +5,17 @@ export function drawGameOverBanner(ctx, state, render, getGlassRect, killY) {
     state.gameOverBannerStartMs = 0;
     return;
   }
+  if (state.mode !== "gameover") {
+    state.gameOverBannerStartMs = 0;
+    return;
+  }
+  if (typeof window !== "undefined") {
+    const router = window.__shellRouter;
+    if (router && router.activeScreen && router.activeScreen !== "game") {
+      state.gameOverBannerStartMs = 0;
+      return;
+    }
+  }
   if (!render || !getGlassRect) {
     return;
   }

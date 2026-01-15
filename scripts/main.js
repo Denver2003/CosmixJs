@@ -4,7 +4,11 @@ import { createShell } from "./shell/index.js";
 import { setAppState } from "./shell/app_state.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
-import { handleShellPointer } from "./ui/canvas_shell.js";
+import { handleShellPointer, isGameScreenActive } from "./ui/canvas_shell.js";
+import {
+  handleCanvasOverlayBack,
+  handleCanvasOverlayPointer,
+} from "./ui/canvas_overlays.js";
 import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
 
 const { Engine, Render } = Matter;
@@ -111,6 +115,13 @@ if (shell?.router) {
   shell.router.showScreen = (id) => {
     originalShow(id);
     if (id === "game") {
+      if (game.state?.gameOver) {
+        if (!shell.router.__skipGameOverMenuOnce) {
+          shell.gameOverMenu?.open?.();
+        }
+        shell.router.__skipGameOverMenuOnce = false;
+        return;
+      }
       if (gameStarted) {
         game.startGame?.();
       }
@@ -125,8 +136,16 @@ if (shell?.router) {
   window.__overlayRoot = document.getElementById("overlay-root");
 }
 window.__canvasStartGame = () => {
+  if (game.state?.gameOver && shell?.router) {
+    shell.router.__skipGameOverMenuOnce = true;
+  }
   if (shell?.router) {
     shell.router.showScreen("game");
+  }
+  if (game.state?.gameOver) {
+    shell?.runRetryFlow?.();
+    gameStarted = true;
+    return;
   }
   if (!gameStarted) {
     resetContinueCount();
@@ -164,6 +183,19 @@ canvas.addEventListener("pointerdown", (event) => {
   const scaleY = render.options.height / rect.height;
   const x = (event.clientX - rect.left) * scaleX;
   const y = (event.clientY - rect.top) * scaleY;
+  if (
+    handleCanvasOverlayPointer({
+      x,
+      y,
+      render,
+      state: game.state,
+      isGameActive: isGameScreenActive(),
+    })
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
   if (handleShellPointer(x, y, render)) {
     event.preventDefault();
     event.stopPropagation();
@@ -322,6 +354,15 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   if (isTypingTarget(event.target)) {
+    return;
+  }
+  if (
+    handleCanvasOverlayBack({
+      state: game.state,
+      isGameActive: isGameScreenActive(),
+    })
+  ) {
+    event.preventDefault();
     return;
   }
   if (shell?.handleBack?.()) {

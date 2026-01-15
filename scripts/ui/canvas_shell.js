@@ -7,8 +7,9 @@ import {
   GLASS_WIDTH,
   WALL_THICKNESS,
 } from "../config.js";
-import { getGlassFrame } from "./layout.js";
+import { getCapsuleLayout } from "./layout.js";
 import { formatNumber } from "./format.js";
+import { openCanvasConfirmDialog } from "./canvas_overlays.js";
 import {
   BONUS_DROP_LEVELS,
   BONUS_UPGRADE_LEVELS,
@@ -180,6 +181,22 @@ export function handleShellPointer(x, y, render) {
       if (audio.mute && pointInRect(x, y, audio.mute)) {
         const current = getAudioSettings();
         setAudioSettings({ mute: !current.mute });
+        return true;
+      }
+    }
+    if (layout?.actions) {
+      if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
+        openCanvasConfirmDialog({
+          titleText: "Reset progress?",
+          bodyText: "This will clear local progress.",
+          onConfirm: () => {
+            console.log("[shell] reset progress requested");
+          },
+        });
+        return true;
+      }
+      if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
+        console.log("[shell] restore purchases requested");
         return true;
       }
     }
@@ -576,12 +593,24 @@ function drawSettingsScreen(ctx, render) {
     { label: "Status", value: "Guest", type: "info" },
     { label: "Login", value: "LOGIN", type: "action" },
   ]);
-  drawSettingsSection(ctx, pad, accountSection.endY + 18, width - pad * 2, "Data", [
-    { label: "Reset progress", value: "RESET", type: "action", danger: true },
-    { label: "Restore purchases", value: "RESTORE", type: "action" },
-  ]);
+  const dataSection = drawSettingsSection(
+    ctx,
+    pad,
+    accountSection.endY + 18,
+    width - pad * 2,
+    "Data",
+    [
+      { key: "reset", label: "Reset progress", value: "RESET", type: "action", danger: true },
+      { key: "restore", label: "Restore purchases", value: "RESTORE", type: "action" },
+    ],
+    { capture: true }
+  );
 
-  lastLayout.settings = { back: backRect, audio: audioSection.rects };
+  lastLayout.settings = {
+    back: backRect,
+    audio: audioSection.rects,
+    actions: dataSection.rects,
+  };
 }
 
 function drawLeaderboardsScreen(ctx, render) {
@@ -756,7 +785,15 @@ function drawSettingsRow(ctx, x, y, width, row) {
     drawToggle(ctx, toggleRect.x, toggleRect.y, toggleRect.width, toggleRect.height, row.value);
     controlRect = toggleRect;
   } else if (row.type === "action") {
-    drawActionButton(ctx, x + width - 120, y + 6, 100, 24, row.value, row.danger);
+    controlRect = drawActionButton(
+      ctx,
+      x + width - 120,
+      y + 6,
+      100,
+      24,
+      row.value,
+      row.danger
+    );
   } else {
     ctx.textAlign = "right";
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -1050,46 +1087,6 @@ function drawPrimaryButton(ctx, cx, cy, width, height, label) {
   ctx.fillText(label, cx, cy);
   ctx.restore();
   return { x, y, width, height };
-}
-
-function getCapsuleLayout(render, getGlassRect) {
-  const glassGetter =
-    getGlassRect ||
-    (typeof window !== "undefined" ? window.__getGlassRect : null);
-  if (typeof glassGetter !== "function") {
-    return null;
-  }
-  const glass = glassGetter();
-  const frame = getGlassFrame(glass);
-  const frameScreen = worldRectToScreen(render, frame);
-  const innerScreen = worldRectToScreen(render, {
-    x: glass.left,
-    y: glass.top,
-    width: GLASS_WIDTH,
-    height: GLASS_HEIGHT,
-  });
-  const scaleX = frameScreen.width / frame.width;
-  const scaleY = frameScreen.height / frame.height;
-  return {
-    frame: frameScreen,
-    inner: innerScreen,
-    scaleX,
-    scaleY,
-    wall: Math.max(1, WALL_THICKNESS * scaleX),
-    floor: Math.max(1, FLOOR_THICKNESS * scaleY),
-  };
-}
-
-function worldRectToScreen(render, rect) {
-  const bounds = render.bounds;
-  const scaleX = render.options.width / (bounds.max.x - bounds.min.x);
-  const scaleY = render.options.height / (bounds.max.y - bounds.min.y);
-  return {
-    x: (rect.x - bounds.min.x) * scaleX,
-    y: (rect.y - bounds.min.y) * scaleY,
-    width: rect.width * scaleX,
-    height: rect.height * scaleY,
-  };
 }
 
 function drawGlobalDim(ctx, width, height) {

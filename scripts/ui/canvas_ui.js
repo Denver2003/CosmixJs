@@ -5,7 +5,7 @@ import {
   drawTopHud,
 } from "../game/lines/hud.js";
 import { drawTouchOverlay } from "../game/draw/overlays.js";
-import { drawPauseOverlay } from "../game/lines/overlays.js";
+import { drawCanvasOverlays } from "./canvas_overlays.js";
 import { drawShellUi, isGameScreenActive } from "./canvas_shell.js";
 
 export function drawCanvasUiWorld({ ctx, state, render, getGlassRect }) {
@@ -24,5 +24,11 @@ export function drawCanvasUiScreen({ ctx, state, render, getGlassRect }) {
   if (isGameScreenActive()) {
     drawTopHud(state, ctx, render, getGlassRect);
   }
-  drawPauseOverlay(state, ctx, render);
+  drawCanvasOverlays({
+    ctx,
+    render,
+    getGlassRect,
+    state,
+    isGameActive: isGameScreenActive(),
+  });
 }

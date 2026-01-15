@@ -26,6 +26,7 @@ import {
 import { drawLevelUpPopups } from "./level_up_popup.js";
 import { drawAimGuides, drawCustomOutlines, drawWaitFill } from "./lines/world.js";
 import { drawCanvasUiScreen, drawCanvasUiWorld } from "../ui/canvas_ui.js";
+import { isGameScreenActive } from "../ui/canvas_shell.js";
 
 const { Render } = Matter;
 
@@ -83,7 +84,9 @@ export function drawLines(state, render, getGlassRect) {
   drawScoreParticles(state, ctx);
   drawComboPopups(state, ctx);
   drawCanvasUiScreen({ ctx, state, render, getGlassRect });
-  drawGameOverBanner(ctx, state, render, getGlassRect, killY);
+  if (isGameScreenActive() && state.mode === "gameover") {
+    drawGameOverBanner(ctx, state, render, getGlassRect, killY);
+  }
   ctx.restore();
 }
 

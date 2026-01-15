@@ -5,12 +5,10 @@ import { createDebugPanel } from "./debug.js";
 import { setupHomeScreen } from "./home.js";
 import { setupShopScreen } from "./shop.js";
 import { setupSettingsScreen } from "./settings.js";
-import { setupConfirmDialog } from "./confirm_dialog.js";
+import { setupCanvasConfirmDialog, setupCanvasGameOverMenu, setupCanvasPauseMenu } from "../ui/canvas_overlays.js";
 import { setupLeaderboardsScreen } from "./leaderboards.js";
 import { setupLoading } from "./loading.js";
 import { setupToast } from "./toast.js";
-import { setupPauseMenu } from "./pause_menu.js";
-import { setupGameOverMenu } from "./game_over_menu.js";
 import { createInterstitialOverlay } from "../ads/interstitial_overlay.js";
 import {
   canContinueRun,
@@ -70,19 +68,43 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
   const interstitialOverlay = createInterstitialOverlay(router);
   setupToast(router);
   setupLoading(router);
-  const confirmDialog = setupConfirmDialog(router);
+  const confirmDialog = setupCanvasConfirmDialog();
   const settingsScreen = screens.find((screen) => screen.dataset.screen === ScreenId.SETTINGS);
   setupSettingsScreen(settingsScreen, router, confirmDialog);
   const leaderboardsScreen = screens.find((screen) => screen.dataset.screen === ScreenId.LEADERBOARDS);
   setupLeaderboardsScreen(leaderboardsScreen, router);
 
-  const pauseMenu = setupPauseMenu(router, {
+  const runRetryFlow = async () => {
+    resetContinueCount();
+    const progress = getShopProgress();
+    const now = Date.now();
+    const adsState = getAdsState();
+    const sessionCount = adsState?.sessionCount || 0;
+    const lastInterstitialAt = adsState?.lastInterstitialAt || 0;
+    const canShowInterstitial =
+      !progress?.removeAds &&
+      canShowAds() &&
+      sessionCount >= 3 &&
+      now - lastInterstitialAt >= 180000;
+
+    if (canShowInterstitial) {
+      interstitialOverlay?.open();
+      await playInterstitial();
+      interstitialOverlay?.close();
+      markInterstitialShown(now);
+    }
+
+    incrementSessionCount();
+    onGameOver?.retry?.();
+  };
+
+  const pauseMenu = setupCanvasPauseMenu({
     onResume: onPause?.resume,
     onRestart: onPause?.restart,
     onHome: onPause?.home,
     onShop: onPause?.shop,
   });
-  const gameOverMenu = setupGameOverMenu(router, {
+  const gameOverMenu = setupCanvasGameOverMenu({
     onContinue: async () => {
       if (!canContinueRun()) {
         gameOverMenu.setContinueState({
@@ -114,27 +136,7 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
       }
     },
     onRetry: async () => {
-      resetContinueCount();
-      const progress = getShopProgress();
-      const now = Date.now();
-      const adsState = getAdsState();
-      const sessionCount = adsState?.sessionCount || 0;
-      const lastInterstitialAt = adsState?.lastInterstitialAt || 0;
-      const canShowInterstitial =
-        !progress?.removeAds &&
-        canShowAds() &&
-        sessionCount >= 3 &&
-        now - lastInterstitialAt >= 180000;
-
-      if (canShowInterstitial) {
-        interstitialOverlay?.open();
-        await playInterstitial();
-        interstitialOverlay?.close();
-        markInterstitialShown(now);
-      }
-
-      incrementSessionCount();
-      onGameOver?.retry?.();
+      await runRetryFlow();
     },
     onHome: onGameOver?.home,
     onShop: onGameOver?.shop,
@@ -179,14 +181,20 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
     pauseButton.type = "button";
     pauseButton.className = "icon-button debug-panel__button";
     pauseButton.textContent = "PAUSE";
-    pauseButton.addEventListener("click", () => pauseMenu?.open());
+    pauseButton.addEventListener("click", () => {
+      if (typeof window !== "undefined" && window.openPauseMenu) {
+        window.openPauseMenu();
+      } else {
+        pauseMenu?.open?.();
+      }
+    });
     shellRoot.querySelector(".debug-panel")?.appendChild(pauseButton);
   }
 
   router.showScreen(ScreenId.HOME);
   overlayRoot.classList.add("is-hidden");
 
-  return { router, pauseMenu, gameOverMenu };
+  return { router, pauseMenu, gameOverMenu, runRetryFlow };
 }
 
 export { ScreenId, OverlayId };

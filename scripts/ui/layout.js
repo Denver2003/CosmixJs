@@ -76,3 +76,43 @@ export function getGlassBorderRects(glassFrame) {
     },
   };
 }
+
+export function getCapsuleLayout(render, getGlassRect) {
+  const glassGetter =
+    getGlassRect ||
+    (typeof window !== "undefined" ? window.__getGlassRect : null);
+  if (!render || typeof glassGetter !== "function") {
+    return null;
+  }
+  const glass = glassGetter();
+  const frame = getGlassFrame(glass);
+  const frameScreen = worldRectToScreen(render, frame);
+  const innerScreen = worldRectToScreen(render, {
+    x: glass.left,
+    y: glass.top,
+    width: GLASS_WIDTH,
+    height: GLASS_HEIGHT,
+  });
+  const scaleX = frameScreen.width / frame.width;
+  const scaleY = frameScreen.height / frame.height;
+  return {
+    frame: frameScreen,
+    inner: innerScreen,
+    scaleX,
+    scaleY,
+    wall: Math.max(1, WALL_THICKNESS * scaleX),
+    floor: Math.max(1, FLOOR_THICKNESS * scaleY),
+  };
+}
+
+export function worldRectToScreen(render, rect) {
+  const bounds = render.bounds;
+  const scaleX = render.options.width / (bounds.max.x - bounds.min.x);
+  const scaleY = render.options.height / (bounds.max.y - bounds.min.y);
+  return {
+    x: (rect.x - bounds.min.x) * scaleX,
+    y: (rect.y - bounds.min.y) * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  };
+}

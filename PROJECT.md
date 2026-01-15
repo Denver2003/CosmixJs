@@ -25,6 +25,7 @@
 - **Kill line pulse**: always visible; laser barrier shifts from cyan→purple→red with increased activity; alpha grows with cup fill (0.2→0.8) and forces 1.0 in last 5 seconds.
 - **Laser barrier danger logic**: 0–0.5 danger from stack height vs death line, 0.5–1.0 from kill timer progress; barrier ignores the current waiting piece and only reacts after first contact.
 - **Game Over banner**: large canvas banner appears above the death line with a fast scale+alpha pop and laser-text glow; the menu overlay shows 2 seconds later.
+- **Game Over menu flow**: returning to `game` while in game-over state opens the menu immediately; pressing Play from Home during game-over triggers a full Retry flow (with interstitials) instead of staying stuck.
 - **Audio (runtime)**: HTMLAudio-based manager with caching/pooling, persisted settings (music/sfx/mute), BGM loop, placeholder assets in `assets/audio/`, and SFX hooks for spawn/drop, first impact, chain burst, bubble pop + reward (coins/points/instant), grenade, hail drop, gun shots, kill-line warning + timeout, combo (basic/super/mega/cosmo), level up, and cosmo multiplier up.
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
 - **Chain burst**: matched chains now play a 1.0s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst. Burst adds spin: rightward -> clockwise, leftward -> counterclockwise, random speed.
@@ -64,6 +65,7 @@
 - **Score/Coins HUD**: live score display; coins and best score persist between sessions (saved on game over, coins are rolled back if the player continues after a rewarded ad; best score stays).
 - **Canvas shell Home**: menu now aligns to the glass capsule layout with Prism Edge HUD, PLAY CTA, and bottom nav inside the capsule.
 - **Canvas UI visibility**: gameplay-only elements (cosmometer, level progress, touch overlay) are hidden while the shell menu is active.
+- **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner.
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
 
 ## File layout
@@ -128,6 +130,7 @@
 - `scripts/shell/game_over_menu.js` — game over menu overlay scaffold.
 - `scripts/ui/canvas_ui.js` — canvas UI dispatcher (HUD + overlays).
 - `scripts/ui/canvas_shell.js` — canvas shell screens (Home/Shop/Settings/Leaderboards).
+- `scripts/ui/canvas_overlays.js` — canvas pause/game-over/confirm modals + hit tests.
 - `css/base.css` — base tokens and global resets.
 - `css/layout.css` — app layout and core layers.
 - `css/components.css` — shared UI components.
