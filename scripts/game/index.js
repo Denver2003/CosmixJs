@@ -8,7 +8,13 @@ import { updateKillLine } from "./kill.js";
 import { updatePreview, repositionPreview } from "./preview.js";
 import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
-import { loadBestScore, saveBestScore, saveBonusInventory, saveCoins } from "./storage.js";
+import {
+  loadBestScore,
+  loadCoins,
+  saveBestScore,
+  saveBonusInventory,
+  saveCoins,
+} from "./storage.js";
 import { spawnScoreParticles, updateScoreParticles } from "./score_particles.js";
 import { recordCombo } from "./combo.js";
 import { spawnComboPopup, updateComboPopups } from "./combo_popup.js";
@@ -45,18 +51,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       mode.setGameOver();
     }
     if (mode.getMode() === mode.MODES.GAMEOVER) {
-      if (!state.gameOverHandled) {
-        saveCoins(state.coins);
-        saveBonusInventory(state.bonusInventory);
-        const prevBest = loadBestScore();
-        if (state.score > prevBest) {
-          saveBestScore(state.score);
-          if (typeof window !== "undefined" && window.__setBestScore) {
-            window.__setBestScore(state.score);
-          }
-        }
-        state.gameOverHandled = true;
-      }
+      finalizeGameOver();
       return;
     }
     if (mode.getMode() !== mode.MODES.GAMEPLAY) {
@@ -204,6 +199,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       window.clearTimeout(state.gameOverMenuTimer);
       state.gameOverMenuTimer = 0;
     }
+    rollbackGameOverCoins();
     state.gameOver = false;
     state.gameOverHandled = false;
     state.paused = false;
@@ -268,6 +264,37 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     }
   }
 
+  function finalizeGameOver() {
+    if (state.gameOverHandled) {
+      return;
+    }
+    const prevCoins = loadCoins();
+    state.lastGameOverStoredCoins = prevCoins;
+    state.lastGameOverCoins = Math.max(0, Math.floor(state.coins - prevCoins));
+    saveCoins(state.coins);
+    saveBonusInventory(state.bonusInventory);
+    const prevBest = loadBestScore();
+    if (state.score > prevBest) {
+      saveBestScore(state.score);
+      if (typeof window !== "undefined" && window.__setBestScore) {
+        window.__setBestScore(state.score);
+      }
+    }
+    state.gameOverHandled = true;
+  }
+
+  function rollbackGameOverCoins() {
+    if (!state.gameOverHandled || state.lastGameOverCoins <= 0) {
+      return;
+    }
+    const restored = Math.max(0, Math.floor(state.lastGameOverStoredCoins || 0));
+    if (state.coins !== restored) {
+      state.coins = restored;
+      saveCoins(state.coins);
+    }
+    state.lastGameOverCoins = 0;
+  }
+
   return {
     state,
     start,
@@ -279,7 +306,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     resumeIfAuto: mode.resumeIfAuto,
     tickAutoResume: mode.tickAutoResume,
     getPauseInfo: mode.getPauseInfo,
-    setGameOver: mode.setGameOver,
+    setGameOver: () => {
+      mode.setGameOver();
+      finalizeGameOver();
+    },
     openShell: mode.openShell,
     startGame: mode.startGame,
     getMode: mode.getMode,
