@@ -63,10 +63,10 @@
 - **Glass frame overlay**: PNG frame (`assets/levelUI/glass_frame.png`) is drawn over the glass for visual alignment checks.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
 - **Score/Coins HUD**: live score display; coins and best score persist between sessions (saved on game over, coins are rolled back if the player continues after a rewarded ad; best score stays).
-- **Canvas shell Home**: menu now aligns to the glass capsule layout with Prism Edge HUD, PLAY CTA, and bottom nav inside the capsule.
-- **Canvas shell Shop/Settings/Leaderboards**: screens render as Prism Edge panels inside the capsule with icon back buttons, capsule-bound tabs, and scaled cards/rows; background is dimmed around the capsule.
+- **Canvas shell Home**: menu now aligns to the glass capsule layout with Prism Edge HUD, PLAY CTA, and bottom nav inside the capsule. Best score chip is wider and the coin chip is ~30% wider for better fit on small screens.
+- **Canvas shell Shop/Settings/Leaderboards**: screens render as Prism Edge panels inside the capsule with icon back buttons, capsule-bound tabs, and scaled cards/rows; background is dimmed around the capsule. Panels now scale down more on small screens and can expand up to +20% width/+30% height, with a 40px allowed overflow beyond the capsule.
 - **Canvas UI visibility**: gameplay-only elements (cosmometer, level progress, touch overlay) are hidden while the shell menu is active.
-- **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner.
+- **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner. Modal UI scale now clamps down to 0.6 on small screens.
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
 
 ## File layout

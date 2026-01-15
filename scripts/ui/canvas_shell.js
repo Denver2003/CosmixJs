@@ -280,22 +280,24 @@ function drawHomeScreen(ctx, render, capsule) {
   const best = state.bestScore ?? 0;
   const user = state.userName || "Guest";
   const { inner } = capsule;
-  const chipHeight = clamp(inner.height * 0.06, 28, 48);
-  const profileY = inner.y - 52;
+  const chipHeight = clamp(inner.height * 0.06, 22, 48);
+  const profileY = inner.y - chipHeight - inner.height * 0.02;
 
   drawCapsuleTint(ctx, inner);
   drawProfileChip(ctx, inner.x - 40, profileY, chipHeight, user);
   drawPrismTitle(ctx, inner, "COSMIX");
-  const chipWidth = clamp(inner.width * 0.26, 120, 170);
-  const coinsX = inner.x + inner.width - chipWidth + 40;
-  drawCoinChip(ctx, coinsX, profileY, chipWidth, chipHeight, coins);
+  const chipWidth = clamp(inner.width * 0.26, 96, 170);
+  const coinWidth = clamp(chipWidth * 1.3, chipWidth, inner.width + 80);
+  const coinsX = inner.x + inner.width - coinWidth + 40;
+  drawCoinChip(ctx, coinsX, profileY, coinWidth, chipHeight, coins);
   const bestY = inner.y + inner.height * 0.15;
-  const bestX = inner.x + (inner.width - chipWidth) / 2;
-  drawHudChip(ctx, bestX, bestY, chipWidth, chipHeight, "Best", best);
+  const bestWidth = clamp(chipWidth * 2, chipWidth, inner.width + 80);
+  const bestX = inner.x + (inner.width - bestWidth) / 2;
+  drawHudChip(ctx, bestX, bestY, bestWidth, chipHeight, "Best", best);
 
   const playY = inner.y + inner.height * 0.65;
   const playWidth = inner.width * 0.6;
-  const playHeight = clamp(inner.height * 0.1, 52, 72);
+  const playHeight = clamp(inner.height * 0.1, 44, 72);
   const playRect = drawPrismPrimaryButton(
     ctx,
     inner.x + inner.width / 2,
@@ -305,9 +307,15 @@ function drawHomeScreen(ctx, render, capsule) {
     "PLAY",
     getUiButtonImage("play")
   );
-  drawSubtext(ctx, inner.x + inner.width / 2, playRect.y + playRect.height + inner.height * 0.035);
+  const subtextSize = Math.max(10, Math.round(14 * getUiScale(inner)));
+  drawSubtext(
+    ctx,
+    inner.x + inner.width / 2,
+    playRect.y + playRect.height + inner.height * 0.035,
+    subtextSize
+  );
 
-  const panelHeight = clamp(inner.height * 0.09, 44, 64);
+  const panelHeight = clamp(inner.height * 0.09, 36, 64);
   const panelWidth = inner.width * 0.88;
   const panelY = inner.y + inner.height - panelHeight - inner.height * 0.02;
   const footer = drawBottomPanel(
@@ -363,16 +371,26 @@ function drawShopScreen(ctx, render, capsule) {
   const progress = getShopProgress();
   const inventory = loadBonusInventory();
 
-  const panelWidth = inner.width * 0.9;
-  const panelHeight = inner.height * 0.78;
-  const panelX = inner.x + (inner.width - panelWidth) / 2;
-  const panelY = inner.y + inner.height * 0.12;
+  const basePanelWidth = inner.width * 0.9;
+  const basePanelHeight = inner.height * 0.78;
+  const panelWidth = Math.min(basePanelWidth * 1.2, inner.width + 80);
+  const panelHeight = Math.min(basePanelHeight * 1.3, inner.height + 80);
+  const panelX = clamp(
+    inner.x + (inner.width - panelWidth) / 2,
+    inner.x - 40,
+    inner.x + inner.width - panelWidth + 40
+  );
+  const panelY = clamp(
+    inner.y + inner.height * 0.12,
+    inner.y - 40,
+    inner.y + inner.height - panelHeight + 40
+  );
   const radius = Math.min(24, panelHeight * 0.08);
   drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, radius);
 
-  const pad = clamp(panelWidth * 0.04, 12, 20);
-  const headerHeight = clamp(48 * scale, 34, 56);
-  const backSize = clamp(32 * scale, 24, 36);
+  const pad = clamp(panelWidth * 0.04, 8, 20);
+  const headerHeight = clamp(48 * scale, 28, 56);
+  const backSize = clamp(32 * scale, 20, 36);
   const backRect = drawBackIconButton(
     ctx,
     panelX + pad,
@@ -380,7 +398,7 @@ function drawShopScreen(ctx, render, capsule) {
     backSize
   );
 
-  const titleSize = clamp(Math.round(20 * scale), 14, 22);
+  const titleSize = clamp(Math.round(20 * scale), 12, 22);
   ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.font = `${titleSize}px "RussoOne", sans-serif`;
@@ -390,27 +408,28 @@ function drawShopScreen(ctx, render, capsule) {
   ctx.restore();
 
   const chipHeight = backSize;
-  const chipWidth = clamp(panelWidth * 0.26, 110, 150);
+  const chipWidth = clamp(panelWidth * 0.26, 96, 150);
+  const coinWidth = clamp(chipWidth * 1.3, chipWidth, panelWidth - pad * 2);
   drawCoinChip(
     ctx,
-    panelX + panelWidth - pad - chipWidth,
+    panelX + panelWidth - pad - coinWidth,
     panelY + pad + (headerHeight - chipHeight) / 2,
-    chipWidth,
+    coinWidth,
     chipHeight,
     coins
   );
 
-  const tabHeight = clamp(32 * scale, 24, 36);
-  const tabGap = clamp(12 * scale, 8, 14);
+  const tabHeight = clamp(32 * scale, 20, 36);
+  const tabGap = clamp(12 * scale, 6, 14);
   const tabWidth = (panelWidth - pad * 2 - tabGap) / 2;
-  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 6, 12);
+  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 4, 12);
   const tabs = drawShopTabs(ctx, panelX + panelWidth / 2, tabsY, shopState.tab, {
     width: tabWidth,
     height: tabHeight,
     gap: tabGap,
   });
 
-  const contentTop = tabsY + tabHeight + clamp(12 * scale, 8, 14);
+  const contentTop = tabsY + tabHeight + clamp(12 * scale, 6, 14);
   const contentHeight = panelY + panelHeight - pad - contentTop;
   const upgrades = buildUpgradeCards(progress, coins);
   const items = buildItemCards(progress, inventory, coins);
@@ -424,11 +443,11 @@ function drawShopScreen(ctx, render, capsule) {
     shopState.tab === "items" ? items : upgrades,
     shopState.tab === "upgrades",
     {
-      gap: clamp(12 * scale, 8, 14),
-      cardHeight: clamp(86 * scale, 68, 96),
-      fontSize: clamp(14 * scale, 12, 16),
-      actionWidth: clamp(120 * scale, 98, 130),
-      actionHeight: clamp(36 * scale, 30, 40),
+      gap: clamp(12 * scale, 6, 14),
+      cardHeight: clamp(86 * scale, 60, 96),
+      fontSize: clamp(14 * scale, 11, 16),
+      actionWidth: clamp(120 * scale, 90, 130),
+      actionHeight: clamp(36 * scale, 24, 40),
     }
   );
 
@@ -722,15 +741,25 @@ function drawSettingsScreen(ctx, render, capsule) {
   const user = state.userName || "Guest";
   const audio = state.audio || getAudioSettings();
 
-  const panelWidth = inner.width * 0.9;
-  const panelHeight = inner.height * 0.78;
-  const panelX = inner.x + (inner.width - panelWidth) / 2;
-  const panelY = inner.y + inner.height * 0.12;
+  const basePanelWidth = inner.width * 0.9;
+  const basePanelHeight = inner.height * 0.78;
+  const panelWidth = Math.min(basePanelWidth * 1.2, inner.width + 80);
+  const panelHeight = Math.min(basePanelHeight * 1.3, inner.height + 80);
+  const panelX = clamp(
+    inner.x + (inner.width - panelWidth) / 2,
+    inner.x - 40,
+    inner.x + inner.width - panelWidth + 40
+  );
+  const panelY = clamp(
+    inner.y + inner.height * 0.12,
+    inner.y - 40,
+    inner.y + inner.height - panelHeight + 40
+  );
   drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, Math.min(24, panelHeight * 0.08));
 
-  const pad = clamp(panelWidth * 0.04, 12, 20);
-  const headerHeight = clamp(48 * scale, 34, 56);
-  const backSize = clamp(32 * scale, 24, 36);
+  const pad = clamp(panelWidth * 0.04, 8, 20);
+  const headerHeight = clamp(48 * scale, 28, 56);
+  const backSize = clamp(32 * scale, 20, 36);
   const backRect = drawBackIconButton(
     ctx,
     panelX + pad,
@@ -738,7 +767,7 @@ function drawSettingsScreen(ctx, render, capsule) {
     backSize
   );
 
-  const titleSize = clamp(Math.round(20 * scale), 14, 22);
+  const titleSize = clamp(Math.round(20 * scale), 12, 22);
   ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.font = `${titleSize}px "RussoOne", sans-serif`;
@@ -748,19 +777,21 @@ function drawSettingsScreen(ctx, render, capsule) {
   ctx.restore();
 
   const chipHeight = backSize;
+  const profileChipWidth = clamp(chipHeight * 3.6, 96, 180);
   drawProfileChip(
     ctx,
-    panelX + panelWidth - pad - chipHeight * 3.6,
+    panelX + panelWidth - pad - profileChipWidth,
     panelY + pad + (headerHeight - chipHeight) / 2,
     chipHeight,
-    user
+    user,
+    { width: profileChipWidth }
   );
 
-  let y = panelY + pad + headerHeight + clamp(10 * scale, 8, 12);
+  let y = panelY + pad + headerHeight + clamp(10 * scale, 6, 12);
   const sectionWidth = panelWidth - pad * 2;
-  const sectionGap = clamp(12 * scale, 10, 16);
-  const rowHeight = clamp(38 * scale, 28, 40);
-  const headerSize = clamp(34 * scale, 26, 36);
+  const sectionGap = clamp(12 * scale, 8, 16);
+  const rowHeight = clamp(38 * scale, 24, 40);
+  const headerSize = clamp(34 * scale, 22, 36);
 
   const audioSection = drawSettingsSection(
     ctx,
@@ -840,15 +871,25 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
   const state = getAppState();
   const user = state.userName || "Guest";
 
-  const panelWidth = inner.width * 0.9;
-  const panelHeight = inner.height * 0.78;
-  const panelX = inner.x + (inner.width - panelWidth) / 2;
-  const panelY = inner.y + inner.height * 0.12;
+  const basePanelWidth = inner.width * 0.9;
+  const basePanelHeight = inner.height * 0.78;
+  const panelWidth = Math.min(basePanelWidth * 1.2, inner.width + 80);
+  const panelHeight = Math.min(basePanelHeight * 1.3, inner.height + 80);
+  const panelX = clamp(
+    inner.x + (inner.width - panelWidth) / 2,
+    inner.x - 40,
+    inner.x + inner.width - panelWidth + 40
+  );
+  const panelY = clamp(
+    inner.y + inner.height * 0.12,
+    inner.y - 40,
+    inner.y + inner.height - panelHeight + 40
+  );
   drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, Math.min(24, panelHeight * 0.08));
 
-  const pad = clamp(panelWidth * 0.04, 12, 20);
-  const headerHeight = clamp(48 * scale, 34, 56);
-  const backSize = clamp(32 * scale, 24, 36);
+  const pad = clamp(panelWidth * 0.04, 8, 20);
+  const headerHeight = clamp(48 * scale, 28, 56);
+  const backSize = clamp(32 * scale, 20, 36);
   const backRect = drawBackIconButton(
     ctx,
     panelX + pad,
@@ -856,7 +897,7 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     backSize
   );
 
-  const titleSize = clamp(Math.round(20 * scale), 14, 22);
+  const titleSize = clamp(Math.round(20 * scale), 12, 22);
   ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.font = `${titleSize}px "RussoOne", sans-serif`;
@@ -866,18 +907,20 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
   ctx.restore();
 
   const chipHeight = backSize;
+  const profileChipWidth = clamp(chipHeight * 3.6, 96, 180);
   drawProfileChip(
     ctx,
-    panelX + panelWidth - pad - chipHeight * 3.6,
+    panelX + panelWidth - pad - profileChipWidth,
     panelY + pad + (headerHeight - chipHeight) / 2,
     chipHeight,
-    user
+    user,
+    { width: profileChipWidth }
   );
 
-  const tabHeight = clamp(32 * scale, 24, 36);
-  const tabGap = clamp(12 * scale, 8, 14);
+  const tabHeight = clamp(32 * scale, 20, 36);
+  const tabGap = clamp(12 * scale, 6, 14);
   const tabWidth = (panelWidth - pad * 2 - tabGap) / 2;
-  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 6, 12);
+  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 4, 12);
   const tabs = drawLeaderboardsTabs(
     ctx,
     panelX + panelWidth / 2,
@@ -886,7 +929,7 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     { width: tabWidth, height: tabHeight, gap: tabGap }
   );
 
-  const listTop = tabsY + tabHeight + clamp(12 * scale, 8, 14);
+  const listTop = tabsY + tabHeight + clamp(12 * scale, 6, 14);
   drawLeaderboardsList(
     ctx,
     panelX + pad,
@@ -933,9 +976,9 @@ function drawLeaderboardsTabs(ctx, cx, y, activeTab, options = {}) {
 
 function drawLeaderboardsList(ctx, x, y, width, height, label, rows, options = {}) {
   const scale = options.scale ?? 1;
-  const labelSize = Math.max(10, Math.round(12 * scale));
-  const rowHeight = Math.max(28, Math.round(34 * scale));
-  const rowGap = Math.max(4, Math.round(6 * scale));
+  const labelSize = Math.max(9, Math.round(12 * scale));
+  const rowHeight = Math.max(24, Math.round(34 * scale));
+  const rowGap = Math.max(3, Math.round(6 * scale));
   ctx.save();
   if (options.prism) {
     drawPrismPanel(ctx, x, y, width, height, 16, {
@@ -972,7 +1015,7 @@ function drawLeaderboardRow(ctx, x, y, width, height, row) {
   });
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(10, Math.round(height * 0.35))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(9, Math.round(height * 0.35))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(String(row.rank), x + 12, y + height / 2);
@@ -1005,7 +1048,7 @@ function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   const scale = options.scale ?? 1;
   const headerHeight = options.headerHeight ?? 40;
   const rowHeight = options.rowHeight ?? 40;
-  const pad = options.pad ?? Math.max(12, Math.round(14 * scale));
+  const pad = options.pad ?? Math.max(8, Math.round(14 * scale));
   const radius = options.radius ?? 18;
   const totalHeight = headerHeight + rows.length * rowHeight;
   ctx.save();
@@ -1021,7 +1064,7 @@ function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   }
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(12, Math.round(16 * scale))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(10, Math.round(16 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(title, x + pad, y + headerHeight / 2);
@@ -1060,15 +1103,15 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
   }
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(10, Math.round(12 * scale))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(9, Math.round(12 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(row.label, x + 12, y + rowHeight / 2);
 
   let controlRect = null;
   if (row.type === "slider") {
-    const sliderWidth = Math.max(90, Math.min(140 * scale, width * 0.4));
-    const sliderHeight = Math.max(6, Math.round(rowHeight * 0.22));
+    const sliderWidth = Math.max(70, Math.min(140 * scale, width * 0.4));
+    const sliderHeight = Math.max(4, Math.round(rowHeight * 0.22));
     const sliderRect = {
       x: x + width - sliderWidth - 12,
       y: y + (rowHeight - sliderHeight) / 2,
@@ -1079,8 +1122,8 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
     drawSlider(ctx, sliderRect.x, sliderRect.y, sliderRect.width, sliderRect.height, row.value || 0);
     controlRect = sliderRect;
   } else if (row.type === "toggle") {
-    const toggleWidth = Math.max(36, Math.round(42 * scale));
-    const toggleHeight = Math.max(16, Math.round(rowHeight * 0.5));
+    const toggleWidth = Math.max(30, Math.round(42 * scale));
+    const toggleHeight = Math.max(14, Math.round(rowHeight * 0.5));
     const toggleRect = {
       x: x + width - toggleWidth - 12,
       y: y + (rowHeight - toggleHeight) / 2,
@@ -1091,8 +1134,8 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
     drawToggle(ctx, toggleRect.x, toggleRect.y, toggleRect.width, toggleRect.height, row.value);
     controlRect = toggleRect;
   } else if (row.type === "action") {
-    const actionWidth = Math.max(86, Math.round(100 * scale));
-    const actionHeight = Math.max(24, Math.round(rowHeight * 0.65));
+    const actionWidth = Math.max(74, Math.round(100 * scale));
+    const actionHeight = Math.max(20, Math.round(rowHeight * 0.65));
     controlRect = drawActionButton(
       ctx,
       x + width - actionWidth - 12,
@@ -1220,7 +1263,7 @@ function drawTabButton(ctx, x, y, w, h, label, active) {
   });
   ctx.save();
   ctx.fillStyle = active ? "#ffffff" : "rgba(255, 255, 255, 0.75)";
-  ctx.font = `${Math.max(11, Math.round(h * 0.36))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(10, Math.round(h * 0.36))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + w / 2, y + h / 2);
@@ -1236,7 +1279,7 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) 
   const actionWidth = options.actionWidth ?? 120;
   const actionHeight = options.actionHeight ?? 38;
   const maxCards = Math.floor((height + gap) / (cardHeight + gap));
-  const textPad = Math.max(12, Math.round(cardHeight * 0.18));
+  const textPad = Math.max(8, Math.round(cardHeight * 0.18));
   ctx.save();
   ctx.font = `${fontSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
@@ -1435,17 +1478,17 @@ function drawCapsuleTint(ctx, inner) {
 function drawPrismTitle(ctx, inner, title) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(24, Math.round(inner.height * 0.06))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(20, Math.round(inner.height * 0.06))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(title, inner.x + inner.width / 2, inner.y + inner.height * 0.09);
   ctx.restore();
 }
 
-function drawSubtext(ctx, x, y) {
+function drawSubtext(ctx, x, y, size = 14) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = "14px \"RussoOne\", sans-serif";
+  ctx.font = `${size}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.fillText("Tap • Stack • Combo", x, y);
@@ -1469,8 +1512,8 @@ function drawPrismPanel(ctx, x, y, width, height, radius, options = {}) {
   ctx.restore();
 }
 
-function drawProfileChip(ctx, x, y, size, label) {
-  const chipWidth = clamp(size * 3.6, 120, 180);
+function drawProfileChip(ctx, x, y, size, label, options = {}) {
+  const chipWidth = options.width ?? clamp(size * 3.6, 96, 180);
   const chipHeight = size;
   drawPrismPanel(ctx, x, y, chipWidth, chipHeight, chipHeight / 2);
   ctx.save();
@@ -1479,7 +1522,7 @@ function drawProfileChip(ctx, x, y, size, label) {
   ctx.arc(x + chipHeight / 2, y + chipHeight / 2, chipHeight * 0.38, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(12, Math.round(chipHeight * 0.38))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(10, Math.round(chipHeight * 0.38))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + chipHeight, y + chipHeight / 2);
@@ -1517,7 +1560,7 @@ function drawCoinChip(ctx, x, y, width, height, value) {
   }
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(12, Math.round(height * 0.36))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(10, Math.round(height * 0.36))}px "RussoOne", sans-serif`;
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
   ctx.fillText(formatValue(value), x + width - height * 0.35, y + height / 2);
@@ -1590,7 +1633,7 @@ function drawPrismPrimaryButton(ctx, cx, cy, width, height, label, sprite) {
     );
   } else {
     ctx.fillStyle = "#081018";
-    ctx.font = `${Math.max(18, Math.round(height * 0.45))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(16, Math.round(height * 0.45))}px "RussoOne", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, cx, cy);
@@ -1681,7 +1724,7 @@ function clamp(value, min, max) {
 
 function getUiScale(inner) {
   const scale = Math.min(inner.width / 360, inner.height / 640);
-  return clamp(scale, 0.85, 1.15);
+  return clamp(scale, 0.6, 1.1);
 }
 
 function roundRect(ctx, x, y, width, height, radius) {

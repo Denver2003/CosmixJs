@@ -276,14 +276,14 @@ export function handleCanvasOverlayBack({ state, isGameActive } = {}) {
 function drawPauseMenu(ctx, inner) {
   const scale = getUiScale(inner);
   const panelWidth = clamp(inner.width * 0.78, 260 * scale, 420 * scale);
-  const pad = clamp(16 * scale, 14, 24);
-  const gap = clamp(10 * scale, 8, 14);
-  const titleSize = clamp(Math.round(inner.height * 0.05), 16, 24);
-  const buttonHeight = clamp(Math.round(inner.height * 0.075), 36, 52);
-  const rowGap = clamp(8 * scale, 8, 12);
-  const audioTitleSize = clamp(Math.round(inner.height * 0.032), 10, 12);
-  const audioRowHeight = clamp(Math.round(inner.height * 0.06), 26, 34);
-  const audioPad = clamp(10 * scale, 8, 12);
+  const pad = clamp(16 * scale, 8, 22);
+  const gap = clamp(10 * scale, 6, 12);
+  const titleSize = clamp(Math.round(inner.height * 0.05), 12, 22);
+  const buttonHeight = clamp(Math.round(inner.height * 0.075), 28, 48);
+  const rowGap = clamp(8 * scale, 6, 10);
+  const audioTitleSize = clamp(Math.round(inner.height * 0.032), 9, 12);
+  const audioRowHeight = clamp(Math.round(inner.height * 0.06), 20, 30);
+  const audioPad = clamp(10 * scale, 6, 10);
 
   const buttonsHeight = buttonHeight * 2 + rowGap;
   const audioBlockHeight =
@@ -353,8 +353,8 @@ function drawPauseMenu(ctx, inner) {
   ctx.restore();
 
   const audio = getAudioSettings();
-  const sliderWidth = Math.max(80, panelWidth * 0.35);
-  const sliderHeight = clamp(Math.round(audioRowHeight * 0.25), 6, 10);
+  const sliderWidth = Math.max(64, panelWidth * 0.35);
+  const sliderHeight = clamp(Math.round(audioRowHeight * 0.25), 4, 8);
   const rowStartY = audioY + audioPad + audioTitleSize + rowGap;
   const labelsX = panelX + pad + audioPad;
   const controlX = panelX + panelWidth - pad - audioPad - sliderWidth;
@@ -401,14 +401,15 @@ function drawPauseMenu(ctx, inner) {
 }
 
 function drawAutoPause(ctx, inner, state) {
+  const scale = getUiScale(inner);
   const panelWidth = Math.min(260, inner.width * 0.7);
-  const panelHeight = clamp(Math.round(inner.height * 0.12), 54, 72);
+  const panelHeight = clamp(Math.round(inner.height * 0.12), 42, 64);
   const panelX = inner.x + (inner.width - panelWidth) / 2;
   const panelY = inner.y + (inner.height - panelHeight) / 2;
   drawModalPanel(ctx, panelX, panelY, panelWidth, panelHeight);
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "14px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.max(10, Math.round(14 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("PAUSED (AUTO)", panelX + panelWidth / 2, panelY + panelHeight * 0.4);
@@ -417,7 +418,7 @@ function drawAutoPause(ctx, inner, state) {
     const remaining = Math.max(0, state.pausedResumeMs - nowMs);
     const seconds = Math.ceil(remaining / 1000);
     ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-    ctx.font = "12px \"RussoOne\", sans-serif";
+    ctx.font = `${Math.max(9, Math.round(12 * scale))}px "RussoOne", sans-serif`;
     ctx.fillText(
       `RESUMING IN ${formatNumber(seconds)}`,
       panelX + panelWidth / 2,
@@ -431,11 +432,11 @@ function drawAutoPause(ctx, inner, state) {
 function drawGameOverMenu(ctx, inner) {
   const scale = getUiScale(inner);
   const panelWidth = clamp(inner.width * 0.78, 260 * scale, 420 * scale);
-  const pad = clamp(16 * scale, 14, 24);
-  const gap = clamp(10 * scale, 8, 14);
-  const titleSize = clamp(Math.round(inner.height * 0.05), 16, 24);
-  const buttonHeight = clamp(Math.round(inner.height * 0.075), 36, 52);
-  const rowGap = clamp(8 * scale, 8, 12);
+  const pad = clamp(16 * scale, 8, 22);
+  const gap = clamp(10 * scale, 6, 12);
+  const titleSize = clamp(Math.round(inner.height * 0.05), 12, 22);
+  const buttonHeight = clamp(Math.round(inner.height * 0.075), 28, 48);
+  const rowGap = clamp(8 * scale, 6, 10);
   const buttonWidth = (panelWidth - pad * 2 - rowGap) / 2;
 
   const buttons = [];
@@ -521,13 +522,13 @@ function drawGameOverMenu(ctx, inner) {
 
 function drawConfirmDialog(ctx, inner) {
   const scale = getUiScale(inner);
-  const panelWidth = clamp(inner.width * 0.72, 240 * scale, 380 * scale);
-  const pad = clamp(16 * scale, 14, 24);
-  const gap = clamp(8 * scale, 8, 12);
-  const titleSize = clamp(Math.round(inner.height * 0.045), 15, 22);
-  const bodySize = clamp(Math.round(inner.height * 0.032), 11, 14);
-  const buttonHeight = clamp(Math.round(inner.height * 0.07), 32, 46);
-  const rowGap = clamp(8 * scale, 8, 12);
+  const panelWidth = clamp(inner.width * 0.72, 200 * scale, 360 * scale);
+  const pad = clamp(16 * scale, 8, 22);
+  const gap = clamp(8 * scale, 6, 10);
+  const titleSize = clamp(Math.round(inner.height * 0.045), 12, 20);
+  const bodySize = clamp(Math.round(inner.height * 0.032), 9, 13);
+  const buttonHeight = clamp(Math.round(inner.height * 0.07), 26, 42);
+  const rowGap = clamp(8 * scale, 6, 10);
 
   ctx.save();
   ctx.font = `${bodySize}px "RussoOne", sans-serif`;
@@ -596,7 +597,7 @@ function drawAudioRow(
 ) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  ctx.font = "11px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.max(9, Math.round(height * 0.4))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(label, labelX, y + height / 2);
@@ -609,7 +610,7 @@ function drawAudioRow(
 function drawAudioToggle(ctx, labelX, controlX, y, height, label, width, on) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  ctx.font = "11px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.max(9, Math.round(height * 0.4))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(label, labelX, y + height / 2);
@@ -640,7 +641,7 @@ function drawModalTitle(ctx, panelX, panelY, panelWidth, size, text) {
   ctx.font = `${size}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(text, panelX + panelWidth / 2, panelY + Math.max(8, size * 0.15));
+  ctx.fillText(text, panelX + panelWidth / 2, panelY + Math.max(6, size * 0.15));
   ctx.restore();
 }
 
@@ -657,7 +658,7 @@ function drawModalButton(ctx, x, y, width, height, label, options = {}) {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = disabled ? "rgba(255, 255, 255, 0.55)" : "#ffffff";
-  ctx.font = `${Math.max(11, Math.round(height * 0.32))}px "RussoOne", sans-serif`;
+  ctx.font = `${Math.max(9, Math.round(height * 0.32))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + width / 2, y + height / 2);
@@ -762,7 +763,7 @@ function clamp(value, min, max) {
 
 function getUiScale(inner) {
   const scale = Math.min(inner.width / 360, inner.height / 640);
-  return clamp(scale, 0.85, 1.15);
+  return clamp(scale, 0.6, 1.1);
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
