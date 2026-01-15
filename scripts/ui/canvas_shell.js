@@ -56,11 +56,27 @@ export function drawShellUi(ctx, render, getGlassRect) {
   const width = render.options.width;
   const height = render.options.height;
   ctx.save();
-  if (active === ScreenId.HOME) {
-    const capsule = getCapsuleLayout(render, getGlassRect);
-    if (capsule) {
-      drawGlobalDim(ctx, width, height);
+  const capsule = getCapsuleLayout(render, getGlassRect);
+  if (capsule) {
+    drawGlobalDim(ctx, width, height);
+    if (active === ScreenId.HOME) {
       drawHomeScreen(ctx, render, capsule);
+      ctx.restore();
+      return;
+    }
+    drawCapsuleTint(ctx, capsule.inner);
+    if (active === ScreenId.SHOP) {
+      drawShopScreen(ctx, render, capsule);
+      ctx.restore();
+      return;
+    }
+    if (active === ScreenId.SETTINGS) {
+      drawSettingsScreen(ctx, render, capsule);
+      ctx.restore();
+      return;
+    }
+    if (active === ScreenId.LEADERBOARDS) {
+      drawLeaderboardsScreen(ctx, render, capsule);
       ctx.restore();
       return;
     }
@@ -305,32 +321,117 @@ function drawHomeScreen(ctx, render, capsule) {
   lastLayout.home = { play: playRect, footer };
 }
 
-function drawShopScreen(ctx, render) {
-  const { width, height } = render.options;
-  const pad = 32;
-  const headerY = 48;
+function drawShopScreen(ctx, render, capsule) {
+  if (!capsule) {
+    const { width, height } = render.options;
+    const pad = 32;
+    const headerY = 48;
+    const state = getAppState();
+    const coins = state.coins ?? 0;
+    const progress = getShopProgress();
+    const inventory = loadBonusInventory();
+
+    const backRect = drawBackButton(ctx, pad, headerY, "BACK");
+    drawShopHeader(ctx, width, headerY, pad, coins);
+
+    const tabs = drawShopTabs(ctx, width / 2, headerY + 70, shopState.tab);
+    const contentTop = headerY + 130;
+    const upgrades = buildUpgradeCards(progress, coins);
+    const items = buildItemCards(progress, inventory, coins);
+    resetShopActions();
+    drawShopCards(
+      ctx,
+      pad,
+      contentTop,
+      width - pad * 2,
+      height - contentTop - pad,
+      shopState.tab === "items" ? items : upgrades,
+      shopState.tab === "upgrades"
+    );
+    lastLayout.shop = {
+      back: backRect,
+      tabs,
+      actions: getActionRects(),
+    };
+    return;
+  }
+
+  const { inner } = capsule;
+  const scale = getUiScale(inner);
   const state = getAppState();
   const coins = state.coins ?? 0;
   const progress = getShopProgress();
   const inventory = loadBonusInventory();
 
-  const backRect = drawBackButton(ctx, pad, headerY, "BACK");
-  drawShopHeader(ctx, width, headerY, pad, coins);
+  const panelWidth = inner.width * 0.9;
+  const panelHeight = inner.height * 0.78;
+  const panelX = inner.x + (inner.width - panelWidth) / 2;
+  const panelY = inner.y + inner.height * 0.12;
+  const radius = Math.min(24, panelHeight * 0.08);
+  drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, radius);
 
-  const tabs = drawShopTabs(ctx, width / 2, headerY + 70, shopState.tab);
-  const contentTop = headerY + 130;
+  const pad = clamp(panelWidth * 0.04, 12, 20);
+  const headerHeight = clamp(48 * scale, 34, 56);
+  const backSize = clamp(32 * scale, 24, 36);
+  const backRect = drawBackIconButton(
+    ctx,
+    panelX + pad,
+    panelY + pad + (headerHeight - backSize) / 2,
+    backSize
+  );
+
+  const titleSize = clamp(Math.round(20 * scale), 14, 22);
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${titleSize}px "RussoOne", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SHOP", panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  ctx.restore();
+
+  const chipHeight = backSize;
+  const chipWidth = clamp(panelWidth * 0.26, 110, 150);
+  drawCoinChip(
+    ctx,
+    panelX + panelWidth - pad - chipWidth,
+    panelY + pad + (headerHeight - chipHeight) / 2,
+    chipWidth,
+    chipHeight,
+    coins
+  );
+
+  const tabHeight = clamp(32 * scale, 24, 36);
+  const tabGap = clamp(12 * scale, 8, 14);
+  const tabWidth = (panelWidth - pad * 2 - tabGap) / 2;
+  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 6, 12);
+  const tabs = drawShopTabs(ctx, panelX + panelWidth / 2, tabsY, shopState.tab, {
+    width: tabWidth,
+    height: tabHeight,
+    gap: tabGap,
+  });
+
+  const contentTop = tabsY + tabHeight + clamp(12 * scale, 8, 14);
+  const contentHeight = panelY + panelHeight - pad - contentTop;
   const upgrades = buildUpgradeCards(progress, coins);
   const items = buildItemCards(progress, inventory, coins);
   resetShopActions();
   drawShopCards(
     ctx,
-    pad,
+    panelX + pad,
     contentTop,
-    width - pad * 2,
-    height - contentTop - pad,
+    panelWidth - pad * 2,
+    contentHeight,
     shopState.tab === "items" ? items : upgrades,
-    shopState.tab === "upgrades"
+    shopState.tab === "upgrades",
+    {
+      gap: clamp(12 * scale, 8, 14),
+      cardHeight: clamp(86 * scale, 68, 96),
+      fontSize: clamp(14 * scale, 12, 16),
+      actionWidth: clamp(120 * scale, 98, 130),
+      actionHeight: clamp(36 * scale, 30, 40),
+    }
   );
+
   lastLayout.shop = {
     back: backRect,
     tabs,
@@ -563,47 +664,141 @@ function getActionRects() {
   return shopActions;
 }
 
-function drawSettingsScreen(ctx, render) {
-  const { width } = render.options;
-  const pad = 32;
-  const headerY = 48;
+function drawSettingsScreen(ctx, render, capsule) {
+  if (!capsule) {
+    const { width } = render.options;
+    const pad = 32;
+    const headerY = 48;
+    const state = getAppState();
+    const user = state.userName || "Guest";
+    const audio = state.audio || getAudioSettings();
+
+    const backRect = drawBackButton(ctx, pad, headerY, "BACK");
+    drawSettingsHeader(ctx, width, headerY, pad, user);
+
+    let y = headerY + 90;
+    const audioSection = drawSettingsSection(
+      ctx,
+      pad,
+      y,
+      width - pad * 2,
+      "Audio",
+      [
+        { key: "music", label: "Music", value: audio.music ?? 70, type: "slider" },
+        { key: "sfx", label: "SFX", value: audio.sfx ?? 80, type: "slider" },
+        { key: "mute", label: "Mute", value: audio.mute ?? false, type: "toggle" },
+      ],
+      { capture: true }
+    );
+    y = audioSection.endY;
+    const accountSection = drawSettingsSection(ctx, pad, y + 18, width - pad * 2, "Account", [
+      { label: "Status", value: "Guest", type: "info" },
+      { label: "Login", value: "LOGIN", type: "action" },
+    ]);
+    const dataSection = drawSettingsSection(
+      ctx,
+      pad,
+      accountSection.endY + 18,
+      width - pad * 2,
+      "Data",
+      [
+        { key: "reset", label: "Reset progress", value: "RESET", type: "action", danger: true },
+        { key: "restore", label: "Restore purchases", value: "RESTORE", type: "action" },
+      ],
+      { capture: true }
+    );
+
+    lastLayout.settings = {
+      back: backRect,
+      audio: audioSection.rects,
+      actions: dataSection.rects,
+    };
+    return;
+  }
+
+  const { inner } = capsule;
+  const scale = getUiScale(inner);
   const state = getAppState();
   const user = state.userName || "Guest";
   const audio = state.audio || getAudioSettings();
 
-  const backRect = drawBackButton(ctx, pad, headerY, "BACK");
-  drawSettingsHeader(ctx, width, headerY, pad, user);
+  const panelWidth = inner.width * 0.9;
+  const panelHeight = inner.height * 0.78;
+  const panelX = inner.x + (inner.width - panelWidth) / 2;
+  const panelY = inner.y + inner.height * 0.12;
+  drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, Math.min(24, panelHeight * 0.08));
 
-  let y = headerY + 90;
+  const pad = clamp(panelWidth * 0.04, 12, 20);
+  const headerHeight = clamp(48 * scale, 34, 56);
+  const backSize = clamp(32 * scale, 24, 36);
+  const backRect = drawBackIconButton(
+    ctx,
+    panelX + pad,
+    panelY + pad + (headerHeight - backSize) / 2,
+    backSize
+  );
+
+  const titleSize = clamp(Math.round(20 * scale), 14, 22);
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${titleSize}px "RussoOne", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SETTINGS", panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  ctx.restore();
+
+  const chipHeight = backSize;
+  drawProfileChip(
+    ctx,
+    panelX + panelWidth - pad - chipHeight * 3.6,
+    panelY + pad + (headerHeight - chipHeight) / 2,
+    chipHeight,
+    user
+  );
+
+  let y = panelY + pad + headerHeight + clamp(10 * scale, 8, 12);
+  const sectionWidth = panelWidth - pad * 2;
+  const sectionGap = clamp(12 * scale, 10, 16);
+  const rowHeight = clamp(38 * scale, 28, 40);
+  const headerSize = clamp(34 * scale, 26, 36);
+
   const audioSection = drawSettingsSection(
     ctx,
-    pad,
+    panelX + pad,
     y,
-    width - pad * 2,
+    sectionWidth,
     "Audio",
     [
       { key: "music", label: "Music", value: audio.music ?? 70, type: "slider" },
       { key: "sfx", label: "SFX", value: audio.sfx ?? 80, type: "slider" },
       { key: "mute", label: "Mute", value: audio.mute ?? false, type: "toggle" },
     ],
-    { capture: true }
+    { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
-  y = audioSection.endY;
-  const accountSection = drawSettingsSection(ctx, pad, y + 18, width - pad * 2, "Account", [
-    { label: "Status", value: "Guest", type: "info" },
-    { label: "Login", value: "LOGIN", type: "action" },
-  ]);
+  y = audioSection.endY + sectionGap;
+  const accountSection = drawSettingsSection(
+    ctx,
+    panelX + pad,
+    y,
+    sectionWidth,
+    "Account",
+    [
+      { label: "Status", value: "Guest", type: "info" },
+      { label: "Login", value: "LOGIN", type: "action" },
+    ],
+    { rowHeight, headerHeight: headerSize, scale, prism: true }
+  );
   const dataSection = drawSettingsSection(
     ctx,
-    pad,
-    accountSection.endY + 18,
-    width - pad * 2,
+    panelX + pad,
+    accountSection.endY + sectionGap,
+    sectionWidth,
     "Data",
     [
       { key: "reset", label: "Reset progress", value: "RESET", type: "action", danger: true },
       { key: "restore", label: "Restore purchases", value: "RESTORE", type: "action" },
     ],
-    { capture: true }
+    { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
 
   lastLayout.settings = {
@@ -613,26 +808,94 @@ function drawSettingsScreen(ctx, render) {
   };
 }
 
-function drawLeaderboardsScreen(ctx, render) {
-  const { width, height } = render.options;
-  const pad = 32;
-  const headerY = 48;
+function drawLeaderboardsScreen(ctx, render, capsule) {
+  if (!capsule) {
+    const { width, height } = render.options;
+    const pad = 32;
+    const headerY = 48;
+    const state = getAppState();
+    const user = state.userName || "Guest";
+
+    const backRect = drawBackButton(ctx, pad, headerY, "BACK");
+    drawLeaderboardsHeader(ctx, width, headerY, pad, user);
+
+    const tabs = drawLeaderboardsTabs(ctx, width / 2, headerY + 70, leaderboardsState.tab);
+    const listTop = headerY + 120;
+    drawLeaderboardsList(
+      ctx,
+      pad,
+      listTop,
+      width - pad * 2,
+      height - listTop - pad,
+      leaderboardsState.tab === "all" ? "ALL-TIME" : "WEEKLY",
+      LEADERBOARD_ROWS
+    );
+
+    lastLayout.leaderboards = { back: backRect, tabs };
+    return;
+  }
+
+  const { inner } = capsule;
+  const scale = getUiScale(inner);
   const state = getAppState();
   const user = state.userName || "Guest";
 
-  const backRect = drawBackButton(ctx, pad, headerY, "BACK");
-  drawLeaderboardsHeader(ctx, width, headerY, pad, user);
+  const panelWidth = inner.width * 0.9;
+  const panelHeight = inner.height * 0.78;
+  const panelX = inner.x + (inner.width - panelWidth) / 2;
+  const panelY = inner.y + inner.height * 0.12;
+  drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, Math.min(24, panelHeight * 0.08));
 
-  const tabs = drawLeaderboardsTabs(ctx, width / 2, headerY + 70, leaderboardsState.tab);
-  const listTop = headerY + 120;
+  const pad = clamp(panelWidth * 0.04, 12, 20);
+  const headerHeight = clamp(48 * scale, 34, 56);
+  const backSize = clamp(32 * scale, 24, 36);
+  const backRect = drawBackIconButton(
+    ctx,
+    panelX + pad,
+    panelY + pad + (headerHeight - backSize) / 2,
+    backSize
+  );
+
+  const titleSize = clamp(Math.round(20 * scale), 14, 22);
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `${titleSize}px "RussoOne", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("LEADERBOARDS", panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  ctx.restore();
+
+  const chipHeight = backSize;
+  drawProfileChip(
+    ctx,
+    panelX + panelWidth - pad - chipHeight * 3.6,
+    panelY + pad + (headerHeight - chipHeight) / 2,
+    chipHeight,
+    user
+  );
+
+  const tabHeight = clamp(32 * scale, 24, 36);
+  const tabGap = clamp(12 * scale, 8, 14);
+  const tabWidth = (panelWidth - pad * 2 - tabGap) / 2;
+  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 6, 12);
+  const tabs = drawLeaderboardsTabs(
+    ctx,
+    panelX + panelWidth / 2,
+    tabsY,
+    leaderboardsState.tab,
+    { width: tabWidth, height: tabHeight, gap: tabGap }
+  );
+
+  const listTop = tabsY + tabHeight + clamp(12 * scale, 8, 14);
   drawLeaderboardsList(
     ctx,
-    pad,
+    panelX + pad,
     listTop,
-    width - pad * 2,
-    height - listTop - pad,
+    panelWidth - pad * 2,
+    panelY + panelHeight - pad - listTop,
     leaderboardsState.tab === "all" ? "ALL-TIME" : "WEEKLY",
-    LEADERBOARD_ROWS
+    LEADERBOARD_ROWS,
+    { scale, prism: true }
   );
 
   lastLayout.leaderboards = { back: backRect, tabs };
@@ -657,10 +920,10 @@ function drawLeaderboardsHeader(ctx, width, y, pad, user) {
   ctx.restore();
 }
 
-function drawLeaderboardsTabs(ctx, cx, y, activeTab) {
-  const w = 220;
-  const h = 34;
-  const gap = 12;
+function drawLeaderboardsTabs(ctx, cx, y, activeTab, options = {}) {
+  const w = options.width ?? 220;
+  const h = options.height ?? 34;
+  const gap = options.gap ?? 12;
   const leftX = cx - w - gap / 2;
   const rightX = cx + gap / 2;
   const allTime = drawTabButton(ctx, leftX, y, w, h, "ALL-TIME", activeTab === "all");
@@ -668,36 +931,48 @@ function drawLeaderboardsTabs(ctx, cx, y, activeTab) {
   return { allTime, weekly };
 }
 
-function drawLeaderboardsList(ctx, x, y, width, height, label, rows) {
+function drawLeaderboardsList(ctx, x, y, width, height, label, rows, options = {}) {
+  const scale = options.scale ?? 1;
+  const labelSize = Math.max(10, Math.round(12 * scale));
+  const rowHeight = Math.max(28, Math.round(34 * scale));
+  const rowGap = Math.max(4, Math.round(6 * scale));
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-  roundRect(ctx, x, y, width, height, 16);
-  ctx.fill();
+  if (options.prism) {
+    drawPrismPanel(ctx, x, y, width, height, 16, {
+      fill: "rgba(12, 18, 26, 0.55)",
+      stroke: "rgba(95, 227, 255, 0.25)",
+    });
+  } else {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    roundRect(ctx, x, y, width, height, 16);
+    ctx.fill();
+  }
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = "12px \"RussoOne\", sans-serif";
+  ctx.font = `${labelSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillText(label, x + 16, y + 12);
 
   let rowY = y + 40;
-  const rowHeight = 34;
   for (const row of rows) {
+    if (rowY + rowHeight > y + height - 8) {
+      break;
+    }
     drawLeaderboardRow(ctx, x + 12, rowY, width - 24, rowHeight, row);
-    rowY += rowHeight + 6;
+    rowY += rowHeight + rowGap;
   }
   ctx.restore();
 }
 
 function drawLeaderboardRow(ctx, x, y, width, height, row) {
+  drawPrismPanel(ctx, x, y, width, height, 12, {
+    fill: row.highlight ? "rgba(95, 227, 255, 0.2)" : "rgba(255, 255, 255, 0.08)",
+    stroke: row.highlight ? "rgba(95, 227, 255, 0.55)" : "rgba(255, 255, 255, 0.18)",
+  });
   ctx.save();
-  ctx.fillStyle = row.highlight
-    ? "rgba(95, 227, 255, 0.2)"
-    : "rgba(255, 255, 255, 0.08)";
-  roundRect(ctx, x, y, width, height, 12);
-  ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.max(10, Math.round(height * 0.35))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(String(row.rank), x + 12, y + height / 2);
@@ -727,77 +1002,110 @@ function drawSettingsHeader(ctx, width, y, pad, user) {
 }
 
 function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
+  const scale = options.scale ?? 1;
+  const headerHeight = options.headerHeight ?? 40;
+  const rowHeight = options.rowHeight ?? 40;
+  const pad = options.pad ?? Math.max(12, Math.round(14 * scale));
+  const radius = options.radius ?? 18;
+  const totalHeight = headerHeight + rows.length * rowHeight;
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
-  roundRect(ctx, x, y, width, 40 + rows.length * 44, 18);
-  ctx.fill();
+  if (options.prism) {
+    drawPrismPanel(ctx, x, y, width, totalHeight, radius, {
+      fill: "rgba(12, 18, 26, 0.6)",
+      stroke: "rgba(95, 227, 255, 0.3)",
+    });
+  } else {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
+    roundRect(ctx, x, y, width, totalHeight, radius);
+    ctx.fill();
+  }
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "16px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.max(12, Math.round(16 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(title, x + 16, y + 22);
+  ctx.fillText(title, x + pad, y + headerHeight / 2);
 
   const rects = {};
-  let rowY = y + 44;
+  let rowY = y + headerHeight;
   for (const row of rows) {
-    const controlRect = drawSettingsRow(ctx, x + 16, rowY, width - 32, row);
+    const controlRect = drawSettingsRow(ctx, x + pad, rowY, width - pad * 2, row, {
+      rowHeight,
+      scale,
+      prism: options.prism,
+    });
     if (options.capture && row.key && controlRect) {
       rects[row.key] = controlRect;
     }
-    rowY += 40;
+    rowY += rowHeight;
   }
   ctx.restore();
   return { endY: rowY, rects };
 }
 
-function drawSettingsRow(ctx, x, y, width, row) {
+function drawSettingsRow(ctx, x, y, width, row, options = {}) {
+  const scale = options.scale ?? 1;
+  const rowHeight = options.rowHeight ?? 34;
+  const radius = Math.min(12, rowHeight / 2);
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-  roundRect(ctx, x, y, width, 34, 12);
-  ctx.fill();
+  if (options.prism) {
+    drawPrismPanel(ctx, x, y, width, rowHeight, radius, {
+      fill: "rgba(10, 16, 24, 0.5)",
+      stroke: "rgba(255, 255, 255, 0.12)",
+    });
+  } else {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    roundRect(ctx, x, y, width, rowHeight, radius);
+    ctx.fill();
+  }
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.max(10, Math.round(12 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(row.label, x + 12, y + 17);
+  ctx.fillText(row.label, x + 12, y + rowHeight / 2);
 
   let controlRect = null;
   if (row.type === "slider") {
+    const sliderWidth = Math.max(90, Math.min(140 * scale, width * 0.4));
+    const sliderHeight = Math.max(6, Math.round(rowHeight * 0.22));
     const sliderRect = {
-      x: x + width - 140,
-      y: y + 12,
-      width: 120,
-      height: 10,
+      x: x + width - sliderWidth - 12,
+      y: y + (rowHeight - sliderHeight) / 2,
+      width: sliderWidth,
+      height: sliderHeight,
       type: "slider",
     };
     drawSlider(ctx, sliderRect.x, sliderRect.y, sliderRect.width, sliderRect.height, row.value || 0);
     controlRect = sliderRect;
   } else if (row.type === "toggle") {
+    const toggleWidth = Math.max(36, Math.round(42 * scale));
+    const toggleHeight = Math.max(16, Math.round(rowHeight * 0.5));
     const toggleRect = {
-      x: x + width - 60,
-      y: y + 8,
-      width: 42,
-      height: 18,
+      x: x + width - toggleWidth - 12,
+      y: y + (rowHeight - toggleHeight) / 2,
+      width: toggleWidth,
+      height: toggleHeight,
       type: "toggle",
     };
     drawToggle(ctx, toggleRect.x, toggleRect.y, toggleRect.width, toggleRect.height, row.value);
     controlRect = toggleRect;
   } else if (row.type === "action") {
+    const actionWidth = Math.max(86, Math.round(100 * scale));
+    const actionHeight = Math.max(24, Math.round(rowHeight * 0.65));
     controlRect = drawActionButton(
       ctx,
-      x + width - 120,
-      y + 6,
-      100,
-      24,
+      x + width - actionWidth - 12,
+      y + (rowHeight - actionHeight) / 2,
+      actionWidth,
+      actionHeight,
       row.value,
       row.danger
     );
   } else {
     ctx.textAlign = "right";
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.fillText(formatValue(row.value), x + width - 12, y + 17);
+    ctx.fillText(formatValue(row.value), x + width - 12, y + rowHeight / 2);
   }
   ctx.restore();
   return controlRect;
@@ -875,10 +1183,29 @@ function drawBackButton(ctx, x, y, label) {
   return { x, y, width: w, height: h };
 }
 
-function drawShopTabs(ctx, cx, y, activeTab) {
-  const w = 240;
-  const h = 34;
-  const gap = 12;
+function drawBackIconButton(ctx, x, y, size) {
+  drawPrismPanel(ctx, x, y, size, size, Math.min(12, size / 2), {
+    fill: "rgba(10, 18, 28, 0.6)",
+    stroke: "rgba(255, 255, 255, 0.35)",
+  });
+  ctx.save();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = Math.max(1.5, size * 0.08);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + size * 0.62, y + size * 0.3);
+  ctx.lineTo(x + size * 0.4, y + size * 0.5);
+  ctx.lineTo(x + size * 0.62, y + size * 0.7);
+  ctx.stroke();
+  ctx.restore();
+  return { x, y, width: size, height: size };
+}
+
+function drawShopTabs(ctx, cx, y, activeTab, options = {}) {
+  const w = options.width ?? 240;
+  const h = options.height ?? 34;
+  const gap = options.gap ?? 12;
   const leftX = cx - w - gap / 2;
   const rightX = cx + gap / 2;
   const upgrades = drawTabButton(ctx, leftX, y, w, h, "UPGRADES", activeTab === "upgrades");
@@ -887,13 +1214,13 @@ function drawShopTabs(ctx, cx, y, activeTab) {
 }
 
 function drawTabButton(ctx, x, y, w, h, label, active) {
+  drawPrismPanel(ctx, x, y, w, h, Math.min(12, h / 2), {
+    fill: active ? "rgba(95, 227, 255, 0.18)" : "rgba(255, 255, 255, 0.08)",
+    stroke: active ? "rgba(95, 227, 255, 0.8)" : "rgba(255, 255, 255, 0.35)",
+  });
   ctx.save();
-  roundRect(ctx, x, y, w, h, 12);
-  ctx.strokeStyle = active ? "rgba(255, 255, 255, 0.7)" : "rgba(255, 255, 255, 0.3)";
-  ctx.lineWidth = active ? 2 : 1.5;
-  ctx.stroke();
-  ctx.fillStyle = active ? "#ffffff" : "rgba(255, 255, 255, 0.7)";
-  ctx.font = "12px \"RussoOne\", sans-serif";
+  ctx.fillStyle = active ? "#ffffff" : "rgba(255, 255, 255, 0.75)";
+  ctx.font = `${Math.max(11, Math.round(h * 0.36))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + w / 2, y + h / 2);
@@ -901,43 +1228,45 @@ function drawTabButton(ctx, x, y, w, h, label, active) {
   return { x, y, width: w, height: h };
 }
 
-function drawShopCards(ctx, x, y, width, height, cards, showNext) {
+function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) {
   const cols = 1;
-  const gap = 16;
-  const cardHeight = 86;
+  const gap = options.gap ?? 16;
+  const cardHeight = options.cardHeight ?? 86;
+  const fontSize = options.fontSize ?? 14;
+  const actionWidth = options.actionWidth ?? 120;
+  const actionHeight = options.actionHeight ?? 38;
   const maxCards = Math.floor((height + gap) / (cardHeight + gap));
+  const textPad = Math.max(12, Math.round(cardHeight * 0.18));
   ctx.save();
-  ctx.font = "14px \"RussoOne\", sans-serif";
+  ctx.font = `${fontSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   for (let i = 0; i < Math.min(cards.length, maxCards); i += 1) {
     const card = cards[i];
     const cardY = y + i * (cardHeight + gap);
-    roundRect(ctx, x, cardY, width, cardHeight, 16);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    drawPrismPanel(ctx, x, cardY, width, cardHeight, Math.min(16, cardHeight * 0.22), {
+      fill: "rgba(12, 18, 26, 0.55)",
+      stroke: "rgba(95, 227, 255, 0.3)",
+    });
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(card.title, x + 16, cardY + 12);
+    ctx.fillText(card.title, x + textPad, cardY + cardHeight * 0.18);
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
     const meta = showNext
       ? `${card.current} -> ${card.next}`
       : card.meta || card.owned || "";
-    ctx.fillText(meta, x + 16, cardY + 36);
+    ctx.fillText(meta, x + textPad, cardY + cardHeight * 0.46);
     if (!showNext && card.owned) {
       ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-      ctx.fillText(card.owned, x + 16, cardY + 56);
+      ctx.fillText(card.owned, x + textPad, cardY + cardHeight * 0.68);
     }
 
     const actionRect = drawActionButton(
       ctx,
-      x + width - 140,
-      cardY + 24,
-      120,
-      38,
+      x + width - actionWidth - textPad,
+      cardY + (cardHeight - actionHeight) / 2,
+      actionWidth,
+      actionHeight,
       card.actionLabel || card.price,
       false,
       card.actionDisabled
@@ -1348,6 +1677,11 @@ function formatValue(value) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function getUiScale(inner) {
+  const scale = Math.min(inner.width / 360, inner.height / 640);
+  return clamp(scale, 0.85, 1.15);
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
