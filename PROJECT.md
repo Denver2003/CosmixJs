@@ -73,6 +73,7 @@
 - **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner. Modal UI scale now clamps down to 0.6 on small screens.
 - **Localization (menus/overlays)**: UI text for shell screens and overlays uses `i18n.t()` with EN/RU dictionaries; language toggle lives in Settings (canvas + DOM fallback), stored in `localStorage` as `cosmix.lang` with EN default.
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
+- **Startup preload**: first-run gate loads background, UI/shape sprites, fonts, and audio; shows a canvas loading bar centered on the glass, then initializes the game after assets are ready.
 
 ## File layout
 
