@@ -71,9 +71,11 @@
 - **Canvas shell Shop/Settings/Leaderboards**: screens render as Prism Edge panels inside the capsule with icon back buttons, capsule-bound tabs, and scaled cards/rows; background is dimmed around the capsule. Panels now scale down more on small screens and can expand up to +20% width/+30% height, with a 40px allowed overflow beyond the capsule.
 - **Canvas UI visibility**: gameplay-only elements (cosmometer, level progress, touch overlay) are hidden while the shell menu is active.
 - **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner. Modal UI scale now clamps down to 0.6 on small screens.
+- **Canvas UI text fitting**: shell/overlay labels auto-shrink and ellipsize to stay inside chips, tabs, rows, and buttons on small screens (EN/RU).
 - **Localization (menus/overlays)**: UI text for shell screens and overlays uses `i18n.t()` with EN/RU dictionaries; language toggle lives in Settings (canvas + DOM fallback), stored in `localStorage` as `cosmix.lang` with EN default.
+- **Site identity**: favicon and apple-touch icon load from `assets/appIcon/app_icon.png`, and the browser title updates by language (`app.page_title`).
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
-- **Startup preload**: first-run gate loads background, UI/shape sprites, fonts, and audio; shows a canvas loading bar centered on the glass, then initializes the game after assets are ready.
+- **Startup preload**: first-run gate loads background, UI/shape sprites, scaled HUD/bonus icons, fonts, audio, and the pause icon; shows a canvas loading bar centered on the glass, then initializes the game after assets are ready.
 
 ## File layout
 

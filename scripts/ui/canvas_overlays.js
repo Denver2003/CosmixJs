@@ -352,10 +352,13 @@ function drawPauseMenu(ctx, inner) {
   );
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-  ctx.font = `${audioTitleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(t("label.audio_caps"), panelX + pad + audioPad, audioY + audioPad);
+  drawFittedText(ctx, t("label.audio_caps"), panelX + pad + audioPad, audioY + audioPad, {
+    size: audioTitleSize,
+    minSize: Math.max(9, audioTitleSize - 3),
+    maxWidth: panelWidth - pad * 2 - audioPad * 2,
+  });
   ctx.restore();
 
   const audio = getAudioSettings();
@@ -415,20 +418,28 @@ function drawAutoPause(ctx, inner, state) {
   drawModalPanel(ctx, panelX, panelY, panelWidth, panelHeight);
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(10, Math.round(14 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("pause.auto"), panelX + panelWidth / 2, panelY + panelHeight * 0.4);
+  drawFittedText(ctx, t("pause.auto"), panelX + panelWidth / 2, panelY + panelHeight * 0.4, {
+    size: Math.max(10, Math.round(14 * scale)),
+    minSize: 9,
+    maxWidth: panelWidth - 16,
+  });
   if (state?.pausedResumeMs) {
     const nowMs = getNowMs();
     const remaining = Math.max(0, state.pausedResumeMs - nowMs);
     const seconds = Math.ceil(remaining / 1000);
     ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-    ctx.font = `${Math.max(9, Math.round(12 * scale))}px "RussoOne", sans-serif`;
-    ctx.fillText(
+    drawFittedText(
+      ctx,
       t("pause.resuming_in", { seconds: formatNumber(seconds) }),
       panelX + panelWidth / 2,
-      panelY + panelHeight * 0.68
+      panelY + panelHeight * 0.68,
+      {
+        size: Math.max(9, Math.round(12 * scale)),
+        minSize: 8,
+        maxWidth: panelWidth - 16,
+      }
     );
   }
   ctx.restore();
@@ -553,11 +564,14 @@ function drawConfirmDialog(ctx, inner) {
   let bodyY = panelY + pad + titleSize + gap;
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-  ctx.font = `${bodySize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   for (const line of lines) {
-    ctx.fillText(line, bodyX, bodyY);
+    drawFittedText(ctx, line, bodyX, bodyY, {
+      size: bodySize,
+      minSize: Math.max(8, bodySize - 2),
+      maxWidth: panelWidth - pad * 2,
+    });
     bodyY += bodySize + 4;
   }
   ctx.restore();
@@ -603,10 +617,13 @@ function drawAudioRow(
 ) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  ctx.font = `${Math.max(9, Math.round(height * 0.4))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, labelX, y + height / 2);
+  drawFittedText(ctx, label, labelX, y + height / 2, {
+    size: Math.max(9, Math.round(height * 0.4)),
+    minSize: 8,
+    maxWidth: Math.max(40, controlX - labelX - 8),
+  });
   ctx.restore();
   const sliderY = y + (height - sliderHeight) / 2;
   drawSlider(ctx, controlX, sliderY, sliderWidth, sliderHeight, value);
@@ -616,10 +633,13 @@ function drawAudioRow(
 function drawAudioToggle(ctx, labelX, controlX, y, height, label, width, on) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  ctx.font = `${Math.max(9, Math.round(height * 0.4))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, labelX, y + height / 2);
+  drawFittedText(ctx, label, labelX, y + height / 2, {
+    size: Math.max(9, Math.round(height * 0.4)),
+    minSize: 8,
+    maxWidth: Math.max(40, controlX - labelX - 8),
+  });
   ctx.restore();
   const toggleWidth = Math.max(36, Math.min(width * 0.35, 46));
   const toggleHeight = Math.max(16, Math.min(height * 0.7, 20));
@@ -655,10 +675,13 @@ function drawModalPanel(ctx, x, y, width, height, options = {}) {
 function drawModalTitle(ctx, panelX, panelY, panelWidth, size, text) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${size}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(text, panelX + panelWidth / 2, panelY + Math.max(6, size * 0.15));
+  drawFittedText(ctx, text, panelX + panelWidth / 2, panelY + Math.max(6, size * 0.15), {
+    size,
+    minSize: Math.max(9, Math.round(size * 0.7)),
+    maxWidth: panelWidth - 24,
+  });
   ctx.restore();
 }
 
@@ -675,10 +698,13 @@ function drawModalButton(ctx, x, y, width, height, label, options = {}) {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = disabled ? "rgba(255, 255, 255, 0.55)" : "#ffffff";
-  ctx.font = `${Math.max(9, Math.round(height * 0.32))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + width / 2, y + height / 2);
+  drawFittedText(ctx, label, x + width / 2, y + height / 2, {
+    size: Math.max(9, Math.round(height * 0.32)),
+    minSize: 8,
+    maxWidth: width - 16,
+  });
   ctx.restore();
   return { x, y, width, height };
 }
@@ -781,6 +807,55 @@ function clamp(value, min, max) {
 function getUiScale(inner) {
   const scale = Math.min(inner.width / 360, inner.height / 640);
   return clamp(scale, 0.6, 1.1);
+}
+
+function drawFittedText(ctx, text, x, y, options = {}) {
+  const fontFamily = options.fontFamily ?? "\"RussoOne\", sans-serif";
+  const maxWidth = options.maxWidth ?? Infinity;
+  let size = Math.round(options.size ?? 12);
+  const minSize = Math.round(options.minSize ?? Math.max(8, size - 3));
+
+  if (Number.isFinite(maxWidth) && maxWidth > 0) {
+    ctx.font = `${size}px ${fontFamily}`;
+    while (size > minSize && ctx.measureText(text).width > maxWidth) {
+      size -= 1;
+      ctx.font = `${size}px ${fontFamily}`;
+    }
+  }
+
+  let drawText = text;
+  if (Number.isFinite(maxWidth) && maxWidth > 0) {
+    ctx.font = `${size}px ${fontFamily}`;
+    if (ctx.measureText(drawText).width > maxWidth) {
+      drawText = ellipsizeText(ctx, drawText, maxWidth);
+    }
+  }
+
+  ctx.font = `${size}px ${fontFamily}`;
+  ctx.fillText(drawText, x, y);
+  return { size, text: drawText };
+}
+
+function ellipsizeText(ctx, text, maxWidth) {
+  if (!text) {
+    return "";
+  }
+  if (!Number.isFinite(maxWidth) || maxWidth <= 0) {
+    return text;
+  }
+  if (ctx.measureText(text).width <= maxWidth) {
+    return text;
+  }
+  const ellipsis = "...";
+  let end = text.length;
+  while (end > 0) {
+    const candidate = `${text.slice(0, end)}${ellipsis}`;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      return candidate;
+    }
+    end -= 1;
+  }
+  return ellipsis;
 }
 
 function roundRect(ctx, x, y, width, height, radius) {

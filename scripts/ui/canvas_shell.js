@@ -89,11 +89,14 @@ export function drawShellUi(ctx, render, getGlassRect) {
   ctx.fillRect(32, 32, width - 64, height - 64);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "28px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   const title = getScreenTitle(active);
-  ctx.fillText(title, width / 2, 80);
+  drawFittedText(ctx, title, width / 2, 80, {
+    size: 28,
+    minSize: 16,
+    maxWidth: width - 64,
+  });
 
   if (active === ScreenId.HOME) {
     drawHomeScreen(ctx, render, null);
@@ -298,10 +301,13 @@ function drawHomeScreen(ctx, render, capsule) {
       t("nav.play")
     );
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.font = "16px \"RussoOne\", sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText(t("home.subtitle_alt"), width / 2, playRect.y + playRect.height + 16);
+    drawFittedText(ctx, t("home.subtitle_alt"), width / 2, playRect.y + playRect.height + 16, {
+      size: 16,
+      minSize: 10,
+      maxWidth: width * 0.8,
+    });
 
     const footer = drawFooter(ctx, width, height - 90, 260);
     lastLayout.home = { play: playRect, footer };
@@ -346,7 +352,8 @@ function drawHomeScreen(ctx, render, capsule) {
     inner.x + inner.width / 2,
     playRect.y + playRect.height + inner.height * 0.035,
     subtextSize,
-    t("home.subtitle")
+    t("home.subtitle"),
+    inner.width * 0.85
   );
 
   const panelHeight = clamp(inner.height * 0.09, 36, 64);
@@ -432,18 +439,24 @@ function drawShopScreen(ctx, render, capsule) {
     backSize
   );
 
-  const titleSize = clamp(Math.round(20 * scale), 12, 22);
-  ctx.save();
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `${titleSize}px "RussoOne", sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(t("shop.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
-  ctx.restore();
-
   const chipHeight = backSize;
   const chipWidth = clamp(panelWidth * 0.26, 96, 150);
   const coinWidth = clamp(chipWidth * 1.3, chipWidth, panelWidth - pad * 2);
+  const titleMaxWidth = Math.max(
+    40,
+    panelWidth - pad * 2 - backSize - coinWidth - pad
+  );
+  const titleSize = clamp(Math.round(20 * scale), 12, 22);
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  drawFittedText(ctx, t("shop.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2, {
+    size: titleSize,
+    minSize: Math.max(10, titleSize - 4),
+    maxWidth: titleMaxWidth,
+  });
+  ctx.restore();
   drawCoinChip(
     ctx,
     panelX + panelWidth - pad - coinWidth,
@@ -838,17 +851,23 @@ function drawSettingsScreen(ctx, render, capsule) {
     backSize
   );
 
+  const chipHeight = backSize;
+  const profileChipWidth = clamp(chipHeight * 3.6, 96, 180);
+  const titleMaxWidth = Math.max(
+    40,
+    panelWidth - pad * 2 - backSize - profileChipWidth - pad
+  );
   const titleSize = clamp(Math.round(20 * scale), 12, 22);
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${titleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("settings.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  drawFittedText(ctx, t("settings.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2, {
+    size: titleSize,
+    minSize: Math.max(10, titleSize - 4),
+    maxWidth: titleMaxWidth,
+  });
   ctx.restore();
-
-  const chipHeight = backSize;
-  const profileChipWidth = clamp(chipHeight * 3.6, 96, 180);
   drawProfileChip(
     ctx,
     panelX + panelWidth - pad - profileChipWidth,
@@ -981,17 +1000,23 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     backSize
   );
 
+  const chipHeight = backSize;
+  const profileChipWidth = clamp(chipHeight * 3.6, 96, 180);
+  const titleMaxWidth = Math.max(
+    40,
+    panelWidth - pad * 2 - backSize - profileChipWidth - pad
+  );
   const titleSize = clamp(Math.round(20 * scale), 12, 22);
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${titleSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("leaderboards.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2);
+  drawFittedText(ctx, t("leaderboards.title"), panelX + panelWidth / 2, panelY + pad + headerHeight / 2, {
+    size: titleSize,
+    minSize: Math.max(10, titleSize - 4),
+    maxWidth: titleMaxWidth,
+  });
   ctx.restore();
-
-  const chipHeight = backSize;
-  const profileChipWidth = clamp(chipHeight * 3.6, 96, 180);
   drawProfileChip(
     ctx,
     panelX + panelWidth - pad - profileChipWidth,
@@ -1031,19 +1056,32 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
 function drawLeaderboardsHeader(ctx, width, y, pad, user) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("leaderboards.title"), width / 2, y + 16);
+  const titleSize = 24;
+  const userSize = 12;
+  const userMaxWidth = Math.max(40, width * 0.25);
+  const titleMaxWidth = Math.max(
+    40,
+    width - pad - 48 - userMaxWidth - 8 - (pad + 20)
+  );
+  drawFittedText(ctx, t("leaderboards.title"), width / 2, y + 16, {
+    size: titleSize,
+    minSize: 12,
+    maxWidth: titleMaxWidth,
+  });
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.beginPath();
   ctx.arc(width - pad - 20, y + 16, 20, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText(user, width - pad - 48, y + 16);
+  drawFittedText(ctx, user, width - pad - 48, y + 16, {
+    size: userSize,
+    minSize: 9,
+    maxWidth: userMaxWidth,
+  });
   ctx.restore();
 }
 
@@ -1076,10 +1114,13 @@ function drawLeaderboardsList(ctx, x, y, width, height, label, rows, options = {
   }
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = `${labelSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(label, x + 16, y + 12);
+  drawFittedText(ctx, label, x + 16, y + 12, {
+    size: labelSize,
+    minSize: 8,
+    maxWidth: width - 32,
+  });
 
   let rowY = y + 40;
   for (const row of rows) {
@@ -1099,32 +1140,55 @@ function drawLeaderboardRow(ctx, x, y, width, height, row) {
   });
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(9, Math.round(height * 0.35))}px "RussoOne", sans-serif`;
+  const fontSize = Math.max(9, Math.round(height * 0.35));
+  const scoreMaxWidth = Math.max(40, Math.round(width * 0.3));
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
+  ctx.font = `${fontSize}px "RussoOne", sans-serif`;
   ctx.fillText(String(row.rank), x + 12, y + height / 2);
-  ctx.fillText(row.name, x + 48, y + height / 2);
+  drawFittedText(ctx, row.name, x + 48, y + height / 2, {
+    size: fontSize,
+    minSize: Math.max(8, fontSize - 2),
+    maxWidth: Math.max(40, width - 72 - scoreMaxWidth),
+  });
   ctx.textAlign = "right";
-  ctx.fillText(formatValue(row.score), x + width - 12, y + height / 2);
+  drawFittedText(ctx, formatValue(row.score), x + width - 12, y + height / 2, {
+    size: fontSize,
+    minSize: Math.max(8, fontSize - 2),
+    maxWidth: scoreMaxWidth,
+  });
   ctx.restore();
 }
 
 function drawSettingsHeader(ctx, width, y, pad, user) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("settings.title"), width / 2, y + 16);
+  const titleSize = 24;
+  const userSize = 12;
+  const userMaxWidth = Math.max(40, width * 0.25);
+  const titleMaxWidth = Math.max(
+    40,
+    width - pad - 48 - userMaxWidth - 8 - (pad + 20)
+  );
+  drawFittedText(ctx, t("settings.title"), width / 2, y + 16, {
+    size: titleSize,
+    minSize: 12,
+    maxWidth: titleMaxWidth,
+  });
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
   ctx.beginPath();
   ctx.arc(width - pad - 20, y + 16, 20, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText(user, width - pad - 48, y + 16);
+  drawFittedText(ctx, user, width - pad - 48, y + 16, {
+    size: userSize,
+    minSize: 9,
+    maxWidth: userMaxWidth,
+  });
   ctx.restore();
 }
 
@@ -1148,10 +1212,14 @@ function drawSettingsSection(ctx, x, y, width, title, rows, options = {}) {
   }
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(10, Math.round(16 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(title, x + pad, y + headerHeight / 2);
+  const titleSize = Math.max(10, Math.round(16 * scale));
+  drawFittedText(ctx, title, x + pad, y + headerHeight / 2, {
+    size: titleSize,
+    minSize: Math.max(9, titleSize - 3),
+    maxWidth: width - pad * 2,
+  });
 
   const rects = {};
   let rowY = y + headerHeight;
@@ -1174,6 +1242,9 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
   const scale = options.scale ?? 1;
   const rowHeight = options.rowHeight ?? 34;
   const radius = Math.min(12, rowHeight / 2);
+  const labelSize = Math.max(9, Math.round(12 * scale));
+  const labelX = x + 12;
+  const labelY = y + rowHeight / 2;
   ctx.save();
   if (options.prism) {
     drawPrismPanel(ctx, x, y, width, rowHeight, radius, {
@@ -1187,15 +1258,17 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
   }
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(9, Math.round(12 * scale))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(row.label, x + 12, y + rowHeight / 2);
-
   let controlRect = null;
   if (row.type === "slider") {
     const sliderWidth = Math.max(70, Math.min(140 * scale, width * 0.4));
     const sliderHeight = Math.max(4, Math.round(rowHeight * 0.22));
+    drawFittedText(ctx, row.label, labelX, labelY, {
+      size: labelSize,
+      minSize: 8,
+      maxWidth: Math.max(40, width - sliderWidth - 24),
+    });
     const sliderRect = {
       x: x + width - sliderWidth - 12,
       y: y + (rowHeight - sliderHeight) / 2,
@@ -1208,6 +1281,11 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
   } else if (row.type === "toggle") {
     const toggleWidth = Math.max(30, Math.round(42 * scale));
     const toggleHeight = Math.max(14, Math.round(rowHeight * 0.5));
+    drawFittedText(ctx, row.label, labelX, labelY, {
+      size: labelSize,
+      minSize: 8,
+      maxWidth: Math.max(40, width - toggleWidth - 24),
+    });
     const toggleRect = {
       x: x + width - toggleWidth - 12,
       y: y + (rowHeight - toggleHeight) / 2,
@@ -1220,6 +1298,11 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
   } else if (row.type === "action") {
     const actionWidth = Math.max(74, Math.round(100 * scale));
     const actionHeight = Math.max(20, Math.round(rowHeight * 0.65));
+    drawFittedText(ctx, row.label, labelX, labelY, {
+      size: labelSize,
+      minSize: 8,
+      maxWidth: Math.max(40, width - actionWidth - 24),
+    });
     controlRect = drawActionButton(
       ctx,
       x + width - actionWidth - 12,
@@ -1232,7 +1315,20 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
   } else {
     ctx.textAlign = "right";
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.fillText(formatValue(row.value), x + width - 12, y + rowHeight / 2);
+    const valueText = formatValue(row.value);
+    const valueMaxWidth = Math.max(60, width * 0.38);
+    drawFittedText(ctx, valueText, x + width - 12, labelY, {
+      size: labelSize,
+      minSize: 8,
+      maxWidth: valueMaxWidth,
+    });
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#ffffff";
+    drawFittedText(ctx, row.label, labelX, labelY, {
+      size: labelSize,
+      minSize: 8,
+      maxWidth: Math.max(40, width - valueMaxWidth - 24),
+    });
   }
   ctx.restore();
   return controlRect;
@@ -1274,10 +1370,13 @@ function drawActionButton(ctx, x, y, w, h, label, danger = false, disabled = fal
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = disabled ? "rgba(255, 255, 255, 0.6)" : "#ffffff";
-  ctx.font = "11px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + w / 2, y + h / 2);
+  drawFittedText(ctx, label, x + w / 2, y + h / 2, {
+    size: 11,
+    minSize: 9,
+    maxWidth: w - 12,
+  });
   ctx.restore();
   return { x, y, width: w, height: h };
 }
@@ -1285,10 +1384,14 @@ function drawActionButton(ctx, x, y, w, h, label, danger = false, disabled = fal
 function drawShopHeader(ctx, width, y, pad, coins) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("shop.title"), width / 2, y + 16);
+  const titleMaxWidth = Math.max(40, width - pad * 2 - 120 - 12);
+  drawFittedText(ctx, t("shop.title"), width / 2, y + 16, {
+    size: 24,
+    minSize: 12,
+    maxWidth: titleMaxWidth,
+  });
   drawPill(ctx, width - pad - 120, y, 120, 36, t("label.coins"), coins);
   ctx.restore();
 }
@@ -1302,10 +1405,13 @@ function drawBackButton(ctx, x, y, label) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + w / 2, y + h / 2);
+  drawFittedText(ctx, label, x + w / 2, y + h / 2, {
+    size: 12,
+    minSize: 9,
+    maxWidth: w - 12,
+  });
   ctx.restore();
   return { x, y, width: w, height: h };
 }
@@ -1363,10 +1469,13 @@ function drawTabButton(ctx, x, y, w, h, label, active) {
   });
   ctx.save();
   ctx.fillStyle = active ? "#ffffff" : "rgba(255, 255, 255, 0.75)";
-  ctx.font = `${Math.max(10, Math.round(h * 0.36))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + w / 2, y + h / 2);
+  drawFittedText(ctx, label, x + w / 2, y + h / 2, {
+    size: Math.max(10, Math.round(h * 0.36)),
+    minSize: 9,
+    maxWidth: w - 12,
+  });
   ctx.restore();
   return { x, y, width: w, height: h };
 }
@@ -1380,8 +1489,8 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) 
   const actionHeight = options.actionHeight ?? 38;
   const maxCards = Math.floor((height + gap) / (cardHeight + gap));
   const textPad = Math.max(8, Math.round(cardHeight * 0.18));
+  const textWidth = Math.max(40, width - actionWidth - textPad * 2 - 8);
   ctx.save();
-  ctx.font = `${fontSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   for (let i = 0; i < Math.min(cards.length, maxCards); i += 1) {
@@ -1393,15 +1502,27 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) 
     });
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(card.title, x + textPad, cardY + cardHeight * 0.18);
+    drawFittedText(ctx, card.title, x + textPad, cardY + cardHeight * 0.18, {
+      size: fontSize,
+      minSize: 10,
+      maxWidth: textWidth,
+    });
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
     const meta = showNext
       ? `${card.current} -> ${card.next}`
       : card.meta || card.owned || "";
-    ctx.fillText(meta, x + textPad, cardY + cardHeight * 0.46);
+    drawFittedText(ctx, meta, x + textPad, cardY + cardHeight * 0.46, {
+      size: fontSize,
+      minSize: 9,
+      maxWidth: textWidth,
+    });
     if (!showNext && card.owned) {
       ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-      ctx.fillText(card.owned, x + textPad, cardY + cardHeight * 0.68);
+      drawFittedText(ctx, card.owned, x + textPad, cardY + cardHeight * 0.68, {
+        size: fontSize,
+        minSize: 9,
+        maxWidth: textWidth,
+      });
     }
 
     const actionRect = drawActionButton(
@@ -1427,14 +1548,21 @@ function drawHeader(ctx, width, y, pad, { user, coins, best }) {
   ctx.arc(pad + buttonSize / 2, y + buttonSize / 2, buttonSize / 2, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "14px \"RussoOne\", sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(user, pad + buttonSize + 8, y + buttonSize / 2);
-
   const pillWidth = 120;
-  const pillHeight = 36;
   const gap = 10;
+  const userMaxWidth = Math.max(
+    40,
+    width - (pad + buttonSize + 8) - (pillWidth * 2 + gap + pad)
+  );
+  drawFittedText(ctx, user, pad + buttonSize + 8, y + buttonSize / 2, {
+    size: 14,
+    minSize: 10,
+    maxWidth: userMaxWidth,
+  });
+
+  const pillHeight = 36;
   const bestX = width - pad - pillWidth;
   const coinsX = bestX - gap - pillWidth;
   drawPill(ctx, coinsX, y + 2, pillWidth, pillHeight, t("label.coins"), coins);
@@ -1448,12 +1576,19 @@ function drawPill(ctx, x, y, w, h, label, value) {
   roundRect(ctx, x, y, w, h, h / 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "12px \"RussoOne\", sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + 12, y + h / 2);
+  drawFittedText(ctx, label, x + 12, y + h / 2, {
+    size: 12,
+    minSize: 9,
+    maxWidth: w * 0.5,
+  });
   ctx.textAlign = "right";
-  ctx.fillText(formatValue(value), x + w - 12, y + h / 2);
+  drawFittedText(ctx, formatValue(value), x + w - 12, y + h / 2, {
+    size: 12,
+    minSize: 9,
+    maxWidth: w * 0.42,
+  });
   ctx.restore();
 }
 
@@ -1468,7 +1603,6 @@ function drawFooter(ctx, width, y, totalWidth) {
   ];
   const rects = {};
   ctx.save();
-  ctx.font = "14px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (let i = 0; i < items.length; i += 1) {
@@ -1479,7 +1613,11 @@ function drawFooter(ctx, width, y, totalWidth) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(items[i].label, rect.x + rect.width / 2, rect.y + rect.height / 2);
+    drawFittedText(ctx, items[i].label, rect.x + rect.width / 2, rect.y + rect.height / 2, {
+      size: 14,
+      minSize: 9,
+      maxWidth: rect.width - 10,
+    });
     rects[items[i].key] = rect;
   }
   ctx.restore();
@@ -1555,10 +1693,13 @@ function drawPrimaryButton(ctx, cx, cy, width, height, label) {
   roundRect(ctx, x, y, width, height, radius);
   ctx.fill();
   ctx.fillStyle = "#0b0d12";
-  ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, cx, cy);
+  drawFittedText(ctx, label, cx, cy, {
+    size: 24,
+    minSize: 14,
+    maxWidth: width - 16,
+  });
   ctx.restore();
   return { x, y, width, height };
 }
@@ -1580,20 +1721,27 @@ function drawCapsuleTint(ctx, inner) {
 function drawPrismTitle(ctx, inner, title) {
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(20, Math.round(inner.height * 0.06))}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(title, inner.x + inner.width / 2, inner.y + inner.height * 0.09);
+  const size = Math.max(20, Math.round(inner.height * 0.06));
+  drawFittedText(ctx, title, inner.x + inner.width / 2, inner.y + inner.height * 0.09, {
+    size,
+    minSize: Math.max(12, size - 6),
+    maxWidth: inner.width - 16,
+  });
   ctx.restore();
 }
 
-function drawSubtext(ctx, x, y, size = 14, text = "") {
+function drawSubtext(ctx, x, y, size = 14, text = "", maxWidth = Infinity) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = `${size}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(text, x, y);
+  drawFittedText(ctx, text, x, y, {
+    size,
+    minSize: 9,
+    maxWidth,
+  });
   ctx.restore();
 }
 
@@ -1624,10 +1772,13 @@ function drawProfileChip(ctx, x, y, size, label, options = {}) {
   ctx.arc(x + chipHeight / 2, y + chipHeight / 2, chipHeight * 0.38, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(10, Math.round(chipHeight * 0.38))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + chipHeight, y + chipHeight / 2);
+  drawFittedText(ctx, label, x + chipHeight, y + chipHeight / 2, {
+    size: Math.max(10, Math.round(chipHeight * 0.38)),
+    minSize: 9,
+    maxWidth: chipWidth - chipHeight - 8,
+  });
   ctx.restore();
 }
 
@@ -1638,13 +1789,21 @@ function drawHudChip(ctx, x, y, width, height, label, value) {
   });
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.font = `${Math.max(10, Math.round(height * 0.32))}px "RussoOne", sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, x + height * 0.4, y + height / 2);
+  const valueMaxWidth = Math.max(40, width * 0.45);
+  drawFittedText(ctx, label, x + height * 0.4, y + height / 2, {
+    size: Math.max(10, Math.round(height * 0.32)),
+    minSize: 9,
+    maxWidth: Math.max(40, width - valueMaxWidth - height * 0.5),
+  });
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "right";
-  ctx.fillText(formatValue(value), x + width - height * 0.35, y + height / 2);
+  drawFittedText(ctx, formatValue(value), x + width - height * 0.35, y + height / 2, {
+    size: Math.max(10, Math.round(height * 0.32)),
+    minSize: 9,
+    maxWidth: valueMaxWidth,
+  });
   ctx.restore();
 }
 
@@ -1662,10 +1821,16 @@ function drawCoinChip(ctx, x, y, width, height, value) {
   }
   ctx.save();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `${Math.max(10, Math.round(height * 0.36))}px "RussoOne", sans-serif`;
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  ctx.fillText(formatValue(value), x + width - height * 0.35, y + height / 2);
+  const rightPadding = height * 0.35;
+  const leftPadding = iconX - x + iconSize + 8;
+  const valueMaxWidth = Math.max(40, width - leftPadding - rightPadding);
+  drawFittedText(ctx, formatValue(value), x + width - height * 0.35, y + height / 2, {
+    size: Math.max(10, Math.round(height * 0.43)),
+    minSize: 9,
+    maxWidth: valueMaxWidth,
+  });
   ctx.restore();
 }
 
@@ -1735,10 +1900,13 @@ function drawPrismPrimaryButton(ctx, cx, cy, width, height, label, sprite) {
     );
   } else {
     ctx.fillStyle = "#081018";
-  ctx.font = `${Math.max(16, Math.round(height * 0.45))}px "RussoOne", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(label, cx, cy);
+    drawFittedText(ctx, label, cx, cy, {
+      size: Math.max(16, Math.round(height * 0.45)),
+      minSize: 12,
+      maxWidth: width - 16,
+    });
   }
   ctx.restore();
   return { x, y, width, height };
@@ -1797,10 +1965,13 @@ function drawIconButton(ctx, x, y, size, label, sprite) {
     );
   } else {
     ctx.fillStyle = "#ffffff";
-    ctx.font = `${Math.max(10, Math.round(size * 0.22))}px "RussoOne", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(label, x + size / 2, y + size / 2);
+    drawFittedText(ctx, label, x + size / 2, y + size / 2, {
+      size: Math.max(10, Math.round(size * 0.22)),
+      minSize: 8,
+      maxWidth: size - 8,
+    });
   }
   ctx.restore();
   return { x, y, width: size, height: size };
@@ -1836,6 +2007,55 @@ function clamp(value, min, max) {
 function getUiScale(inner) {
   const scale = Math.min(inner.width / 360, inner.height / 640);
   return clamp(scale, 0.6, 1.1);
+}
+
+function drawFittedText(ctx, text, x, y, options = {}) {
+  const fontFamily = options.fontFamily ?? "\"RussoOne\", sans-serif";
+  const maxWidth = options.maxWidth ?? Infinity;
+  let size = Math.round(options.size ?? 12);
+  const minSize = Math.round(options.minSize ?? Math.max(8, size - 3));
+
+  if (Number.isFinite(maxWidth) && maxWidth > 0) {
+    ctx.font = `${size}px ${fontFamily}`;
+    while (size > minSize && ctx.measureText(text).width > maxWidth) {
+      size -= 1;
+      ctx.font = `${size}px ${fontFamily}`;
+    }
+  }
+
+  let drawText = text;
+  if (Number.isFinite(maxWidth) && maxWidth > 0) {
+    ctx.font = `${size}px ${fontFamily}`;
+    if (ctx.measureText(drawText).width > maxWidth) {
+      drawText = ellipsizeText(ctx, drawText, maxWidth);
+    }
+  }
+
+  ctx.font = `${size}px ${fontFamily}`;
+  ctx.fillText(drawText, x, y);
+  return { size, text: drawText };
+}
+
+function ellipsizeText(ctx, text, maxWidth) {
+  if (!text) {
+    return "";
+  }
+  if (!Number.isFinite(maxWidth) || maxWidth <= 0) {
+    return text;
+  }
+  if (ctx.measureText(text).width <= maxWidth) {
+    return text;
+  }
+  const ellipsis = "...";
+  let end = text.length;
+  while (end > 0) {
+    const candidate = `${text.slice(0, end)}${ellipsis}`;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      return candidate;
+    }
+    end -= 1;
+  }
+  return ellipsis;
 }
 
 function roundRect(ctx, x, y, width, height, radius) {

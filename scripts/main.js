@@ -9,6 +9,7 @@ import {
   handleCanvasOverlayBack,
   handleCanvasOverlayPointer,
 } from "./ui/canvas_overlays.js";
+import { subscribeLanguage, t } from "./ui/i18n.js";
 import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
 import { preloadAssets } from "./preload.js";
 import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
@@ -26,6 +27,12 @@ let runner = null;
 let game = null;
 let shell = null;
 let gameStarted = false;
+
+subscribeLanguage(() => {
+  if (typeof document !== "undefined") {
+    document.title = t("app.page_title");
+  }
+});
 
 bootstrap();
 

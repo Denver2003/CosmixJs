@@ -3,6 +3,12 @@ import { ICON_PATHS } from "./constants.js";
 const ICON_CACHE = new Map();
 const TINT_CACHE = new Map();
 
+export function preloadIcons() {
+  for (const key of Object.keys(ICON_PATHS || {})) {
+    getIcon(key);
+  }
+}
+
 export function drawBubbleIcon(ctx, x, y, size, reward) {
   if (!reward) {
     return;

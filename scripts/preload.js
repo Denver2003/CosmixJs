@@ -1,6 +1,8 @@
 import { SHAPE_SPRITE_PACK } from "./config.js";
 import { getAudioAssets } from "./audio/index.js";
 import { ICON_PATHS } from "./game/bubbles/constants.js";
+import { preloadIcons } from "./game/bubbles/icons.js";
+import { preloadPauseButton } from "./game/pause_button.js";
 
 const BACKGROUND_SRC = "./assets/backgrounds/space_bg_placeholder.png";
 const STATIC_IMAGE_SRCS = [
@@ -10,6 +12,16 @@ const STATIC_IMAGE_SRCS = [
   "./assets/hud/ui_button_shop.png",
   "./assets/hud/ui_button_leaders.png",
   "./assets/hud/ui_button_settings.png",
+];
+const SCALED_ICON_SRCS = [
+  "assets/scaled/icon-coin.png",
+  "assets/scaled/icon_points1.png",
+  "assets/scaled/icon_points2.png",
+  "assets/scaled/icon_points3.png",
+  "assets/scaled/icon-hail.png",
+  "assets/scaled/icon-grenade.png",
+  "assets/scaled/icon-touch.png",
+  "assets/scaled/icon-machine.png",
 ];
 
 const SHAPE_TYPES = [
@@ -44,7 +56,7 @@ export function getPreloadManifest() {
 
   return {
     background: [BACKGROUND_SRC],
-    images: dedupe([...STATIC_IMAGE_SRCS, ...iconSrcs, ...shapeSrcs]),
+    images: dedupe([...STATIC_IMAGE_SRCS, ...SCALED_ICON_SRCS, ...iconSrcs, ...shapeSrcs]),
     fonts: [...FONT_REQUESTS],
     audio: dedupe(audioSrcs),
   };
@@ -71,6 +83,7 @@ export async function preloadAssets({ onProgress } = {}) {
   };
 
   report();
+  preloadPauseButton();
   const backgroundImages = await Promise.all(
     manifest.background.map((src) =>
       loadImage(src)
@@ -111,6 +124,7 @@ export async function preloadAssets({ onProgress } = {}) {
   if (pending.length) {
     await Promise.all(pending);
   }
+  preloadIcons();
   report();
 
   return {

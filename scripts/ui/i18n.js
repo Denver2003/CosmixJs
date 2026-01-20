@@ -6,6 +6,7 @@ const listeners = new Set();
 const STRINGS = {
   en: {
     "app.title": "COSMIX",
+    "app.page_title": "Falling Blocks: Physics Puzzle",
     "user.guest": "Guest",
     "nav.back": "BACK",
     "nav.home": "HOME",
@@ -100,6 +101,7 @@ const STRINGS = {
   },
   ru: {
     "app.title": "COSMIX",
+    "app.page_title": "Падающие Блоки: Физическая Головоломка",
     "user.guest": "Гость",
     "nav.back": "НАЗАД",
     "nav.home": "ГЛАВНАЯ",

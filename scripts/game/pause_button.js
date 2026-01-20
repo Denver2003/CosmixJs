@@ -14,6 +14,10 @@ function getPauseImage() {
   return pauseImage;
 }
 
+export function preloadPauseButton() {
+  getPauseImage();
+}
+
 export function drawPauseButton(ctx, pauseLayout) {
   const image = getPauseImage();
   if (image._broken || !image.complete || image.naturalWidth === 0) {
