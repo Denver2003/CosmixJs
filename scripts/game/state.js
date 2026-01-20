@@ -43,7 +43,6 @@ export function createGameState() {
     killGraceUntil: 0,
     killWarningActive: false,
     chainStates: [],
-    debugLogMs: 0,
     chainGraceMs: 0,
     burstBodies: new Set(),
     viewScale: 1,
@@ -134,6 +133,5 @@ export function applyLevelProgress(state, removedCount) {
   state.toNextLevel = Math.floor(prevToNextLevel * 1.2);
   state.colorsCount = getColorsCount(state.level);
   state.rotationRange = getRotationRange(state.level);
-  console.log("[level] up:", state.level);
   return { leveledUp: true, prevToNextLevel };
 }

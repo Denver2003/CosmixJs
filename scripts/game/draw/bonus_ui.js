@@ -4,6 +4,27 @@ import { drawBubbleIcon } from "../bubbles.js";
 import { getBonusSlots } from "../bonus_ui.js";
 import { getBonusCooldownMs } from "../bonuses.js";
 
+function drawKeyHint(ctx, x, y, size, label) {
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(x, y, size, size);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.beginPath();
+  ctx.moveTo(x, y + size);
+  ctx.lineTo(x + size, y + size);
+  ctx.lineTo(x + size, y);
+  ctx.stroke();
+  ctx.fillStyle = "#0f1115";
+  ctx.font = "12px \"RussoOne\", sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + size / 2, y + size / 2 + 0.5);
+}
+
 export function drawBonusButtons(state, ctx, getGlassRect) {
   const slots = getBonusSlots(state, getGlassRect);
   if (!slots.length) {
@@ -78,6 +99,13 @@ export function drawBonusButtons(state, ctx, getGlassRect) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(formatNumber(count), badgeX, badgeY + 0.5);
+    }
+
+    if (state.keyboardControlActive && slot.keyLabel && !cooling) {
+      const size = Math.round(slot.radius * 0.75);
+      const hintX = slot.x + slot.radius * 0.45;
+      const hintY = slot.y + slot.radius * 0.45;
+      drawKeyHint(ctx, hintX, hintY, size, slot.keyLabel);
     }
   }
   ctx.restore();

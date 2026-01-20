@@ -188,5 +188,3 @@ fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 for (const shape of SHAPES) {
   drawShape(shape.body(), shape.name);
 }
-
-console.log(`Generated ${SHAPES.length} sprites in ${OUTPUT_DIR}`);

@@ -45,9 +45,6 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     confirmDialog?.open({
       titleText: t("confirm.reset_title"),
       bodyText: t("confirm.reset_body"),
-      onConfirm: () => {
-        console.log("[shell] reset progress requested");
-      },
     });
   });
 

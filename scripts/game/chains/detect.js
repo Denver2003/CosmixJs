@@ -3,7 +3,6 @@ import { CHAIN_DURATION_MS, CHAIN_GRACE_MS, CHAIN_MIN } from "../../config.js";
 const { Composite } = Matter;
 
 export function updateChainDetect(state, deltaMs) {
-  state.debugLogMs += deltaMs;
   const bodies = Composite.allBodies(state.world).filter((body) => {
     if (body.isStatic || body.parent !== body) {
       return false;
@@ -136,21 +135,6 @@ export function updateChainDetect(state, deltaMs) {
   }
 
   state.chainStates = nextStates;
-
-  if (state.debugLogMs >= 1000) {
-    const counts = components.map((component) => component.ids.size);
-    const totalPairs = state.engine.pairs.list.length;
-    console.log(
-      "[chains]",
-      "bodies:",
-      bodies.length,
-      "pairs:",
-      totalPairs,
-      "components:",
-      counts
-    );
-    state.debugLogMs = 0;
-  }
 
   return { bodies, components, bodyById, removeComponents: [], removedCount: 0 };
 }

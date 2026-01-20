@@ -73,7 +73,6 @@ export function applyBubbleReward(state, reward, getGlassRect) {
         state.bubbleRewardCooldowns.grenade = now + BUBBLE_COOLDOWN_GRENADE_MS;
         triggerGrenade(state, reward.color, getGlassRect);
       }
-      console.log("[bubble] instant:", reward.subtype);
       break;
     case "consumable":
       if (reward.subtype === "touch") {
@@ -85,7 +84,6 @@ export function applyBubbleReward(state, reward, getGlassRect) {
         state.bonusInventory.gun += reward.amount || 1;
         playSfx("bonus_instant_pick");
       }
-      console.log("[bubble] consumable:", reward.subtype);
       break;
     default:
       break;

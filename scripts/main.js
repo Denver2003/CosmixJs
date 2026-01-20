@@ -13,8 +13,6 @@ import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads
 
 const { Engine, Render } = Matter;
 
-console.log("[main] init");
-
 const engine = Engine.create();
 const world = engine.world;
 
@@ -319,14 +317,20 @@ function startFixedRunner(engineInstance, runnerState) {
   let accumulator = 0;
   const stepMs = runnerState.delta;
   const maxSteps = 5;
+  const maxFrameDelta = stepMs * maxSteps;
+  const resetAfterMs = 1000;
 
   function tick(time) {
     if (lastTime === null) {
       lastTime = time;
     }
-    const frameDelta = time - lastTime;
+    const rawDelta = time - lastTime;
     lastTime = time;
     if (runnerState.enabled) {
+      if (rawDelta > resetAfterMs) {
+        accumulator = 0;
+      }
+      const frameDelta = Math.min(rawDelta, maxFrameDelta);
       accumulator += frameDelta;
       let steps = 0;
       while (accumulator >= stepMs && steps < maxSteps) {

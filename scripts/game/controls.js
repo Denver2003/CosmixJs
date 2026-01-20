@@ -18,6 +18,7 @@ export function attachControls(
   let lastX = 0;
 
   function onKeyDown(event) {
+    const { key, code } = event;
     if (event.key === "p" || event.key === "P") {
       if (state.mode === "shell" || state.mode === "gameover") {
         return;
@@ -30,7 +31,7 @@ export function attachControls(
       event.preventDefault();
       return;
     }
-    if (event.key === "e" || event.key === "E" || event.key === "ArrowUp") {
+    if (key === "e" || key === "E" || code === "KeyE" || key === "ArrowUp") {
       if (state.mode === "shell" || state.mode === "gameover") {
         return;
       }
@@ -42,10 +43,11 @@ export function attachControls(
         }
       }
     }
-    if (event.key === "1") {
+    if (key === "1" || code === "Digit1" || code === "Numpad1") {
       if (state.mode === "shell" || state.mode === "gameover") {
         return;
       }
+      state.keyboardControlActive = true;
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         if (activateTouchBonus(state)) {
           event.preventDefault();
@@ -53,10 +55,11 @@ export function attachControls(
         }
       }
     }
-    if (event.key === "2") {
+    if (key === "2" || code === "Digit2" || code === "Numpad2") {
       if (state.mode === "shell" || state.mode === "gameover") {
         return;
       }
+      state.keyboardControlActive = true;
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         if (activateGunBonus(state, getGlassRect)) {
           event.preventDefault();
@@ -64,18 +67,16 @@ export function attachControls(
         }
       }
     }
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "ArrowDown") {
+    if (
+      code === "ArrowLeft" ||
+      code === "ArrowRight" ||
+      code === "ArrowDown" ||
+      code === "ArrowUp"
+    ) {
       state.keyboardControlActive = true;
       state.keyboardControlMode = "arrows";
     }
-    if (
-      event.key === "a" ||
-      event.key === "A" ||
-      event.key === "d" ||
-      event.key === "D" ||
-      event.key === "s" ||
-      event.key === "S"
-    ) {
+    if (code === "KeyA" || code === "KeyD" || code === "KeyS") {
       state.keyboardControlActive = true;
       state.keyboardControlMode = "wasd";
     }
@@ -86,22 +87,17 @@ export function attachControls(
       return;
     }
 
-    switch (event.key) {
+    switch (code) {
       case "ArrowLeft":
-      case "a":
-      case "A":
+      case "KeyA":
         state.moveLeft = true;
         break;
       case "ArrowRight":
-      case "d":
-      case "D":
+      case "KeyD":
         state.moveRight = true;
         break;
       case "ArrowDown":
-        dropActiveBody(state, getSpawnPoint, getGlassRect);
-        break;
-      case "s":
-      case "S":
+      case "KeyS":
         dropActiveBody(state, getSpawnPoint, getGlassRect);
         break;
       default:
@@ -110,15 +106,13 @@ export function attachControls(
   }
 
   function onKeyUp(event) {
-    switch (event.key) {
+    switch (event.code) {
       case "ArrowLeft":
-      case "a":
-      case "A":
+      case "KeyA":
         state.moveLeft = false;
         break;
       case "ArrowRight":
-      case "d":
-      case "D":
+      case "KeyD":
         state.moveRight = false;
         break;
       default:

@@ -90,28 +90,11 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
         comboInfo?.chainCount || 0
       );
       const { breakdown } = applyChainRewards(state, removedComponents);
-      if (comboInfo && comboInfo.multiplier > 1) {
-        console.log(
-          "[combo]",
-          `x${comboInfo.multiplier}`,
-          "chains:",
-          comboInfo.chainCount,
-          "windowMs:",
-          comboInfo.windowMs
-        );
-      }
       spawnScoreParticles(
         state,
         render,
         removedComponentBodies,
         breakdown
-      );
-      console.log(
-        "[level]",
-        "cleared:",
-        state.clearedThisLevel + removedCount,
-        "/",
-        state.toNextLevel
       );
       const { leveledUp, prevToNextLevel } = applyLevelProgress(
         state,
@@ -129,15 +112,6 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     updateComboPopups(state);
     updateLevelUpPopups(state);
 
-    if (state.gameMultiplier !== prevMultiplier) {
-      console.log(
-        "[cosmo]",
-        "energy:",
-        state.energy.toFixed(1),
-        "x",
-        state.gameMultiplier
-      );
-    }
   }
 
   function draw() {

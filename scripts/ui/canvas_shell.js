@@ -211,14 +211,10 @@ export function handleShellPointer(x, y, render) {
         openCanvasConfirmDialog({
           titleText: t("confirm.reset_title"),
           bodyText: t("confirm.reset_body"),
-          onConfirm: () => {
-            console.log("[shell] reset progress requested");
-          },
         });
         return true;
       }
       if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
-        console.log("[shell] restore purchases requested");
         return true;
       }
     }

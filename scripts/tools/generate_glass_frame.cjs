@@ -121,4 +121,3 @@ const chunks = Buffer.concat([
 ]);
 
 fs.writeFileSync("assets/levelUI/glass_frame.png", chunks);
-console.log("Generated assets/levelUI/glass_frame.png");
