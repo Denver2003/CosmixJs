@@ -63,7 +63,7 @@ export function drawLevelUpPopups(state, ctx) {
     }
 
     const color = getLevelColor(popup.level);
-    const baseFont = 20;
+    const baseFont = 30;
     const gap = 24;
     let newPos = { x: popup.worldX, y: popup.worldY - gap };
     let levelPos = { x: popup.worldX, y: popup.worldY };
@@ -117,22 +117,34 @@ export function drawLevelUpPopups(state, ctx) {
 
     ctx.save();
     ctx.globalAlpha = alpha;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.fillStyle = hexToRgba("#ffffff", alpha);
     ctx.font = `${Math.round(baseFont * newScale)}px "RussoOne", sans-serif`;
+    ctx.strokeText("NEW", newPos.x, newPos.y);
     ctx.fillText("NEW", newPos.x, newPos.y);
     ctx.restore();
 
     ctx.save();
     ctx.globalAlpha = alpha;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.fillStyle = hexToRgba(color, alpha);
     ctx.font = `${Math.round(baseFont * levelScale)}px "RussoOne", sans-serif`;
+    ctx.strokeText(formatNumber(popup.level), levelPos.x, levelPos.y);
     ctx.fillText(formatNumber(popup.level), levelPos.x, levelPos.y);
     ctx.restore();
 
     ctx.save();
     ctx.globalAlpha = alpha;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.fillStyle = hexToRgba("#ffffff", alpha);
     ctx.font = `${Math.round(baseFont * levelLabelScale)}px "RussoOne", sans-serif`;
+    ctx.strokeText("LEVEL", levelLabelPos.x, levelLabelPos.y);
     ctx.fillText("LEVEL", levelLabelPos.x, levelLabelPos.y);
     ctx.restore();
   }

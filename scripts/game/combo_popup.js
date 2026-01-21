@@ -5,7 +5,7 @@ const PHASE2_MS = 1000;
 const START_SCALE = 0.3;
 const PEAK_SCALE = 1.5;
 const END_SCALE = 1;
-const FONT_SIZE = 48;
+const FONT_SIZE = 72;
 const FONT_FAMILY = "\"RussoOne\", sans-serif";
 const DEFAULT_COLOR = "#f0c74a";
 
@@ -161,6 +161,10 @@ export function drawComboPopups(state, ctx) {
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.strokeText(popup.label, 0, 0);
     ctx.fillStyle = colorWithAlpha(popup.color || DEFAULT_COLOR, alpha);
     ctx.fillText(popup.label, 0, 0);
     ctx.restore();

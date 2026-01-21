@@ -181,6 +181,22 @@ export function popBubbleAt(state, x, y, getGlassRect) {
   return reward;
 }
 
+export function isBubbleHit(state, x, y) {
+  const bubbles = state.bubbles;
+  if (!bubbles || bubbles.length === 0) {
+    return false;
+  }
+  for (let i = bubbles.length - 1; i >= 0; i -= 1) {
+    const bubble = bubbles[i];
+    const dx = x - bubble.x;
+    const dy = y - bubble.y;
+    if (dx * dx + dy * dy <= bubble.radius * bubble.radius) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function popTopBubble(state, getGlassRect) {
   const bubbles = state.bubbles;
   if (!bubbles || bubbles.length === 0) {

@@ -83,15 +83,19 @@ export function drawRewardFloaters(state, ctx) {
   ctx.save();
   for (const floater of floaters) {
     const alpha = Math.max(0, Math.min(1, floater.alpha ?? 1));
-    ctx.fillStyle = colorWithAlpha(floater.color || "#ffffff", alpha);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     if (floater.type === "coins") {
-      ctx.font = "bold 32px \"RussoOne\", sans-serif";
+      ctx.font = "bold 48px \"RussoOne\", sans-serif";
     } else {
-      ctx.font = "28px \"RussoOne\", sans-serif";
+      ctx.font = "42px \"RussoOne\", sans-serif";
     }
-      ctx.fillText(`+${formatNumber(floater.value)}`, floater.x, floater.y);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.strokeText(`+${formatNumber(floater.value)}`, floater.x, floater.y);
+    ctx.fillStyle = colorWithAlpha(floater.color || "#ffffff", alpha);
+    ctx.fillText(`+${formatNumber(floater.value)}`, floater.x, floater.y);
   }
   ctx.restore();
 }

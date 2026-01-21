@@ -20,6 +20,7 @@ import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads
 import { preloadAssets } from "./preload.js";
 import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
 import * as bonusUi from "./game/bonus_ui.js";
+import { isBubbleHit } from "./game/bubbles.js";
 import { isPauseButtonHover } from "./game/lines/hud.js";
 
 const { Engine, Render } = Matter;
@@ -254,25 +255,38 @@ async function bootstrap() {
       isGameActive,
     });
     const shellHover = isShellHoverTarget(x, y, render);
-    let gameHover = false;
+    let gameHover = "";
     if (isGameActive && game?.state && glass?.getRect) {
       const state = game.state;
       const scale = state.viewScale || 1;
       const worldX = x / scale;
       const worldY = y / scale;
-      if (!state.paused && !state.gameOver) {
-        gameHover =
-          isPauseButtonHover(state, render, glass.getRect, x, y) ||
-          (typeof bonusUi.hasHoverableBonusSlot === "function" &&
-            bonusUi.hasHoverableBonusSlot(state, glass.getRect, worldX, worldY)) ||
-          isPointInGlass(render, glass.getRect, x, y);
-      } else {
-        gameHover = isPauseButtonHover(state, render, glass.getRect, x, y);
+      const pauseHover = isPauseButtonHover(state, render, glass.getRect, x, y);
+      const bonusHover =
+        typeof bonusUi.hasHoverableBonusSlot === "function" &&
+        bonusUi.hasHoverableBonusSlot(state, glass.getRect, worldX, worldY);
+      const bubbleHover = isBubbleHit(state, worldX, worldY);
+      const touchKillActive =
+        state.bonusTouchActiveUntil &&
+        state.engine?.timing?.timestamp < state.bonusTouchActiveUntil;
+      const inGlass = isPointInGlass(render, glass.getRect, x, y);
+      if (state.paused) {
+        gameHover = pauseHover ? "pointer" : "";
+      } else if (state.gameOver) {
+        gameHover = pauseHover ? "pointer" : "";
+      } else if (touchKillActive && inGlass) {
+        gameHover = "pointer";
+      } else if (bubbleHover || bonusHover || pauseHover) {
+        gameHover = "pointer";
+      } else if (inGlass) {
+        gameHover = "ew-resize";
       }
     }
-    canvas.style.cursor = overlayHover || shellHover || gameHover ? "pointer" : "";
+    const hoverCursor =
+      overlayHover || shellHover ? "pointer" : gameHover || "";
+    canvas.style.cursor = hoverCursor;
     if (typeof document !== "undefined") {
-      document.body.style.cursor = canvas.style.cursor;
+      document.body.style.cursor = hoverCursor;
     }
   };
   canvas.addEventListener("pointermove", updateCanvasCursor);

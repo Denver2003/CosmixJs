@@ -3,6 +3,7 @@ import { drawBubbles, trySpawnBubble, updateBubbles } from "./bubbles/core.js";
 import {
   drawBubblePopIcons,
   drawBubblePopParticles,
+  isBubbleHit,
   popBubbleAt,
   popTopBubble,
   spawnBubblePopIcon,
@@ -17,6 +18,7 @@ export {
   applyBubbleReward,
   drawBubblePopIcons,
   drawBubblePopParticles,
+  isBubbleHit,
   popBubbleAt,
   popTopBubble,
   rollBubbleReward,

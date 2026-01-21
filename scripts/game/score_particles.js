@@ -115,19 +115,24 @@ export function drawScoreParticles(state, ctx) {
     return;
   }
   ctx.save();
-  ctx.font = "28px \"RussoOne\", sans-serif";
+  ctx.font = "42px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const particle of particles) {
     const alpha = Math.max(0, Math.min(1, particle.alpha ?? 1));
     const scale = Math.max(0.1, particle.scale ?? 1);
     const color = particle.color || "#e0e4e8";
-    ctx.fillStyle = color.startsWith("#")
+    const fillColor = color.startsWith("#")
       ? colorWithAlpha(color, alpha)
       : color;
     ctx.save();
     ctx.translate(particle.x, particle.y);
     ctx.scale(scale, scale);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.strokeText(`+${formatNumber(particle.value)}`, 0, 0);
+    ctx.fillStyle = fillColor;
     ctx.fillText(`+${formatNumber(particle.value)}`, 0, 0);
     ctx.restore();
   }

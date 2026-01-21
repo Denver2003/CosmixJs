@@ -324,7 +324,7 @@ function drawCosmoPopups(state, ctx, bar) {
   const moveX = bar.width * 2 + 12;
   const lift = bar.height * 0.1;
   ctx.save();
-  ctx.font = "16px \"RussoOne\", sans-serif";
+  ctx.font = "24px \"RussoOne\", sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   for (const popup of popups) {
@@ -359,6 +359,10 @@ function drawCosmoPopups(state, ctx, bar) {
     ctx.globalAlpha = alpha;
     ctx.translate(x, y);
     ctx.scale(scale, scale);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.strokeText(`${formatNumber(popup.multiplier)}x`, 0, 0);
     ctx.fillStyle = hexToRgba(popup.color || "#ffffff", alpha);
     ctx.fillText(`${formatNumber(popup.multiplier)}x`, 0, 0);
     ctx.restore();
