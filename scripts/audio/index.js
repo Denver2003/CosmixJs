@@ -54,6 +54,10 @@ const MUSIC = {
   bgm_main_loop: { src: "./assets/audio/bgm/bgm_main_loop.ogg" },
 };
 
+const AudioContextClass =
+  typeof window !== "undefined" ? window.AudioContext || window.webkitAudioContext : null;
+const WEB_AUDIO_SUPPORTED = Boolean(AudioContextClass);
+
 let settings = loadAudioSettings();
 const lastPlayMs = new Map();
 const loopActive = new Set();
@@ -61,6 +65,23 @@ const loopPlayers = new Map();
 const sfxPools = new Map();
 let musicPlayer = null;
 const SFX_POOL_LIMIT = 4;
+const webAudio = {
+  supported: WEB_AUDIO_SUPPORTED,
+  context: null,
+  sfxGain: null,
+  musicGain: null,
+  sfxBuffers: new Map(),
+  musicBuffers: new Map(),
+  sfxLoads: new Map(),
+  musicLoads: new Map(),
+  loopSources: new Map(),
+  musicId: null,
+  musicSource: null,
+  musicSourceId: null,
+  failed: false,
+  unlocked: false,
+};
+let webAudioUnlockBound = false;
 
 export function getAudioSettings() {
   return { ...settings };
@@ -82,6 +103,53 @@ export function setAudioSettings(partial) {
 }
 
 export function playSfx(id) {
+  if (useWebAudio()) {
+    playSfxWeb(id);
+    return;
+  }
+  playSfxHtml(id);
+}
+
+export function setLoop(id, active) {
+  if (useWebAudio()) {
+    setLoopWeb(id, active);
+    return;
+  }
+  setLoopHtml(id, active);
+}
+
+export function playMusic(id) {
+  if (useWebAudio()) {
+    playMusicWeb(id);
+    return;
+  }
+  playMusicHtml(id);
+}
+
+export function stopMusic() {
+  if (useWebAudio()) {
+    stopMusicWeb();
+    return;
+  }
+  stopMusicHtml();
+}
+
+export function preloadAudio() {
+  if (useWebAudio()) {
+    preloadWebAudio();
+    return;
+  }
+  preloadAudioHtml();
+}
+
+export function getAudioAssets() {
+  return {
+    sfx: { ...SFX },
+    music: { ...MUSIC },
+  };
+}
+
+function playSfxHtml(id) {
   const meta = SFX[id];
   if (!meta || !canPlaySfx()) {
     return;
@@ -102,7 +170,7 @@ export function playSfx(id) {
   audio.play().catch(() => {});
 }
 
-export function setLoop(id, active) {
+function setLoopHtml(id, active) {
   if (active) {
     if (loopActive.has(id)) {
       return;
@@ -116,10 +184,10 @@ export function setLoop(id, active) {
     return;
   }
   loopActive.delete(id);
-  stopLoop(id);
+  stopLoopHtml(id);
 }
 
-export function playMusic(id) {
+function playMusicHtml(id) {
   if (settings.mute || settings.music <= 0) {
     return;
   }
@@ -128,7 +196,7 @@ export function playMusic(id) {
     return;
   }
   if (!musicPlayer || musicPlayer.id !== id) {
-    stopMusic();
+    stopMusicHtml();
     const audio = createAudio(meta.src, true);
     musicPlayer = { id, audio };
   }
@@ -139,7 +207,7 @@ export function playMusic(id) {
   musicPlayer.audio.play().catch(() => {});
 }
 
-export function stopMusic() {
+function stopMusicHtml() {
   if (!musicPlayer?.audio) {
     return;
   }
@@ -147,7 +215,7 @@ export function stopMusic() {
   musicPlayer.audio.currentTime = 0;
 }
 
-export function preloadAudio() {
+function preloadAudioHtml() {
   for (const [id, meta] of Object.entries(SFX)) {
     if (!meta?.src) {
       continue;
@@ -188,14 +256,7 @@ export function preloadAudio() {
       musicPlayer.audio.load();
     }
   }
-  applyVolumes();
-}
-
-export function getAudioAssets() {
-  return {
-    sfx: { ...SFX },
-    music: { ...MUSIC },
-  };
+  applyHtmlVolumes();
 }
 
 function canPlaySfx() {
@@ -267,7 +328,7 @@ function getLoopPlayer(id) {
   return audio;
 }
 
-function stopLoop(id) {
+function stopLoopHtml(id) {
   const audio = loopPlayers.get(id);
   if (!audio) {
     return;
@@ -277,10 +338,18 @@ function stopLoop(id) {
 }
 
 function applyVolumes() {
+  if (useWebAudio()) {
+    applyWebVolumes();
+    return;
+  }
+  applyHtmlVolumes();
+}
+
+function applyHtmlVolumes() {
   const sfxVolume = getSfxVolume();
   if (!canPlaySfx()) {
     for (const id of loopActive) {
-      stopLoop(id);
+      stopLoopHtml(id);
     }
   }
   for (const id of loopActive) {
@@ -305,6 +374,347 @@ function applyVolumes() {
       musicPlayer.audio.pause();
     } else if (musicPlayer.audio.paused) {
       musicPlayer.audio.play().catch(() => {});
+    }
+  }
+}
+
+function useWebAudio() {
+  return webAudio.supported && !webAudio.failed;
+}
+
+function bindWebAudioUnlock() {
+  if (webAudioUnlockBound || typeof window === "undefined" || !useWebAudio()) {
+    return;
+  }
+  webAudioUnlockBound = true;
+  const pointerOptions = { capture: true, passive: true };
+  const keyOptions = { capture: true };
+  const unlock = () => {
+    if (!useWebAudio()) {
+      return;
+    }
+    const context = ensureWebAudioContext();
+    if (!context) {
+      return;
+    }
+    if (context.state === "suspended") {
+      context.resume().catch(() => {});
+    }
+    if (!webAudio.unlocked && context.state === "running") {
+      unlockWebAudio(context);
+      webAudio.unlocked = true;
+      window.removeEventListener("pointerdown", unlock, pointerOptions);
+      window.removeEventListener("touchend", unlock, pointerOptions);
+      window.removeEventListener("mousedown", unlock, pointerOptions);
+      window.removeEventListener("keydown", unlock, keyOptions);
+    }
+  };
+  window.addEventListener("pointerdown", unlock, pointerOptions);
+  window.addEventListener("touchend", unlock, pointerOptions);
+  window.addEventListener("mousedown", unlock, pointerOptions);
+  window.addEventListener("keydown", unlock, keyOptions);
+}
+
+function ensureWebAudioContext() {
+  if (!useWebAudio()) {
+    return null;
+  }
+  bindWebAudioUnlock();
+  if (!webAudio.context) {
+    try {
+      webAudio.context = new AudioContextClass();
+      webAudio.sfxGain = webAudio.context.createGain();
+      webAudio.musicGain = webAudio.context.createGain();
+      webAudio.sfxGain.connect(webAudio.context.destination);
+      webAudio.musicGain.connect(webAudio.context.destination);
+      webAudio.sfxGain.gain.value = getSfxVolume();
+      webAudio.musicGain.gain.value = getMusicVolume();
+    } catch (error) {
+      webAudio.failed = true;
+      return null;
+    }
+  }
+  if (webAudio.context.state === "suspended") {
+    webAudio.context.resume().catch(() => {});
+  }
+  return webAudio.context;
+}
+
+function unlockWebAudio(context) {
+  if (!context) {
+    return;
+  }
+  const buffer = context.createBuffer(1, 1, context.sampleRate);
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(context.destination);
+  source.start(0);
+  source.stop(0);
+}
+
+function decodeAudioData(context, data) {
+  if (context.decodeAudioData.length === 1) {
+    return context.decodeAudioData(data);
+  }
+  return new Promise((resolve, reject) => {
+    context.decodeAudioData(data, resolve, reject);
+  });
+}
+
+function loadWebAudioBuffer(id, src, cache, pending) {
+  if (!useWebAudio()) {
+    return Promise.reject(new Error("WebAudio unavailable"));
+  }
+  if (cache.has(id)) {
+    return Promise.resolve(cache.get(id));
+  }
+  if (pending.has(id)) {
+    return pending.get(id);
+  }
+  const context = ensureWebAudioContext();
+  if (!context) {
+    return Promise.reject(new Error("WebAudio context missing"));
+  }
+  const request = fetch(src)
+    .then((response) => response.arrayBuffer())
+    .then((data) => decodeAudioData(context, data))
+    .then((buffer) => {
+      cache.set(id, buffer);
+      pending.delete(id);
+      return buffer;
+    })
+    .catch((error) => {
+      pending.delete(id);
+      throw error;
+    });
+  pending.set(id, request);
+  return request;
+}
+
+function preloadWebAudio() {
+  const context = ensureWebAudioContext();
+  if (!context) {
+    return;
+  }
+  const tasks = [];
+  for (const [id, meta] of Object.entries(SFX)) {
+    if (!meta?.src) {
+      continue;
+    }
+    tasks.push(
+      loadWebAudioBuffer(id, meta.src, webAudio.sfxBuffers, webAudio.sfxLoads).catch(
+        () => null
+      )
+    );
+  }
+  for (const [id, meta] of Object.entries(MUSIC)) {
+    if (!meta?.src) {
+      continue;
+    }
+    tasks.push(
+      loadWebAudioBuffer(id, meta.src, webAudio.musicBuffers, webAudio.musicLoads).catch(
+        () => null
+      )
+    );
+  }
+  if (tasks.length > 0) {
+    Promise.all(tasks).catch(() => {});
+  }
+  applyWebVolumes();
+}
+
+function playSfxWeb(id) {
+  const meta = SFX[id];
+  if (!meta || !canPlaySfx()) {
+    return;
+  }
+  const now = getNowMs();
+  const last = lastPlayMs.get(id) || 0;
+  if (now - last < (meta.minIntervalMs || 0)) {
+    return;
+  }
+  lastPlayMs.set(id, now);
+  const buffer = webAudio.sfxBuffers.get(id);
+  if (buffer) {
+    startWebSfx(buffer);
+    return;
+  }
+  loadWebAudioBuffer(id, meta.src, webAudio.sfxBuffers, webAudio.sfxLoads)
+    .then((loaded) => {
+      if (!loaded || !canPlaySfx()) {
+        return;
+      }
+      startWebSfx(loaded);
+    })
+    .catch(() => {});
+}
+
+function startWebSfx(buffer) {
+  const context = ensureWebAudioContext();
+  if (!context || !webAudio.sfxGain) {
+    return;
+  }
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(webAudio.sfxGain);
+  source.start(0);
+}
+
+function setLoopWeb(id, active) {
+  if (active) {
+    if (loopActive.has(id)) {
+      return;
+    }
+    loopActive.add(id);
+    startWebLoop(id);
+    return;
+  }
+  loopActive.delete(id);
+  stopWebLoop(id);
+}
+
+function startWebLoop(id) {
+  if (!canPlaySfx()) {
+    return;
+  }
+  if (webAudio.loopSources.has(id)) {
+    return;
+  }
+  const meta = SFX[id];
+  if (!meta?.src) {
+    return;
+  }
+  const buffer = webAudio.sfxBuffers.get(id);
+  if (!buffer) {
+    loadWebAudioBuffer(id, meta.src, webAudio.sfxBuffers, webAudio.sfxLoads)
+      .then((loaded) => {
+        if (!loaded || !loopActive.has(id) || !canPlaySfx()) {
+          return;
+        }
+        startWebLoop(id);
+      })
+      .catch(() => {});
+    return;
+  }
+  const context = ensureWebAudioContext();
+  if (!context || !webAudio.sfxGain) {
+    return;
+  }
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(webAudio.sfxGain);
+  source.start(0);
+  webAudio.loopSources.set(id, source);
+}
+
+function stopWebLoop(id) {
+  const source = webAudio.loopSources.get(id);
+  if (!source) {
+    return;
+  }
+  try {
+    source.stop(0);
+  } catch (error) {
+  }
+  source.disconnect();
+  webAudio.loopSources.delete(id);
+}
+
+function playMusicWeb(id) {
+  const meta = MUSIC[id];
+  if (!meta?.src) {
+    return;
+  }
+  webAudio.musicId = id;
+  if (settings.mute || settings.music <= 0) {
+    stopWebMusicSource();
+    return;
+  }
+  if (webAudio.musicSource && webAudio.musicSourceId === id) {
+    return;
+  }
+  startWebMusic(id, meta.src);
+}
+
+function startWebMusic(id, src) {
+  const buffer = webAudio.musicBuffers.get(id);
+  if (buffer) {
+    startWebMusicSource(buffer);
+    return;
+  }
+  loadWebAudioBuffer(id, src, webAudio.musicBuffers, webAudio.musicLoads)
+    .then((loaded) => {
+      if (!loaded || webAudio.musicId !== id) {
+        return;
+      }
+      if (settings.mute || settings.music <= 0) {
+        return;
+      }
+      startWebMusicSource(loaded);
+    })
+    .catch(() => {});
+}
+
+function startWebMusicSource(buffer) {
+  const context = ensureWebAudioContext();
+  if (!context || !webAudio.musicGain) {
+    return;
+  }
+  stopWebMusicSource();
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(webAudio.musicGain);
+  source.start(0);
+  webAudio.musicSource = source;
+  webAudio.musicSourceId = webAudio.musicId;
+}
+
+function stopMusicWeb() {
+  webAudio.musicId = null;
+  stopWebMusicSource();
+}
+
+function stopWebMusicSource() {
+  const source = webAudio.musicSource;
+  if (!source) {
+    return;
+  }
+  try {
+    source.stop(0);
+  } catch (error) {
+  }
+  source.disconnect();
+  webAudio.musicSource = null;
+  webAudio.musicSourceId = null;
+}
+
+function applyWebVolumes() {
+  if (!webAudio.context) {
+    return;
+  }
+  if (webAudio.sfxGain) {
+    webAudio.sfxGain.gain.value = getSfxVolume();
+  }
+  if (webAudio.musicGain) {
+    webAudio.musicGain.gain.value = getMusicVolume();
+  }
+  if (!canPlaySfx()) {
+    for (const id of webAudio.loopSources.keys()) {
+      stopWebLoop(id);
+    }
+  } else {
+    for (const id of loopActive) {
+      startWebLoop(id);
+    }
+  }
+  if (settings.mute || settings.music <= 0) {
+    stopWebMusicSource();
+  } else if (webAudio.musicId && !webAudio.musicSource) {
+    const meta = MUSIC[webAudio.musicId];
+    if (meta?.src) {
+      startWebMusic(webAudio.musicId, meta.src);
     }
   }
 }
