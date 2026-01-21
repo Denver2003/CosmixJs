@@ -2,6 +2,7 @@ import { ROTATE_RANGE } from "../config.js";
 import { createRandomSpec } from "../shapes.js";
 import { applyShopToGameState, getShopProgress } from "../shop/progression.js";
 import { loadBonusInventory, loadCoins } from "./storage.js";
+import { createTutorialState } from "./tutorial.js";
 
 export function getColorsCount(level) {
   return Math.min(4 + Math.floor((level - 1) / 5), 7);
@@ -109,6 +110,7 @@ export function createGameState() {
     keyboardControlMode: null,
     lastGameOverCoins: 0,
     lastGameOverStoredCoins: 0,
+    tutorial: createTutorialState(),
     level,
     clearedThisLevel: 0,
     toNextLevel,

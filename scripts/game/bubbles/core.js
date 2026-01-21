@@ -47,6 +47,18 @@ export function trySpawnBubble(
   return bubble;
 }
 
+export function spawnBubbleWithReward(state, getGlassRect, reward, source = "tutorial") {
+  if (!reward || !state || !getGlassRect) {
+    return null;
+  }
+  if (state.bubbles.length >= BUBBLE_MAX_COUNT) {
+    return null;
+  }
+  const bubble = createBubble(state, getGlassRect, reward, source);
+  state.bubbles.push(bubble);
+  return bubble;
+}
+
 function createBubble(state, getGlassRect, reward, source) {
   const glass = getGlassRect();
   const radius =
@@ -68,6 +80,7 @@ function createBubble(state, getGlassRect, reward, source) {
     bornMs: state.engine.timing.timestamp,
     reward,
     source,
+    tutorial: Boolean(reward?.tutorial),
   };
 }
 

@@ -2,6 +2,7 @@ const COINS_KEY = "cosmix.coins";
 const BONUSES_KEY = "cosmix.bonuses";
 const BEST_SCORE_KEY = "cosmix.best_score";
 const AUDIO_KEY = "cosmix.audio";
+const TUTORIAL_KEY = "cosmix.tutorial";
 
 function getStorage() {
   if (typeof window === "undefined") {
@@ -125,6 +126,42 @@ export function saveAudioSettings(settings) {
     mute: Boolean(settings?.mute),
   };
   storage.setItem(AUDIO_KEY, JSON.stringify(payload));
+  return true;
+}
+
+export function loadTutorialProgress() {
+  const storage = getStorage();
+  if (!storage) {
+    return { completed: false };
+  }
+  const raw = storage.getItem(TUTORIAL_KEY);
+  if (!raw) {
+    return { completed: false };
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return { completed: Boolean(parsed?.completed) };
+  } catch (error) {
+    return { completed: false };
+  }
+}
+
+export function saveTutorialProgress(completed) {
+  const storage = getStorage();
+  if (!storage) {
+    return false;
+  }
+  const payload = { completed: Boolean(completed) };
+  storage.setItem(TUTORIAL_KEY, JSON.stringify(payload));
+  return true;
+}
+
+export function resetTutorialProgress() {
+  const storage = getStorage();
+  if (!storage) {
+    return false;
+  }
+  storage.removeItem(TUTORIAL_KEY);
   return true;
 }
 

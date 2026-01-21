@@ -2,6 +2,8 @@ import { subscribeAppState } from "./app_state.js";
 import { getAudioSettings, setAudioSettings } from "../audio/index.js";
 import { createHeaderBar, createIconButton, setIconButtonLabel } from "./ui/header.js";
 import { getLanguage, setLanguage, subscribeLanguage, t } from "../ui/i18n.js";
+import { resetTutorialProgress } from "../game/storage.js";
+import { resetTutorialForRun } from "../game/tutorial.js";
 
 export function setupSettingsScreen(screen, router, confirmDialog) {
   if (!screen) {
@@ -48,8 +50,28 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     });
   });
 
+  const resetTutorialButton = createActionRow(t("label.reset_tutorial"), t("button.reset"));
+  resetTutorialButton.querySelector("button").addEventListener("click", () => {
+    confirmDialog?.open({
+      titleText: t("confirm.reset_tutorial_title"),
+      bodyText: t("confirm.reset_tutorial_body"),
+      onConfirm: () => {
+        resetTutorialProgress();
+        const state = window.__gameState;
+        if (state?.tutorial) {
+          state.tutorial.completed = false;
+          resetTutorialForRun(state);
+        }
+      },
+    });
+  });
+
   const restoreButton = createActionRow(t("label.restore_purchases"), t("button.restore"));
-  const dataSection = createSection(t("label.data"), [resetButton, restoreButton]);
+  const dataSection = createSection(t("label.data"), [
+    resetTutorialButton,
+    resetButton,
+    restoreButton,
+  ]);
 
   content.appendChild(audioSection);
   content.appendChild(accountSection);
@@ -72,6 +94,8 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   const languageLabel = languageRow.querySelector(".settings-row__label");
   const resetLabel = resetButton.querySelector(".settings-row__label");
   const resetAction = resetButton.querySelector("button");
+  const resetTutorialLabel = resetTutorialButton.querySelector(".settings-row__label");
+  const resetTutorialAction = resetTutorialButton.querySelector("button");
   const restoreLabel = restoreButton.querySelector(".settings-row__label");
   const restoreAction = restoreButton.querySelector("button");
 
@@ -92,6 +116,8 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     if (loginButton) loginButton.textContent = t("button.login");
     if (languageLabel) languageLabel.textContent = t("label.language");
     if (languageButton) languageButton.textContent = getLanguage().toUpperCase();
+    if (resetTutorialLabel) resetTutorialLabel.textContent = t("label.reset_tutorial");
+    if (resetTutorialAction) resetTutorialAction.textContent = t("button.reset");
     if (resetLabel) resetLabel.textContent = t("label.reset_progress");
     if (resetAction) resetAction.textContent = t("button.reset");
     if (restoreLabel) restoreLabel.textContent = t("label.restore_purchases");

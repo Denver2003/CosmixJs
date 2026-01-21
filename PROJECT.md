@@ -73,6 +73,7 @@
 - **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner. Modal UI scale now clamps down to 0.6 on small screens.
 - **Canvas UI text fitting**: shell/overlay labels auto-shrink and ellipsize to stay inside chips, tabs, rows, and buttons on small screens (EN/RU).
 - **Localization (menus/overlays)**: UI text for shell screens and overlays uses `i18n.t()` with EN/RU dictionaries; language toggle lives in Settings (canvas + DOM fallback), stored in `localStorage` as `cosmix.lang` with EN default.
+- **Tutorial onboarding**: first-run guidance for move/drop and bubble pop (center/top messages with key boxes); bubble prompt repeats after 5s if missed; completion persists in `localStorage` and can be reset from Settings. Touch devices omit keyboard hints in tutorial copy.
 - **Site identity**: favicon and apple-touch icon load from `assets/appIcon/app_icon.png`, and the browser title updates by language (`app.page_title`).
 - **Hover cursor**: canvas hover shows `ew-resize` over the glass in active play, `pointer` over bubbles/instant bonuses/pause/touch-to-kill targets, and `pointer` on shell/overlay buttons.
 - **VFX text**: animated popups (score/coins/combo/level/cosmo) use a white 2px stroke and ~50% larger text for better readability.

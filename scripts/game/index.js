@@ -23,6 +23,7 @@ import { trySpawnBubble, updateBubbles, updateBubblePopIcons, updateBubblePopPar
 import { updateGunBonus, updateGunMarks } from "./bonuses.js";
 import { spawnLevelUpPopup, updateLevelUpPopups } from "./level_up_popup.js";
 import { updateRewardFloaters } from "./reward_floaters.js";
+import { resetTutorialForRun, updateTutorial } from "./tutorial.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 import { updateBackgroundStars } from "./background.js";
 import { playMusic, playSfx, preloadAudio } from "../audio/index.js";
@@ -64,6 +65,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     updateCosmometerMultiplier(state, engine.timing.timestamp);
     updateGunBonus(state, getGlassRect);
     updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs);
+    updateTutorial(state, getGlassRect);
     updateKillLine(state, getGlassRect, deltaMs);
     updateBubbles(state, deltaMs, getGlassRect);
     updateBubblePopParticles(state, deltaMs);
@@ -164,6 +166,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     mode.startGame();
     preloadAudio();
     playMusic("bgm_main_loop");
+    resetTutorialForRun(state);
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
   }
@@ -206,6 +209,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     mode.startGame();
     preloadAudio();
     playMusic("bgm_main_loop");
+    resetTutorialForRun(state);
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
   }

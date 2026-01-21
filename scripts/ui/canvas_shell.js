@@ -30,8 +30,14 @@ import {
   tryBuyUpgrade,
   updateShopProgress,
 } from "../shop/progression.js";
-import { loadBonusInventory, saveBonusInventory, saveCoins } from "../game/storage.js";
+import {
+  loadBonusInventory,
+  resetTutorialProgress,
+  saveBonusInventory,
+  saveCoins,
+} from "../game/storage.js";
 import { addTotalSpentCoins } from "../ads/runtime.js";
+import { resetTutorialForRun } from "../game/tutorial.js";
 
 const LEADERBOARD_ROWS = [
   { rank: 1, name: "You", score: 12450 },
@@ -41,6 +47,18 @@ const LEADERBOARD_ROWS = [
   { rank: 5, name: "Neo", score: 7980 },
   { rank: "-", name: "You", score: 5020, highlight: true },
 ];
+
+function resetTutorialState() {
+  resetTutorialProgress();
+  if (typeof window === "undefined") {
+    return;
+  }
+  const state = window.__gameState;
+  if (state?.tutorial) {
+    state.tutorial.completed = false;
+    resetTutorialForRun(state);
+  }
+}
 
 export function drawShellUi(ctx, render, getGlassRect) {
   const router = getShellRouter();
@@ -210,6 +228,14 @@ export function handleShellPointer(x, y, render) {
       return true;
     }
     if (layout?.actions) {
+      if (layout.actions.resetTutorial && pointInRect(x, y, layout.actions.resetTutorial)) {
+        openCanvasConfirmDialog({
+          titleText: t("confirm.reset_tutorial_title"),
+          bodyText: t("confirm.reset_tutorial_body"),
+          onConfirm: resetTutorialState,
+        });
+        return true;
+      }
       if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
         openCanvasConfirmDialog({
           titleText: t("confirm.reset_title"),
@@ -307,6 +333,12 @@ export function isShellHoverTarget(x, y, render) {
       return true;
     }
     if (layout?.actions) {
+      if (
+        layout.actions.resetTutorial &&
+        pointInRect(x, y, layout.actions.resetTutorial)
+      ) {
+        return true;
+      }
       if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
         return true;
       }
@@ -889,6 +921,12 @@ function drawSettingsScreen(ctx, render, capsule) {
       t("label.data"),
       [
         {
+          key: "resetTutorial",
+          label: t("label.reset_tutorial"),
+          value: t("button.reset"),
+          type: "action",
+        },
+        {
           key: "reset",
           label: t("label.reset_progress"),
           value: t("button.reset"),
@@ -1012,6 +1050,12 @@ function drawSettingsScreen(ctx, render, capsule) {
     sectionWidth,
     t("label.data"),
     [
+      {
+        key: "resetTutorial",
+        label: t("label.reset_tutorial"),
+        value: t("button.reset"),
+        type: "action",
+      },
       {
         key: "reset",
         label: t("label.reset_progress"),

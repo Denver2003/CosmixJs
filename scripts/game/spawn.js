@@ -14,6 +14,7 @@ import { clampWaitingBody, setBodyFillAlpha, setBodyScale } from "./utils.js";
 import { playSfx } from "../audio/index.js";
 import { removePreview, setPreview } from "./preview.js";
 import { trySpawnBubble } from "./bubbles.js";
+import { handleTutorialDrop } from "./tutorial.js";
 
 const { Body, World } = Matter;
 
@@ -78,6 +79,7 @@ export function dropActiveBody(state, getSpawnPoint, getGlassRect) {
   state.waitingState = "none";
   state.waitStartMs = 0;
   spawnBlock(state, getSpawnPoint);
+  handleTutorialDrop(state, getGlassRect);
   if (state.bonusUpgradeLevel >= 4 && getGlassRect) {
     if (Math.random() < 0.05) {
       trySpawnBubble(state, getGlassRect, "drop");

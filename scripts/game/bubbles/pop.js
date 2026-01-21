@@ -14,6 +14,7 @@ import {
 import { getIcon, getIconKey } from "./icons.js";
 import { applyBubbleReward } from "./rewards.js";
 import { playSfx } from "../../audio/index.js";
+import { handleTutorialBubblePop } from "../tutorial.js";
 
 export function spawnBubblePopParticles(state, x, y, radius) {
   const ratio =
@@ -178,6 +179,7 @@ export function popBubbleAt(state, x, y, getGlassRect) {
   playSfx("bonus_bubble_pop");
   const reward = { ...bubble.reward, x: bubble.x, y: bubble.y };
   applyBubbleReward(state, reward, getGlassRect);
+  handleTutorialBubblePop(state, bubble);
   return reward;
 }
 
@@ -222,5 +224,6 @@ export function popTopBubble(state, getGlassRect) {
   playSfx("bonus_bubble_pop");
   const reward = { ...bubble.reward, x: bubble.x, y: bubble.y };
   applyBubbleReward(state, reward, getGlassRect);
+  handleTutorialBubblePop(state, bubble);
   return reward;
 }
