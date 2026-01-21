@@ -41,6 +41,7 @@ import { addTotalSpentCoins } from "../ads/runtime.js";
 import { resetTutorialForRun } from "../game/tutorial.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
+import { requestAuthorization } from "../sdk/auth.js";
 
 
 function resetTutorialState() {
@@ -225,6 +226,10 @@ export function handleShellPointer(x, y, render) {
       setLanguage(next);
       return true;
     }
+    if (layout?.account?.login && pointInRect(x, y, layout.account.login)) {
+      requestAuthorization();
+      return true;
+    }
     if (layout?.actions) {
       if (layout.actions.resetTutorial && pointInRect(x, y, layout.actions.resetTutorial)) {
         openCanvasConfirmDialog({
@@ -232,16 +237,6 @@ export function handleShellPointer(x, y, render) {
           bodyText: t("confirm.reset_tutorial_body"),
           onConfirm: resetTutorialState,
         });
-        return true;
-      }
-      if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
-        openCanvasConfirmDialog({
-          titleText: t("confirm.reset_title"),
-          bodyText: t("confirm.reset_body"),
-        });
-        return true;
-      }
-      if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
         return true;
       }
     }
@@ -320,17 +315,14 @@ export function isShellHoverTarget(x, y, render) {
     if (layout?.account?.language && pointInRect(x, y, layout.account.language)) {
       return true;
     }
+    if (layout?.account?.login && pointInRect(x, y, layout.account.login)) {
+      return true;
+    }
     if (layout?.actions) {
       if (
         layout.actions.resetTutorial &&
         pointInRect(x, y, layout.actions.resetTutorial)
       ) {
-        return true;
-      }
-      if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
-        return true;
-      }
-      if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
         return true;
       }
     }
@@ -879,22 +871,31 @@ function drawSettingsScreen(ctx, render, capsule) {
       { capture: true }
     );
     y = audioSection.endY;
+    const showLanguage = state.sdkName !== "yandex";
+    const accountRows = [
+      { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
+      {
+        key: "login",
+        label: t("label.login"),
+        value: t("button.login"),
+        type: "action",
+      },
+    ];
+    if (showLanguage) {
+      accountRows.push({
+        key: "language",
+        label: t("label.language"),
+        value: getLanguage().toUpperCase(),
+        type: "action",
+      });
+    }
     const accountSection = drawSettingsSection(
       ctx,
       pad,
       y + 18,
       width - pad * 2,
       t("label.account"),
-      [
-        { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
-        { label: t("label.login"), value: t("button.login"), type: "action" },
-        {
-          key: "language",
-          label: t("label.language"),
-          value: getLanguage().toUpperCase(),
-          type: "action",
-        },
-      ],
+      accountRows,
       { capture: true }
     );
     const dataSection = drawSettingsSection(
@@ -910,14 +911,6 @@ function drawSettingsScreen(ctx, render, capsule) {
           value: t("button.reset"),
           type: "action",
         },
-        {
-          key: "reset",
-          label: t("label.reset_progress"),
-          value: t("button.reset"),
-          type: "action",
-          danger: true,
-        },
-        { key: "restore", label: t("label.restore_purchases"), value: t("button.restore"), type: "action" },
       ],
       { capture: true }
     );
@@ -1009,22 +1002,31 @@ function drawSettingsScreen(ctx, render, capsule) {
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
   y = audioSection.endY + sectionGap;
+  const showLanguage = state.sdkName !== "yandex";
+  const accountRows = [
+    { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
+    {
+      key: "login",
+      label: t("label.login"),
+      value: t("button.login"),
+      type: "action",
+    },
+  ];
+  if (showLanguage) {
+    accountRows.push({
+      key: "language",
+      label: t("label.language"),
+      value: getLanguage().toUpperCase(),
+      type: "action",
+    });
+  }
   const accountSection = drawSettingsSection(
     ctx,
     panelX + pad,
     y,
     sectionWidth,
     t("label.account"),
-    [
-      { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
-      { label: t("label.login"), value: t("button.login"), type: "action" },
-      {
-        key: "language",
-        label: t("label.language"),
-        value: getLanguage().toUpperCase(),
-        type: "action",
-      },
-    ],
+    accountRows,
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
   const dataSection = drawSettingsSection(
@@ -1040,14 +1042,6 @@ function drawSettingsScreen(ctx, render, capsule) {
         value: t("button.reset"),
         type: "action",
       },
-      {
-        key: "reset",
-        label: t("label.reset_progress"),
-        value: t("button.reset"),
-        type: "action",
-        danger: true,
-      },
-      { key: "restore", label: t("label.restore_purchases"), value: t("button.restore"), type: "action" },
     ],
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );

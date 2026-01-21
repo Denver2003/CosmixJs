@@ -4,6 +4,7 @@ import { loadAudioSettings, loadBestScore, loadCoins } from "../game/storage.js"
 
 const state = {
   userName: "Guest",
+  sdkName: "mock",
   coins: loadCoins(),
   bestScore: loadBestScore(),
   audio: loadAudioSettings(),

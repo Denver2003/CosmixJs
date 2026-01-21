@@ -4,6 +4,7 @@ import { createHeaderBar, createIconButton, setIconButtonLabel } from "./ui/head
 import { getLanguage, setLanguage, subscribeLanguage, t } from "../ui/i18n.js";
 import { resetTutorialProgress } from "../game/storage.js";
 import { resetTutorialForRun } from "../game/tutorial.js";
+import { requestAuthorization } from "../sdk/auth.js";
 
 export function setupSettingsScreen(screen, router, confirmDialog) {
   if (!screen) {
@@ -33,6 +34,12 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
 
   const statusRow = createInfoRow(t("label.status"), t("user.guest"));
   const loginRow = createActionRow(t("label.login"), t("button.login"));
+  const loginButton = loginRow.querySelector("button");
+  if (loginButton) {
+    loginButton.addEventListener("click", () => {
+      requestAuthorization();
+    });
+  }
   const languageRow = createActionRow(t("label.language"), getLanguage().toUpperCase());
   const languageButton = languageRow.querySelector("button");
   languageButton.addEventListener("click", () => {
@@ -40,15 +47,6 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     setLanguage(next);
   });
   const accountSection = createSection(t("label.account"), [statusRow, loginRow, languageRow]);
-
-  const resetButton = createActionRow(t("label.reset_progress"), t("button.reset"));
-  resetButton.querySelector("button").classList.add("danger");
-  resetButton.querySelector("button").addEventListener("click", () => {
-    confirmDialog?.open({
-      titleText: t("confirm.reset_title"),
-      bodyText: t("confirm.reset_body"),
-    });
-  });
 
   const resetTutorialButton = createActionRow(t("label.reset_tutorial"), t("button.reset"));
   resetTutorialButton.querySelector("button").addEventListener("click", () => {
@@ -66,12 +64,7 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     });
   });
 
-  const restoreButton = createActionRow(t("label.restore_purchases"), t("button.restore"));
-  const dataSection = createSection(t("label.data"), [
-    resetTutorialButton,
-    resetButton,
-    restoreButton,
-  ]);
+  const dataSection = createSection(t("label.data"), [resetTutorialButton]);
 
   content.appendChild(audioSection);
   content.appendChild(accountSection);
@@ -90,14 +83,11 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   const statusLabel = statusRow.querySelector(".settings-row__label");
   const statusValue = statusRow.querySelector(".settings-row__control");
   const loginLabel = loginRow.querySelector(".settings-row__label");
-  const loginButton = loginRow.querySelector("button");
+  const loginButtonRef = loginRow.querySelector("button");
   const languageLabel = languageRow.querySelector(".settings-row__label");
-  const resetLabel = resetButton.querySelector(".settings-row__label");
-  const resetAction = resetButton.querySelector("button");
   const resetTutorialLabel = resetTutorialButton.querySelector(".settings-row__label");
   const resetTutorialAction = resetTutorialButton.querySelector("button");
-  const restoreLabel = restoreButton.querySelector(".settings-row__label");
-  const restoreAction = restoreButton.querySelector("button");
+  let sdkName = "";
 
   let currentUserName = "";
   const applyTranslations = () => {
@@ -113,23 +103,26 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     if (statusLabel) statusLabel.textContent = t("label.status");
     if (statusValue) statusValue.textContent = resolveUserLabel(currentUserName);
     if (loginLabel) loginLabel.textContent = t("label.login");
-    if (loginButton) loginButton.textContent = t("button.login");
+    if (loginButtonRef) loginButtonRef.textContent = t("button.login");
     if (languageLabel) languageLabel.textContent = t("label.language");
     if (languageButton) languageButton.textContent = getLanguage().toUpperCase();
     if (resetTutorialLabel) resetTutorialLabel.textContent = t("label.reset_tutorial");
     if (resetTutorialAction) resetTutorialAction.textContent = t("button.reset");
-    if (resetLabel) resetLabel.textContent = t("label.reset_progress");
-    if (resetAction) resetAction.textContent = t("button.reset");
-    if (restoreLabel) restoreLabel.textContent = t("label.restore_purchases");
-    if (restoreAction) restoreAction.textContent = t("button.restore");
+    if (languageRow) {
+      languageRow.style.display = sdkName === "yandex" ? "none" : "";
+    }
   };
 
   subscribeLanguage(applyTranslations);
   subscribeAppState((next) => {
     currentUserName = next.userName || "";
+    sdkName = next.sdkName || "";
     setIconButtonLabel(userButton, resolveUserLabel(currentUserName));
     if (statusValue) {
       statusValue.textContent = resolveUserLabel(currentUserName);
+    }
+    if (languageRow) {
+      languageRow.style.display = sdkName === "yandex" ? "none" : "";
     }
   });
 }

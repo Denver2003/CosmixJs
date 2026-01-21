@@ -57,6 +57,25 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     return player;
   }
 
+  function resolvePlayerMode() {
+    if (!player) {
+      return "guest";
+    }
+    if (typeof player?.isAuthorized === "function") {
+      return player.isAuthorized() ? "authorized" : "guest";
+    }
+    if (typeof player?.getMode === "function") {
+      const mode = player.getMode();
+      if (mode === "full") {
+        return "authorized";
+      }
+      if (mode === "lite") {
+        return "guest";
+      }
+    }
+    return player ? "authorized" : "guest";
+  }
+
   async function showInterstitial() {
     if (!isAdAvailable() || !ysdk?.adv?.showFullscreenAdv) {
       return false;
@@ -157,11 +176,51 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     }
   }
 
+  async function getMeta(leaderboardId) {
+    if (!ready || !leaderboards || !leaderboardId) {
+      return null;
+    }
+    if (typeof leaderboards.getLeaderboardDescription !== "function") {
+      return null;
+    }
+    try {
+      const info = await leaderboards.getLeaderboardDescription(leaderboardId);
+      return {
+        title: info?.title || null,
+        description: info?.description || null,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
   function getPlayerId() {
     if (typeof player?.getUniqueID === "function") {
       return player.getUniqueID();
     }
     return null;
+  }
+
+  async function requestAuthorization() {
+    if (!ysdk?.getPlayer) {
+      return false;
+    }
+    if (resolvePlayerMode() === "authorized") {
+      return true;
+    }
+    try {
+      if (typeof ysdk?.auth?.openAuthDialog === "function") {
+        await ysdk.auth.openAuthDialog();
+      }
+      const next = await ysdk.getPlayer({ scopes: true });
+      if (next) {
+        player = next;
+        return resolvePlayerMode() === "authorized";
+      }
+    } catch (error) {
+      return false;
+    }
+    return false;
   }
 
   async function loadCloud() {
@@ -211,6 +270,7 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     leaderboards: {
       submitScore,
       getEntries,
+      getMeta,
     },
     cloud: {
       load: loadCloud,
@@ -219,7 +279,8 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     player: {
       getId: () => getPlayerId(),
       getName: () => (typeof player?.getName === "function" ? player.getName() : null),
-      getMode: () => (player ? "authorized" : "guest"),
+      getMode: () => resolvePlayerMode(),
+      requestAuthorization,
     },
   };
 }
