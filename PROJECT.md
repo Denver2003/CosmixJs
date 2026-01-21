@@ -55,7 +55,10 @@
   - Bonus icons show key hints (`1`/`2`) when keyboard control is active and the bonus is ready.
 - **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
 - **Shop & progression**: upgrades for score/coin multiplier, bonus drop chance, and bonus upgrades (localStorage). Shop allows purchasing consumable bonuses with coins; real-money items are mocked (remove ads, coin pack) and applied immediately.
-- **Ads (mock)**: rewarded continue on Game Over (up to 3 per run) clears 70/50/30% of shapes with 2.5s kill-line grace; interstitials show only on Retry with 3-session warmup and 180s cooldown (disabled by remove ads); shop rewarded grants coins with 5/hour limit and 2 min cooldown (reward scales by total spent coins and MoneyCoef, rounded to 50).
+- **Ads (SDK-backed)**: rewarded continue on Game Over (up to 3 per run) clears 70/50/30% of shapes with 2.5s kill-line grace; interstitials show only on Retry with 3-session warmup and 180s cooldown (disabled by remove ads); shop rewarded grants coins with 5/hour limit and 2 min cooldown (reward scales by total spent coins and MoneyCoef, rounded to 50).
+- **SDK layer**: provider-based SDK abstraction with mock fallback; Yandex provider bootstraps when `YaGames` is available, emits pause/resume events through the game loop, and provides cloud saves + language via SDK.
+- **Leaderboards (all-time)**: Yandex SDK all-time leaderboard only; weekly removed. Best score submits on game over and the leaderboard screen fetches all-time entries.
+- **Cloud saves (SDK-backed)**: on start we load cloud and apply to local (cloud wins), then save; on game over and shop actions we throttle-save (10s) coins, bestScore, shop progress, bonus inventory, audio settings, and tutorial status. LocalStorage remains fallback.
 - **Bonus upgrades**: bonus drop adds to bubble spawn chance; upgrade level 4 enables bubble spawn on drop (5%); level 5 reduces consumable cooldown to 2 min; level 6 forces instant rewards on drop bubbles; level 7 increases consumable rewards to x5 and boosts their weights.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
@@ -122,6 +125,10 @@
 - `scripts/game/bubbles/utils.js` — утилиты (проценты/рандом).
 - `scripts/game/level_up_popup.js` — level-up popup animation.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
+- `scripts/leaderboards/index.js` — SDK leaderboard submit/fetch for all-time.
+- `scripts/sdk/index.js` — SDK provider selection + init.
+- `scripts/sdk/providers/mock.js` — mock SDK provider.
+- `scripts/sdk/providers/yandex.js` — Yandex SDK provider (ads + leaderboards).
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
 - `scripts/ui/layout.js` — HUD layout helpers (safe area + glass rects).
 - `scripts/ui/hud.js` — top HUD layout geometry.
@@ -135,7 +142,7 @@
 - `scripts/shell/shop.js` — shop screen wiring (tabs + cards layout).
 - `scripts/shell/settings.js` — settings screen wiring (audio/account/data).
 - `scripts/shell/confirm_dialog.js` — generic confirm dialog overlay.
-- `scripts/shell/leaderboards.js` — leaderboards screen wiring (tabs + list).
+- `scripts/shell/leaderboards.js` — leaderboards screen wiring (all-time list + refresh).
 - `scripts/shell/loading.js` — loading overlay scaffold.
 - `scripts/shell/toast.js` — toast overlay scaffold.
 - `scripts/shell/pause_menu.js` — pause menu overlay scaffold.

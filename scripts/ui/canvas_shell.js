@@ -11,6 +11,7 @@ import { getCapsuleLayout } from "./layout.js";
 import { formatNumber } from "./format.js";
 import { getLanguage, setLanguage, t } from "./i18n.js";
 import { openCanvasConfirmDialog } from "./canvas_overlays.js";
+import { refreshAllTimeLeaderboard } from "../leaderboards/index.js";
 import {
   BONUS_DROP_LEVELS,
   BONUS_UPGRADE_LEVELS,
@@ -38,15 +39,9 @@ import {
 } from "../game/storage.js";
 import { addTotalSpentCoins } from "../ads/runtime.js";
 import { resetTutorialForRun } from "../game/tutorial.js";
+import { queueCloudSave } from "../cloud/index.js";
+import { buildCloudPayload } from "../cloud/state.js";
 
-const LEADERBOARD_ROWS = [
-  { rank: 1, name: "You", score: 12450 },
-  { rank: 2, name: "Guest_42", score: 10880 },
-  { rank: 3, name: "PlayerX", score: 9640 },
-  { rank: 4, name: "Guest_9", score: 8210 },
-  { rank: 5, name: "Neo", score: 7980 },
-  { rank: "-", name: "You", score: 5020, highlight: true },
-];
 
 function resetTutorialState() {
   resetTutorialProgress();
@@ -71,6 +66,9 @@ export function drawShellUi(ctx, render, getGlassRect) {
     return;
   }
   syncShellVisibility(true);
+  if (active !== ScreenId.LEADERBOARDS) {
+    leaderboardsState.requested = false;
+  }
 
   const width = render.options.width;
   const height = render.options.height;
@@ -254,16 +252,6 @@ export function handleShellPointer(x, y, render) {
       router.back?.();
       return true;
     }
-    if (layout?.tabs) {
-      if (layout.tabs.allTime && pointInRect(x, y, layout.tabs.allTime)) {
-        leaderboardsState.tab = "all";
-        return true;
-      }
-      if (layout.tabs.weekly && pointInRect(x, y, layout.tabs.weekly)) {
-        leaderboardsState.tab = "weekly";
-        return true;
-      }
-    }
   }
   return false;
 }
@@ -352,14 +340,6 @@ export function isShellHoverTarget(x, y, render) {
     if (layout?.back && pointInRect(x, y, layout.back)) {
       return true;
     }
-    if (layout?.tabs) {
-      if (layout.tabs.allTime && pointInRect(x, y, layout.tabs.allTime)) {
-        return true;
-      }
-      if (layout.tabs.weekly && pointInRect(x, y, layout.tabs.weekly)) {
-        return true;
-      }
-    }
   }
   return false;
 }
@@ -374,7 +354,7 @@ const shopState = {
   tab: "upgrades",
 };
 const leaderboardsState = {
-  tab: "all",
+  requested: false,
 };
 const shopActions = [];
 const UPGRADE_TITLE_KEYS = {
@@ -785,6 +765,7 @@ function handleShopAction(action) {
     saveCoins(coins);
     setAppState({ coins });
     applyShopStateToGame({ coins, progress: nextProgress, inventory });
+    queueCloudSave(buildCloudPayload());
     return;
   }
 
@@ -801,6 +782,7 @@ function handleShopAction(action) {
       saveBonusInventory(result.inventory);
       applyShopStateToGame({ coins, progress, inventory: result.inventory });
     }
+    queueCloudSave(buildCloudPayload());
     return;
   }
 
@@ -819,6 +801,7 @@ function handleShopAction(action) {
       removeAds: progress.removeAds,
     });
     applyShopStateToGame({ coins, progress: nextProgress, inventory });
+    queueCloudSave(buildCloudPayload());
   }
 
   if (action.kind === "reward") {
@@ -838,6 +821,7 @@ function handleShopAction(action) {
       saveCoins(coins);
       setAppState({ coins });
       applyShopStateToGame({ coins, progress, inventory });
+      queueCloudSave(buildCloudPayload());
     });
   }
 }
@@ -1083,23 +1067,28 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     const headerY = 48;
     const state = getAppState();
     const user = resolveUserLabel(state.userName);
+    const rows = state.leaderboards?.allTime || [];
+
+    if (!leaderboardsState.requested) {
+      leaderboardsState.requested = true;
+      refreshAllTimeLeaderboard();
+    }
 
     const backRect = drawBackButton(ctx, pad, headerY, t("nav.back"));
     drawLeaderboardsHeader(ctx, width, headerY, pad, user);
 
-    const tabs = drawLeaderboardsTabs(ctx, width / 2, headerY + 70, leaderboardsState.tab);
-    const listTop = headerY + 120;
+    const listTop = headerY + 96;
     drawLeaderboardsList(
       ctx,
       pad,
       listTop,
       width - pad * 2,
       height - listTop - pad,
-      leaderboardsState.tab === "all" ? t("label.all_time_title") : t("label.week_01"),
-      LEADERBOARD_ROWS
+      t("label.all_time_title"),
+      rows
     );
 
-    lastLayout.leaderboards = { back: backRect, tabs };
+    lastLayout.leaderboards = { back: backRect };
     return;
   }
 
@@ -1107,6 +1096,12 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
   const scale = getUiScale(inner);
   const state = getAppState();
   const user = resolveUserLabel(state.userName);
+  const rows = state.leaderboards?.allTime || [];
+
+  if (!leaderboardsState.requested) {
+    leaderboardsState.requested = true;
+    refreshAllTimeLeaderboard();
+  }
 
   const basePanelWidth = inner.width * 0.9;
   const basePanelHeight = inner.height * 0.78;
@@ -1160,31 +1155,19 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     { width: profileChipWidth }
   );
 
-  const tabHeight = clamp(32 * scale, 20, 36);
-  const tabGap = clamp(12 * scale, 6, 14);
-  const tabWidth = (panelWidth - pad * 2 - tabGap) / 2;
-  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 4, 12);
-  const tabs = drawLeaderboardsTabs(
-    ctx,
-    panelX + panelWidth / 2,
-    tabsY,
-    leaderboardsState.tab,
-    { width: tabWidth, height: tabHeight, gap: tabGap }
-  );
-
-  const listTop = tabsY + tabHeight + clamp(12 * scale, 6, 14);
+  const listTop = panelY + pad + headerHeight + clamp(14 * scale, 8, 16);
   drawLeaderboardsList(
     ctx,
     panelX + pad,
     listTop,
     panelWidth - pad * 2,
     panelY + panelHeight - pad - listTop,
-    leaderboardsState.tab === "all" ? t("label.all_time_title") : t("label.week_01"),
-    LEADERBOARD_ROWS,
+    t("label.all_time_title"),
+    rows,
     { scale, prism: true }
   );
 
-  lastLayout.leaderboards = { back: backRect, tabs };
+  lastLayout.leaderboards = { back: backRect };
 }
 
 function drawLeaderboardsHeader(ctx, width, y, pad, user) {
@@ -1217,17 +1200,6 @@ function drawLeaderboardsHeader(ctx, width, y, pad, user) {
     maxWidth: userMaxWidth,
   });
   ctx.restore();
-}
-
-function drawLeaderboardsTabs(ctx, cx, y, activeTab, options = {}) {
-  const w = options.width ?? 220;
-  const h = options.height ?? 34;
-  const gap = options.gap ?? 12;
-  const leftX = cx - w - gap / 2;
-  const rightX = cx + gap / 2;
-  const allTime = drawTabButton(ctx, leftX, y, w, h, t("label.all_time"), activeTab === "all");
-  const weekly = drawTabButton(ctx, rightX, y, w, h, t("label.weekly"), activeTab === "weekly");
-  return { allTime, weekly };
 }
 
 function drawLeaderboardsList(ctx, x, y, width, height, label, rows, options = {}) {

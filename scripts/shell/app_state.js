@@ -7,6 +7,11 @@ const state = {
   coins: loadCoins(),
   bestScore: loadBestScore(),
   audio: loadAudioSettings(),
+  leaderboards: {
+    allTime: [],
+    loading: false,
+    updatedAt: 0,
+  },
 };
 
 export function getAppState() {

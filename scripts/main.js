@@ -14,7 +14,7 @@ import {
   handleCanvasOverlayPointer,
   isCanvasOverlayHover,
 } from "./ui/canvas_overlays.js";
-import { subscribeLanguage, t } from "./ui/i18n.js";
+import { setLanguage, subscribeLanguage, t } from "./ui/i18n.js";
 import { getCapsuleLayout } from "./ui/layout.js";
 import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
 import { preloadAssets } from "./preload.js";
@@ -22,6 +22,9 @@ import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
 import * as bonusUi from "./game/bonus_ui.js";
 import { isBubbleHit } from "./game/bubbles.js";
 import { isPauseButtonHover } from "./game/lines/hud.js";
+import { initSdk, setSdkCallbacks } from "./sdk/index.js";
+import { loadCloudState, queueCloudSave } from "./cloud/index.js";
+import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
 
 const { Engine, Render } = Matter;
 
@@ -37,6 +40,29 @@ let game = null;
 let shell = null;
 let gameStarted = false;
 
+setSdkCallbacks({
+  onPause: () => {
+    if (!game?.setPaused) {
+      return;
+    }
+    game.setPaused(true, "sdk");
+  },
+  onResume: () => {
+    if (!game?.setPaused || !game?.getPauseInfo) {
+      return;
+    }
+    const info = game.getPauseInfo();
+    if (info?.paused && info.reason === "sdk") {
+      game.setPaused(false, "sdk");
+    }
+  },
+  onLanguage: (lang) => {
+    if (lang) {
+      setLanguage(lang);
+    }
+  },
+});
+
 subscribeLanguage(() => {
   if (typeof document !== "undefined") {
     document.title = t("app.page_title");
@@ -50,6 +76,8 @@ async function bootstrap() {
   if (!canvas) {
     return;
   }
+  const cloudPromise = loadCloudState();
+  initSdk().catch(() => {});
   viewport = createViewport(canvas);
   fitHeight = getFitViewHeight();
 
@@ -58,6 +86,10 @@ async function bootstrap() {
     onProgress: (info) => loader.update(info),
   });
   loader.stop();
+
+  const cloudPayload = await cloudPromise;
+  applyCloudPayload(cloudPayload);
+  queueCloudSave(buildCloudPayload());
 
   engine = Engine.create();
   world = engine.world;

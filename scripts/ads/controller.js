@@ -1,4 +1,4 @@
-import { isAdLocked, isSdkReady, showInterstitialSafe, showRewardedSafe } from "./sdk_mock.js";
+import { getSdk } from "../sdk/index.js";
 
 let adOpenCallback = null;
 let adCloseCallback = null;
@@ -9,25 +9,38 @@ export function setAdCallbacks({ onOpen, onClose } = {}) {
 }
 
 export function canShowAds() {
-  return isSdkReady() && !isAdLocked();
+  const sdk = getSdk();
+  return Boolean(sdk?.ads?.isAvailable?.());
 }
 
 export async function playInterstitial() {
   if (!canShowAds()) {
     return false;
   }
+  const sdk = getSdk();
   adOpenCallback?.();
-  const ok = await showInterstitialSafe();
+  let ok = false;
+  try {
+    ok = await sdk.ads.showInterstitial();
+  } catch (error) {
+    ok = false;
+  }
   adCloseCallback?.();
-  return ok;
+  return Boolean(ok);
 }
 
 export async function playRewarded() {
   if (!canShowAds()) {
     return false;
   }
+  const sdk = getSdk();
   adOpenCallback?.();
-  const ok = await showRewardedSafe();
+  let ok = false;
+  try {
+    ok = await sdk.ads.showRewarded();
+  } catch (error) {
+    ok = false;
+  }
   adCloseCallback?.();
-  return ok;
+  return Boolean(ok);
 }

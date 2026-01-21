@@ -27,6 +27,9 @@ import { resetTutorialForRun, updateTutorial } from "./tutorial.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 import { updateBackgroundStars } from "./background.js";
 import { playMusic, playSfx, preloadAudio } from "../audio/index.js";
+import { submitLeaderboardScore } from "../leaderboards/index.js";
+import { queueCloudSave } from "../cloud/index.js";
+import { buildCloudPayload } from "../cloud/state.js";
 
 const { Events } = Matter;
 
@@ -254,10 +257,12 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     const prevBest = loadBestScore();
     if (state.score > prevBest) {
       saveBestScore(state.score);
+      submitLeaderboardScore(state.score);
       if (typeof window !== "undefined" && window.__setBestScore) {
         window.__setBestScore(state.score);
       }
     }
+    queueCloudSave(buildCloudPayload());
     state.gameOverHandled = true;
   }
 

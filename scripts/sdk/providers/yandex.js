@@ -1,0 +1,225 @@
+export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
+  let ysdk = null;
+  let player = null;
+  let leaderboards = null;
+  let ready = false;
+  let adLock = false;
+  const CLOUD_KEY = "cosmix";
+
+  async function init() {
+    if (typeof window === "undefined" || !window.YaGames?.init) {
+      ready = false;
+      throw new Error("Yandex SDK not available");
+    }
+    ysdk = await window.YaGames.init();
+    ready = true;
+    if (typeof ysdk?.on === "function") {
+      ysdk.on("game_api_pause", () => {
+        onPause?.();
+      });
+      ysdk.on("game_api_resume", () => {
+        onResume?.();
+      });
+    }
+    onLanguage?.(ysdk?.environment?.i18n?.lang);
+    try {
+      player = await ysdk.getPlayer({ scopes: false });
+    } catch (error) {
+      player = null;
+    }
+    try {
+      if (typeof ysdk?.getLeaderboards === "function") {
+        leaderboards = await ysdk.getLeaderboards();
+      }
+    } catch (error) {
+      leaderboards = null;
+    }
+    return true;
+  }
+
+  function isReady() {
+    return ready;
+  }
+
+  function isAdAvailable() {
+    return ready && !adLock && Boolean(ysdk?.adv);
+  }
+
+  async function ensurePlayer() {
+    if (player || !ysdk?.getPlayer) {
+      return player;
+    }
+    try {
+      player = await ysdk.getPlayer({ scopes: false });
+    } catch (error) {
+      player = null;
+    }
+    return player;
+  }
+
+  async function showInterstitial() {
+    if (!isAdAvailable() || !ysdk?.adv?.showFullscreenAdv) {
+      return false;
+    }
+    if (adLock) {
+      return false;
+    }
+    adLock = true;
+    return new Promise((resolve) => {
+      ysdk.adv.showFullscreenAdv({
+        callbacks: {
+          onOpen() {},
+          onClose: () => {
+            adLock = false;
+            resolve(true);
+          },
+          onError: () => {
+            adLock = false;
+            resolve(false);
+          },
+          onOffline: () => {
+            adLock = false;
+            resolve(false);
+          },
+        },
+      });
+    });
+  }
+
+  async function showRewarded() {
+    if (!isAdAvailable() || !ysdk?.adv?.showRewardedVideo) {
+      return false;
+    }
+    if (adLock) {
+      return false;
+    }
+    adLock = true;
+    return new Promise((resolve) => {
+      let rewarded = false;
+      ysdk.adv.showRewardedVideo({
+        callbacks: {
+          onOpen() {},
+          onRewarded: () => {
+            rewarded = true;
+          },
+          onClose: () => {
+            adLock = false;
+            resolve(rewarded);
+          },
+          onError: () => {
+            adLock = false;
+            resolve(false);
+          },
+        },
+      });
+    });
+  }
+
+  async function submitScore(leaderboardId, score) {
+    if (!ready || !leaderboards || !leaderboardId) {
+      return false;
+    }
+    const safeScore = Math.max(0, Math.floor(score || 0));
+    try {
+      await leaderboards.setLeaderboardScore(leaderboardId, safeScore);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async function getEntries(leaderboardId, options = {}) {
+    if (!ready || !leaderboards || !leaderboardId) {
+      return [];
+    }
+    const payload = {
+      quantityTop: options.quantityTop ?? 10,
+      includeUser: Boolean(options.includeUser ?? true),
+      quantityAround: options.quantityAround ?? 1,
+    };
+    try {
+      const result = await leaderboards.getLeaderboardEntries(leaderboardId, payload);
+      const entries = result?.entries || [];
+      const selfId = getPlayerId();
+      return entries.map((entry) => {
+        const playerInfo = entry?.player || {};
+        const playerId = playerInfo.uniqueID || null;
+        return {
+          rank: entry?.rank ?? "-",
+          score: entry?.score ?? 0,
+          name: playerInfo.publicName || "Guest",
+          playerId,
+          highlight: Boolean(selfId && playerId && selfId === playerId),
+        };
+      });
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function getPlayerId() {
+    if (typeof player?.getUniqueID === "function") {
+      return player.getUniqueID();
+    }
+    return null;
+  }
+
+  async function loadCloud() {
+    if (!ready) {
+      return null;
+    }
+    const current = await ensurePlayer();
+    if (!current || typeof current.getData !== "function") {
+      return null;
+    }
+    try {
+      const data = await current.getData([CLOUD_KEY]);
+      return data?.[CLOUD_KEY] ?? null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function saveCloud(payload) {
+    if (!ready) {
+      return false;
+    }
+    if (!payload || typeof payload !== "object") {
+      return false;
+    }
+    const current = await ensurePlayer();
+    if (!current || typeof current.setData !== "function") {
+      return false;
+    }
+    try {
+      await current.setData({ [CLOUD_KEY]: payload });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  return {
+    name: "yandex",
+    init,
+    isReady,
+    ads: {
+      isAvailable: isAdAvailable,
+      showInterstitial,
+      showRewarded,
+    },
+    leaderboards: {
+      submitScore,
+      getEntries,
+    },
+    cloud: {
+      load: loadCloud,
+      save: saveCloud,
+    },
+    player: {
+      getId: () => getPlayerId(),
+      getName: () => (typeof player?.getName === "function" ? player.getName() : null),
+      getMode: () => (player ? "authorized" : "guest"),
+    },
+  };
+}
