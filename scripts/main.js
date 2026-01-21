@@ -4,15 +4,23 @@ import { createShell } from "./shell/index.js";
 import { setAppState } from "./shell/app_state.js";
 import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
-import { handleShellPointer, isGameScreenActive } from "./ui/canvas_shell.js";
+import {
+  handleShellPointer,
+  isGameScreenActive,
+  isShellHoverTarget,
+} from "./ui/canvas_shell.js";
 import {
   handleCanvasOverlayBack,
   handleCanvasOverlayPointer,
+  isCanvasOverlayHover,
 } from "./ui/canvas_overlays.js";
 import { subscribeLanguage, t } from "./ui/i18n.js";
+import { getCapsuleLayout } from "./ui/layout.js";
 import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
 import { preloadAssets } from "./preload.js";
 import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
+import * as bonusUi from "./game/bonus_ui.js";
+import { isPauseButtonHover } from "./game/lines/hud.js";
 
 const { Engine, Render } = Matter;
 
@@ -231,6 +239,51 @@ async function bootstrap() {
       return;
     }
   });
+  const updateCanvasCursor = (event) => {
+    const rect = canvasRect();
+    const scaleX = render.options.width / rect.width;
+    const scaleY = render.options.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    const isGameActive = isGameScreenActive();
+    const overlayHover = isCanvasOverlayHover({
+      x,
+      y,
+      render,
+      state: game.state,
+      isGameActive,
+    });
+    const shellHover = isShellHoverTarget(x, y, render);
+    let gameHover = false;
+    if (isGameActive && game?.state && glass?.getRect) {
+      const state = game.state;
+      const scale = state.viewScale || 1;
+      const worldX = x / scale;
+      const worldY = y / scale;
+      if (!state.paused && !state.gameOver) {
+        gameHover =
+          isPauseButtonHover(state, render, glass.getRect, x, y) ||
+          (typeof bonusUi.hasHoverableBonusSlot === "function" &&
+            bonusUi.hasHoverableBonusSlot(state, glass.getRect, worldX, worldY)) ||
+          isPointInGlass(render, glass.getRect, x, y);
+      } else {
+        gameHover = isPauseButtonHover(state, render, glass.getRect, x, y);
+      }
+    }
+    canvas.style.cursor = overlayHover || shellHover || gameHover ? "pointer" : "";
+    if (typeof document !== "undefined") {
+      document.body.style.cursor = canvas.style.cursor;
+    }
+  };
+  canvas.addEventListener("pointermove", updateCanvasCursor);
+  window.addEventListener("pointermove", updateCanvasCursor);
+  window.addEventListener("mousemove", updateCanvasCursor);
+  canvas.addEventListener("pointerleave", () => {
+    canvas.style.cursor = "";
+    if (typeof document !== "undefined") {
+      document.body.style.cursor = "";
+    }
+  });
   if (shell) {
     window.shell = shell.router;
     window.shellPause = shell.pauseMenu;
@@ -430,6 +483,20 @@ function getGlassCenterWorldX(viewWidth) {
 
 function getGlassCenterWorldY() {
   return HUD_TOP_RESERVE + GLASS_HEIGHT / 2;
+}
+
+function isPointInGlass(render, getGlassRect, x, y) {
+  const capsule = getCapsuleLayout(render, getGlassRect);
+  if (!capsule?.inner) {
+    return false;
+  }
+  const inner = capsule.inner;
+  return (
+    x >= inner.x &&
+    x <= inner.x + inner.width &&
+    y >= inner.y &&
+    y <= inner.y + inner.height
+  );
 }
 
 function roundRect(ctx, x, y, width, height, radius) {

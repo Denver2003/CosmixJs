@@ -61,6 +61,16 @@ export function drawTopHud(state, ctx, render, getGlassRect) {
   ctx.restore();
 }
 
+export function isPauseButtonHover(state, render, getGlassRect, x, y) {
+  const { pause } = getTopHudLayout(state, render, getGlassRect);
+  if (!pause) {
+    return false;
+  }
+  const dx = x - pause.centerX;
+  const dy = y - pause.centerY;
+  return dx * dx + dy * dy <= pause.radius * pause.radius;
+}
+
 export function drawCosmometer(state, ctx, getGlassRect) {
   const glassRect = getGlassRect();
   const glassFrame = getGlassFrame(glassRect);

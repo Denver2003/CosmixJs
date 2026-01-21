@@ -242,6 +242,96 @@ export function handleShellPointer(x, y, render) {
   return false;
 }
 
+export function isShellHoverTarget(x, y, render) {
+  const router = getShellRouter();
+  if (!router) {
+    return false;
+  }
+  if (router.activeScreen === ScreenId.HOME) {
+    const layout = lastLayout.home;
+    if (layout?.play && pointInRect(x, y, layout.play)) {
+      return true;
+    }
+    if (layout?.footer) {
+      if (layout.footer.shop && pointInRect(x, y, layout.footer.shop)) {
+        return true;
+      }
+      if (layout.footer.leaders && pointInRect(x, y, layout.footer.leaders)) {
+        return true;
+      }
+      if (layout.footer.settings && pointInRect(x, y, layout.footer.settings)) {
+        return true;
+      }
+    }
+  }
+  if (router.activeScreen === ScreenId.SHOP) {
+    const layout = lastLayout.shop;
+    if (layout?.back && pointInRect(x, y, layout.back)) {
+      return true;
+    }
+    if (layout?.tabs) {
+      if (layout.tabs.upgrades && pointInRect(x, y, layout.tabs.upgrades)) {
+        return true;
+      }
+      if (layout.tabs.items && pointInRect(x, y, layout.tabs.items)) {
+        return true;
+      }
+    }
+    if (layout?.actions) {
+      const action = layout.actions.find(
+        (entry) => !entry.disabled && pointInRect(x, y, entry.rect)
+      );
+      if (action) {
+        return true;
+      }
+    }
+  }
+  if (router.activeScreen === ScreenId.SETTINGS) {
+    const layout = lastLayout.settings;
+    if (layout?.back && pointInRect(x, y, layout.back)) {
+      return true;
+    }
+    if (layout?.audio) {
+      const audio = layout.audio;
+      if (audio.music && pointInRect(x, y, audio.music)) {
+        return true;
+      }
+      if (audio.sfx && pointInRect(x, y, audio.sfx)) {
+        return true;
+      }
+      if (audio.mute && pointInRect(x, y, audio.mute)) {
+        return true;
+      }
+    }
+    if (layout?.account?.language && pointInRect(x, y, layout.account.language)) {
+      return true;
+    }
+    if (layout?.actions) {
+      if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
+        return true;
+      }
+      if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
+        return true;
+      }
+    }
+  }
+  if (router.activeScreen === ScreenId.LEADERBOARDS) {
+    const layout = lastLayout.leaderboards;
+    if (layout?.back && pointInRect(x, y, layout.back)) {
+      return true;
+    }
+    if (layout?.tabs) {
+      if (layout.tabs.allTime && pointInRect(x, y, layout.tabs.allTime)) {
+        return true;
+      }
+      if (layout.tabs.weekly && pointInRect(x, y, layout.tabs.weekly)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 const lastLayout = {
   home: null,
   shop: null,

@@ -48,3 +48,23 @@ export function hitTestBonusSlot(slots, x, y) {
   }
   return null;
 }
+
+export function hasHoverableBonusSlot(state, getGlassRect, x, y) {
+  const slots = getBonusSlots(state, getGlassRect);
+  if (!slots.length) {
+    return false;
+  }
+  const now = state.engine?.timing?.timestamp || 0;
+  for (const slot of slots) {
+    const count = state.bonusInventory?.[slot.key] || 0;
+    const cooldownUntil =
+      slot.key === "touch"
+        ? state.bonusCooldowns?.touchUntil
+        : state.bonusCooldowns?.gunUntil;
+    const cooling = cooldownUntil && now < cooldownUntil;
+    if (!cooling && count > 0 && hitTestBonusSlot([slot], x, y)) {
+      return true;
+    }
+  }
+  return false;
+}

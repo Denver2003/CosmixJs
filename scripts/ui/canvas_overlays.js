@@ -264,6 +264,75 @@ export function handleCanvasOverlayPointer({
   return false;
 }
 
+export function isCanvasOverlayHover({
+  x,
+  y,
+  render,
+  state,
+  isGameActive,
+}) {
+  if (!render) {
+    return false;
+  }
+  if (overlayState.confirm.open) {
+    if (!overlayLayout.confirm) {
+      return false;
+    }
+    return (
+      hitButton(x, y, overlayLayout.confirm.cancel) ||
+      hitButton(x, y, overlayLayout.confirm.confirm)
+    );
+  }
+
+  if (isGameActive && state?.paused && state?.pausedReason === "manual") {
+    const { buttons, sliders, toggle } = overlayLayout.pause || {};
+    if (hitButton(x, y, buttons?.resume)) {
+      return true;
+    }
+    if (hitButton(x, y, buttons?.restart)) {
+      return true;
+    }
+    if (hitButton(x, y, buttons?.home)) {
+      return true;
+    }
+    if (hitButton(x, y, buttons?.shop)) {
+      return true;
+    }
+    if (sliders?.music && pointInRect(x, y, sliders.music)) {
+      return true;
+    }
+    if (sliders?.sfx && pointInRect(x, y, sliders.sfx)) {
+      return true;
+    }
+    if (toggle?.mute && pointInRect(x, y, toggle.mute)) {
+      return true;
+    }
+    return false;
+  }
+
+  if (isGameActive && state?.gameOver && overlayState.gameOver.visible) {
+    const { buttons } = overlayLayout.gameOver || {};
+    if (
+      buttons?.continue &&
+      !overlayState.gameOver.continue.disabled &&
+      hitButton(x, y, buttons.continue)
+    ) {
+      return true;
+    }
+    if (hitButton(x, y, buttons?.retry)) {
+      return true;
+    }
+    if (hitButton(x, y, buttons?.home)) {
+      return true;
+    }
+    if (hitButton(x, y, buttons?.shop)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function handleCanvasOverlayBack({ state, isGameActive } = {}) {
   if (overlayState.confirm.open) {
     overlayState.confirm.onCancel?.();
