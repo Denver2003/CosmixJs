@@ -3,10 +3,11 @@ import { getAudioAssets } from "./audio/index.js";
 import { ICON_PATHS } from "./game/bubbles/constants.js";
 import { preloadIcons } from "./game/bubbles/icons.js";
 import { preloadPauseButton } from "./game/pause_button.js";
+import { preloadGlassFrame } from "./game/glass_frame.js";
+import { preloadBackground } from "./game/background.js";
 
 const BACKGROUND_SRC = "./assets/backgrounds/space_bg_placeholder.png";
 const STATIC_IMAGE_SRCS = [
-  "./assets/levelUI/glass_frame.png",
   "./assets/levelUI/pause_button.png",
   "./assets/hud/ui_button_play.png",
   "./assets/hud/ui_button_shop.png",
@@ -64,11 +65,13 @@ export function getPreloadManifest() {
 
 export async function preloadAssets({ onProgress } = {}) {
   const manifest = getPreloadManifest();
+  const extraImageTasks = [preloadGlassFrame(), preloadBackground()];
   const total =
     manifest.background.length +
     manifest.images.length +
     manifest.fonts.length +
-    manifest.audio.length;
+    manifest.audio.length +
+    extraImageTasks.length;
   let loaded = 0;
   let phase = "background";
   let backgroundImage = null;
@@ -104,6 +107,11 @@ export async function preloadAssets({ onProgress } = {}) {
   report();
 
   const pending = [
+    ...extraImageTasks.map((task) =>
+      task
+        .then(mark)
+        .catch(mark)
+    ),
     ...manifest.images.map((src) =>
       loadImage(src)
         .then(mark)

@@ -20,6 +20,7 @@ export async function submitLeaderboardScore(score) {
 
 export async function refreshAllTimeLeaderboard() {
   await initSdk();
+  await refreshLeaderboardMeta();
   const state = getAppState();
   const current = state.leaderboards || {};
   if (current.loading) {
@@ -54,6 +55,32 @@ export async function refreshAllTimeLeaderboard() {
     },
   });
   return normalized;
+}
+
+export async function refreshLeaderboardMeta() {
+  await initSdk();
+  const sdk = getSdk();
+  if (!sdk?.leaderboards?.getMeta) {
+    return null;
+  }
+  let meta = null;
+  try {
+    meta = await sdk.leaderboards.getMeta(YANDEX_LEADERBOARD_ID);
+  } catch (error) {
+    meta = null;
+  }
+  if (!meta) {
+    return null;
+  }
+  const state = getAppState();
+  const current = state.leaderboards || {};
+  setAppState({
+    leaderboards: {
+      ...current,
+      title: meta.title || current.title || null,
+    },
+  });
+  return meta;
 }
 
 function normalizeRows(rows) {

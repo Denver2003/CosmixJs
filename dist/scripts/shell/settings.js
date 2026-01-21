@@ -48,15 +48,6 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   });
   const accountSection = createSection(t("label.account"), [statusRow, loginRow, languageRow]);
 
-  const resetButton = createActionRow(t("label.reset_progress"), t("button.reset"));
-  resetButton.querySelector("button").classList.add("danger");
-  resetButton.querySelector("button").addEventListener("click", () => {
-    confirmDialog?.open({
-      titleText: t("confirm.reset_title"),
-      bodyText: t("confirm.reset_body"),
-    });
-  });
-
   const resetTutorialButton = createActionRow(t("label.reset_tutorial"), t("button.reset"));
   resetTutorialButton.querySelector("button").addEventListener("click", () => {
     confirmDialog?.open({
@@ -73,12 +64,7 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     });
   });
 
-  const restoreButton = createActionRow(t("label.restore_purchases"), t("button.restore"));
-  const dataSection = createSection(t("label.data"), [
-    resetTutorialButton,
-    resetButton,
-    restoreButton,
-  ]);
+  const dataSection = createSection(t("label.data"), [resetTutorialButton]);
 
   content.appendChild(audioSection);
   content.appendChild(accountSection);
@@ -99,12 +85,9 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   const loginLabel = loginRow.querySelector(".settings-row__label");
   const loginButtonRef = loginRow.querySelector("button");
   const languageLabel = languageRow.querySelector(".settings-row__label");
-  const resetLabel = resetButton.querySelector(".settings-row__label");
-  const resetAction = resetButton.querySelector("button");
   const resetTutorialLabel = resetTutorialButton.querySelector(".settings-row__label");
   const resetTutorialAction = resetTutorialButton.querySelector("button");
-  const restoreLabel = restoreButton.querySelector(".settings-row__label");
-  const restoreAction = restoreButton.querySelector("button");
+  let sdkName = "";
 
   let currentUserName = "";
   const applyTranslations = () => {
@@ -125,18 +108,21 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     if (languageButton) languageButton.textContent = getLanguage().toUpperCase();
     if (resetTutorialLabel) resetTutorialLabel.textContent = t("label.reset_tutorial");
     if (resetTutorialAction) resetTutorialAction.textContent = t("button.reset");
-    if (resetLabel) resetLabel.textContent = t("label.reset_progress");
-    if (resetAction) resetAction.textContent = t("button.reset");
-    if (restoreLabel) restoreLabel.textContent = t("label.restore_purchases");
-    if (restoreAction) restoreAction.textContent = t("button.restore");
+    if (languageRow) {
+      languageRow.style.display = sdkName === "yandex" ? "none" : "";
+    }
   };
 
   subscribeLanguage(applyTranslations);
   subscribeAppState((next) => {
     currentUserName = next.userName || "";
+    sdkName = next.sdkName || "";
     setIconButtonLabel(userButton, resolveUserLabel(currentUserName));
     if (statusValue) {
       statusValue.textContent = resolveUserLabel(currentUserName);
+    }
+    if (languageRow) {
+      languageRow.style.display = sdkName === "yandex" ? "none" : "";
     }
   });
 }

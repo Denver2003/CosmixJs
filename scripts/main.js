@@ -6,6 +6,9 @@ import { createViewport } from "./view/viewport.js";
 import { getFitViewHeight } from "./view/fit.js";
 import {
   handleShellPointer,
+  beginShellDrag,
+  updateShellDrag,
+  handleShellWheel,
   isGameScreenActive,
   isShellHoverTarget,
 } from "./ui/canvas_shell.js";
@@ -26,6 +29,7 @@ import { initSdk, setSdkCallbacks } from "./sdk/index.js";
 import { loadCloudState, queueCloudSave } from "./cloud/index.js";
 import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
 import { requestAuthorizationOnce, syncSdkUser } from "./sdk/auth.js";
+import { loadIapCatalog, syncIapPurchases } from "./shop/iap.js";
 
 const { Engine, Render } = Matter;
 
@@ -40,6 +44,7 @@ let runner = null;
 let game = null;
 let shell = null;
 let gameStarted = false;
+const AUTO_RESUME_DELAY_MS = 1000;
 
 setSdkCallbacks({
   onPause: () => {
@@ -92,6 +97,8 @@ async function bootstrap() {
   applyCloudPayload(cloudPayload);
   queueCloudSave(buildCloudPayload());
   syncSdkUser();
+  syncIapPurchases();
+  loadIapCatalog();
   loader.stop();
 
   engine = Engine.create();
@@ -227,6 +234,9 @@ async function bootstrap() {
       gameStarted = true;
     }
   };
+  if (!gameStarted && game?.state?.tutorial && !game.state.tutorial.completed) {
+    window.__canvasStartGame();
+  }
   window.__applyShopState = (payload) => {
     game.applyShopState?.(payload);
   };
@@ -250,6 +260,14 @@ async function bootstrap() {
   window.__getGlassRect = glass.getRect;
 
   const canvasRect = () => canvas.getBoundingClientRect();
+  const shopDrag = {
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    lastY: 0,
+    moved: false,
+  };
   canvas.addEventListener("pointerdown", (event) => {
     const rect = canvasRect();
     const scaleX = render.options.width / rect.width;
@@ -269,12 +287,90 @@ async function bootstrap() {
       event.stopPropagation();
       return;
     }
+    if (event.pointerType === "touch" && beginShellDrag(x, y)) {
+      shopDrag.active = true;
+      shopDrag.pointerId = event.pointerId;
+      shopDrag.startX = x;
+      shopDrag.startY = y;
+      shopDrag.lastY = y;
+      shopDrag.moved = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (handleShellPointer(x, y, render)) {
       event.preventDefault();
       event.stopPropagation();
       return;
     }
   });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!shopDrag.active || shopDrag.pointerId !== event.pointerId) {
+      return;
+    }
+    const rect = canvasRect();
+    const scaleY = render.options.height / rect.height;
+    const y = (event.clientY - rect.top) * scaleY;
+    const deltaY = y - shopDrag.lastY;
+    if (Math.abs(y - shopDrag.startY) > 4) {
+      shopDrag.moved = true;
+    }
+    shopDrag.lastY = y;
+    if (updateShellDrag(-deltaY)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  });
+  canvas.addEventListener("pointerup", (event) => {
+    if (!shopDrag.active || shopDrag.pointerId !== event.pointerId) {
+      return;
+    }
+    const rect = canvasRect();
+    const scaleX = render.options.width / rect.width;
+    const scaleY = render.options.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    const wasMoved = shopDrag.moved;
+    shopDrag.active = false;
+    shopDrag.pointerId = null;
+    if (!wasMoved) {
+      if (handleShellPointer(x, y, render)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    } else {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  });
+  canvas.addEventListener("pointercancel", (event) => {
+    if (!shopDrag.active || shopDrag.pointerId !== event.pointerId) {
+      return;
+    }
+    shopDrag.active = false;
+    shopDrag.pointerId = null;
+  });
+  canvas.addEventListener(
+    "wheel",
+    (event) => {
+      const rect = canvasRect();
+      const scaleX = render.options.width / rect.width;
+      const scaleY = render.options.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      let delta = event.deltaY;
+      if (event.deltaMode === 1) {
+        delta *= 16;
+      } else if (event.deltaMode === 2) {
+        delta *= rect.height;
+      }
+      if (handleShellWheel(x, y, delta * scaleY, render)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    { passive: false }
+  );
   const updateCanvasCursor = (event) => {
     const rect = canvasRect();
     const scaleX = render.options.width / rect.width;
@@ -355,11 +451,13 @@ async function bootstrap() {
   window.visualViewport?.addEventListener("resize", handleResize);
   window.visualViewport?.addEventListener("scroll", handleResize);
   window.addEventListener("blur", () => {
+    clearAutoResumeTimer();
     game.setPaused(true, "focus");
   });
   window.addEventListener("focus", scheduleAutoResume);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      clearAutoResumeTimer();
       game.setPaused(true, "focus");
     } else {
       scheduleAutoResume();
@@ -625,11 +723,18 @@ function scheduleAutoResume() {
   if (!pauseInfo?.paused || pauseInfo.reason !== "focus") {
     return;
   }
-  game.setPaused(true, "focus", 3000);
+  if (!isWindowActive()) {
+    clearAutoResumeTimer();
+    return;
+  }
+  game.setPaused(true, "focus", AUTO_RESUME_DELAY_MS);
   window.clearTimeout(scheduleAutoResume.resumeTimer);
   scheduleAutoResume.resumeTimer = window.setTimeout(() => {
+    if (!isWindowActive()) {
+      return;
+    }
     game.resumeIfAuto();
-  }, 3000);
+  }, AUTO_RESUME_DELAY_MS);
 }
 
 function startFixedRunner(engineInstance, runnerState) {
@@ -671,4 +776,25 @@ function isTypingTarget(target) {
   }
   const tag = target.tagName;
   return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
+}
+
+function isWindowActive() {
+  if (typeof document === "undefined") {
+    return true;
+  }
+  if (document.hidden) {
+    return false;
+  }
+  if (typeof document.hasFocus === "function") {
+    return document.hasFocus();
+  }
+  return true;
+}
+
+function clearAutoResumeTimer() {
+  window.clearTimeout(scheduleAutoResume.resumeTimer);
+  scheduleAutoResume.resumeTimer = 0;
+  if (game?.state?.pausedReason === "focus") {
+    game.state.pausedResumeMs = 0;
+  }
 }

@@ -11,6 +11,7 @@ import { setupLoading } from "./loading.js";
 import { setupToast } from "./toast.js";
 import { createInterstitialOverlay } from "../ads/interstitial_overlay.js";
 import { subscribeLanguage } from "../ui/i18n.js";
+import { getAppState, setAppState } from "./app_state.js";
 import {
   canContinueRun,
   canShowAds,
@@ -26,6 +27,9 @@ import {
 } from "../ads/index.js";
 import { applyContinueCleanup } from "../game/continue_cleanup.js";
 import { getShopProgress } from "../shop/progression.js";
+import { saveSkippers } from "../game/storage.js";
+import { queueCloudSave } from "../cloud/index.js";
+import { buildCloudPayload } from "../cloud/state.js";
 
 export function createShell({ onPlay, onPause, onGameOver } = {}) {
   const shellRoot = document.getElementById("shell-root");
@@ -115,9 +119,18 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
         });
         return;
       }
-      const ok = await playRewarded();
-      if (!ok) {
-        return;
+      const appState = getAppState();
+      const skippers = appState.skippers ?? 0;
+      if (skippers > 0) {
+        const nextSkippers = Math.max(0, Math.floor(skippers - 1));
+        saveSkippers(nextSkippers);
+        setAppState({ skippers: nextSkippers });
+        queueCloudSave(buildCloudPayload());
+      } else {
+        const ok = await playRewarded();
+        if (!ok) {
+          return;
+        }
       }
       const percent = getContinuePercent();
       incrementContinueCount();
@@ -147,7 +160,8 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
     if (!gameOverMenu?.setContinueState) {
       return;
     }
-    if (!canShowAds()) {
+    const skippers = getAppState().skippers ?? 0;
+    if (skippers <= 0 && !canShowAds()) {
       gameOverMenu.setContinueState({ visible: false });
       return;
     }
@@ -155,14 +169,14 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
       gameOverMenu.setContinueState({
         visible: true,
         disabled: true,
-        label: getContinueLabel(),
+        label: getContinueLabel(skippers),
       });
       return;
     }
     gameOverMenu.setContinueState({
       visible: true,
       disabled: false,
-      label: getContinueLabel(),
+      label: getContinueLabel(skippers),
     });
   };
 

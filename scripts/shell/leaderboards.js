@@ -46,11 +46,14 @@ export function setupLeaderboardsScreen(screen, router) {
   const headerTitle = header.header.querySelector(".header-title");
   const allTimePeriod = allTimePanel.querySelector(".leaderboards-period");
   let currentUserName = "";
+  let leaderboardTitle = "";
   const applyTranslations = () => {
     setIconButtonLabel(backButton, t("nav.back"));
     setIconButtonLabel(refreshButton, t("label.refresh"));
     if (headerTitle) headerTitle.textContent = t("leaderboards.title");
-    if (allTimePeriod) allTimePeriod.textContent = t("label.all_time_title");
+    if (allTimePeriod) {
+      allTimePeriod.textContent = leaderboardTitle || t("label.all_time_title");
+    }
     updatePill(userPill, { label: resolveUserLabel(currentUserName), value: "" });
   };
 
@@ -58,7 +61,12 @@ export function setupLeaderboardsScreen(screen, router) {
   subscribeAppState((next) => {
     currentUserName = next.userName || "";
     updatePill(userPill, { label: resolveUserLabel(currentUserName), value: "" });
-    renderBoardList(list, next.leaderboards?.allTime || [], t("label.all_time_title"));
+    leaderboardTitle = next.leaderboards?.title || "";
+    renderBoardList(
+      list,
+      next.leaderboards?.allTime || [],
+      leaderboardTitle || t("label.all_time_title")
+    );
   });
 
   refreshButton.addEventListener("click", () => {

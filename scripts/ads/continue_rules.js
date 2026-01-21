@@ -12,9 +12,12 @@ export function getContinuePercent() {
   return CONTINUE_PERCENTS[index];
 }
 
-export function getContinueLabel() {
-  if (canContinueRun()) {
-    return t("button.continue_ad");
+export function getContinueLabel(skippersCount = 0) {
+  if (!canContinueRun()) {
+    return t("label.no_more_continues");
   }
-  return t("label.no_more_continues");
+  if (skippersCount > 0) {
+    return t("label.continue_skipper");
+  }
+  return t("button.continue_ad");
 }

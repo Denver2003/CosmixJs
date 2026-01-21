@@ -85,6 +85,13 @@ export const REAL_MONEY_ITEMS = [
     currency: "yan",
     grant: { key: "coins", amount: 1000 },
   },
+  {
+    id: "skippers_30",
+    title: "30 Skippers",
+    price: 200,
+    currency: "yan",
+    grant: { key: "skippers", amount: 30 },
+  },
 ];
 
 export function getUpgradePrice(level) {

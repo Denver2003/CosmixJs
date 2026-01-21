@@ -2,6 +2,7 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
   let ysdk = null;
   let player = null;
   let leaderboards = null;
+  let payments = null;
   let ready = false;
   let adLock = false;
   const CLOUD_KEY = "cosmix";
@@ -33,6 +34,13 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
       }
     } catch (error) {
       leaderboards = null;
+    }
+    try {
+      if (typeof ysdk?.getPayments === "function") {
+        payments = await ysdk.getPayments();
+      }
+    } catch (error) {
+      payments = null;
     }
     return true;
   }
@@ -223,6 +231,67 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     return false;
   }
 
+  function isPaymentsAvailable() {
+    return ready && payments && typeof payments.getCatalog === "function";
+  }
+
+  async function getCatalog() {
+    if (!isPaymentsAvailable()) {
+      return [];
+    }
+    try {
+      const items = await payments.getCatalog();
+      return Array.isArray(items) ? items : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async function getPurchases() {
+    if (!isPaymentsAvailable() || typeof payments.getPurchases !== "function") {
+      return [];
+    }
+    try {
+      const items = await payments.getPurchases();
+      return Array.isArray(items) ? items : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async function purchase(productId, developerPayload) {
+    if (!isPaymentsAvailable() || typeof payments.purchase !== "function") {
+      return null;
+    }
+    if (!productId) {
+      return null;
+    }
+    const payload = { id: productId };
+    if (developerPayload) {
+      payload.developerPayload = String(developerPayload);
+    }
+    try {
+      return await payments.purchase(payload);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function consumePurchase(purchaseToken) {
+    if (!isPaymentsAvailable() || typeof payments.consumePurchase !== "function") {
+      return false;
+    }
+    if (!purchaseToken) {
+      return false;
+    }
+    try {
+      await payments.consumePurchase(purchaseToken);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   async function loadCloud() {
     if (!ready) {
       return null;
@@ -281,6 +350,13 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
       getName: () => (typeof player?.getName === "function" ? player.getName() : null),
       getMode: () => resolvePlayerMode(),
       requestAuthorization,
+    },
+    payments: {
+      isAvailable: isPaymentsAvailable,
+      getCatalog,
+      getPurchases,
+      purchase,
+      consumePurchase,
     },
   };
 }

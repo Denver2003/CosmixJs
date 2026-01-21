@@ -76,7 +76,7 @@ export function updateTutorial(state, getGlassRect) {
         tutorial.moveRight = true;
       }
     }
-    if (tutorial.moveLeft && tutorial.moveRight && tutorial.dropCount >= 1) {
+    if ((tutorial.moveLeft || tutorial.moveRight) && tutorial.dropCount >= 1) {
       tutorial.stage = STAGES.PRAISE;
       tutorial.stageStartMs = now;
       tutorial.messageUntilMs = now + MESSAGE_DURATION_MS;

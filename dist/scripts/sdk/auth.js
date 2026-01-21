@@ -51,7 +51,7 @@ export async function syncSdkUser() {
 
 function applySdkUser(sdk) {
   const name = sdk?.player?.getName?.();
-  setAppState({ userName: name || "" });
+  setAppState({ userName: name || "", sdkName: sdk?.name || "mock" });
 }
 
 function getPromptFlag() {

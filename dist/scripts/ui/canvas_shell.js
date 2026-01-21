@@ -16,7 +16,6 @@ import {
   BONUS_DROP_LEVELS,
   BONUS_UPGRADE_LEVELS,
   COIN_MULTIPLIER_LEVELS,
-  REAL_MONEY_ITEMS,
   SCORE_MULTIPLIER_LEVELS,
   SHOP_ITEMS,
   UPGRADE_TYPES,
@@ -27,7 +26,6 @@ import {
   getMaxUpgradeLevel,
   getShopProgress,
   tryBuyItem,
-  tryBuyRealMoneyItem,
   tryBuyUpgrade,
   updateShopProgress,
 } from "../shop/progression.js";
@@ -42,6 +40,8 @@ import { resetTutorialForRun } from "../game/tutorial.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
 import { requestAuthorization } from "../sdk/auth.js";
+import { ensureIapCatalog, purchaseIapItem } from "../shop/iap.js";
+import { IAP_PRODUCTS } from "../shop/iap_config.js";
 
 
 function resetTutorialState() {
@@ -179,16 +179,6 @@ export function handleShellPointer(x, y, render) {
       router.back?.();
       return true;
     }
-    if (layout?.tabs) {
-      if (layout.tabs.upgrades && pointInRect(x, y, layout.tabs.upgrades)) {
-        shopState.tab = "upgrades";
-        return true;
-      }
-      if (layout.tabs.items && pointInRect(x, y, layout.tabs.items)) {
-        shopState.tab = "items";
-        return true;
-      }
-    }
     if (layout?.actions) {
       const action = layout.actions.find((entry) => pointInRect(x, y, entry.rect));
       if (action) {
@@ -239,16 +229,6 @@ export function handleShellPointer(x, y, render) {
         });
         return true;
       }
-      if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
-        openCanvasConfirmDialog({
-          titleText: t("confirm.reset_title"),
-          bodyText: t("confirm.reset_body"),
-        });
-        return true;
-      }
-      if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
-        return true;
-      }
     }
   }
   if (router.activeScreen === ScreenId.LEADERBOARDS) {
@@ -287,14 +267,6 @@ export function isShellHoverTarget(x, y, render) {
     const layout = lastLayout.shop;
     if (layout?.back && pointInRect(x, y, layout.back)) {
       return true;
-    }
-    if (layout?.tabs) {
-      if (layout.tabs.upgrades && pointInRect(x, y, layout.tabs.upgrades)) {
-        return true;
-      }
-      if (layout.tabs.items && pointInRect(x, y, layout.tabs.items)) {
-        return true;
-      }
     }
     if (layout?.actions) {
       const action = layout.actions.find(
@@ -335,12 +307,6 @@ export function isShellHoverTarget(x, y, render) {
       ) {
         return true;
       }
-      if (layout.actions.reset && pointInRect(x, y, layout.actions.reset)) {
-        return true;
-      }
-      if (layout.actions.restore && pointInRect(x, y, layout.actions.restore)) {
-        return true;
-      }
     }
   }
   if (router.activeScreen === ScreenId.LEADERBOARDS) {
@@ -352,6 +318,59 @@ export function isShellHoverTarget(x, y, render) {
   return false;
 }
 
+export function handleShellWheel(x, y, deltaY, render) {
+  const router = getShellRouter();
+  if (!router || router.activeScreen !== ScreenId.SHOP) {
+    return false;
+  }
+  const layout = lastLayout.shop;
+  if (!layout?.scrollRect || !layout.scrollMax) {
+    return false;
+  }
+  const scrollRect = layout.scrollRect;
+  const panelRect = layout.panelRect;
+  const hasScrollRect = scrollRect && scrollRect.width > 0 && scrollRect.height > 0;
+  const inScroll =
+    hasScrollRect && pointInRect(x, y, scrollRect)
+      ? true
+      : panelRect
+        ? pointInRect(x, y, panelRect)
+        : false;
+  if (!inScroll) {
+    return false;
+  }
+  return applyShopScroll(deltaY);
+}
+
+export function beginShellDrag(x, y) {
+  const router = getShellRouter();
+  if (!router || router.activeScreen !== ScreenId.SHOP) {
+    return false;
+  }
+  const layout = lastLayout.shop;
+  if (!layout?.scrollRect || !layout.scrollMax) {
+    return false;
+  }
+  const scrollRect = layout.scrollRect;
+  const panelRect = layout.panelRect;
+  const hasScrollRect = scrollRect && scrollRect.width > 0 && scrollRect.height > 0;
+  const inScroll =
+    hasScrollRect && pointInRect(x, y, scrollRect)
+      ? true
+      : panelRect
+        ? pointInRect(x, y, panelRect)
+        : false;
+  if (!inScroll) {
+    return false;
+  }
+  const max = layout.scrollMax.all ?? 0;
+  return max > 0;
+}
+
+export function updateShellDrag(deltaY) {
+  return applyShopScroll(deltaY);
+}
+
 const lastLayout = {
   home: null,
   shop: null,
@@ -359,7 +378,9 @@ const lastLayout = {
   leaderboards: null,
 };
 const shopState = {
-  tab: "upgrades",
+  scroll: {
+    all: 0,
+  },
 };
 const leaderboardsState = {
   requested: false,
@@ -375,10 +396,32 @@ const ITEM_TITLE_KEYS = {
   touch: "item.touch",
   gun: "item.gun",
 };
-const REAL_ITEM_TITLE_KEYS = {
-  remove_ads: "label.remove_ads",
-  coins_1000: "label.coins_pack",
-};
+
+function clampShopScroll(tab, max) {
+  if (!shopState.scroll) {
+    shopState.scroll = { all: 0 };
+  }
+  const current = shopState.scroll[tab] ?? 0;
+  shopState.scroll[tab] = clamp(current, 0, Math.max(0, max));
+}
+
+function applyShopScroll(deltaY) {
+  const layout = lastLayout.shop;
+  if (!layout?.scrollMax) {
+    return false;
+  }
+  const max = layout.scrollMax.all ?? 0;
+  if (max <= 0) {
+    return false;
+  }
+  const current = shopState.scroll.all ?? 0;
+  const next = clamp(current + deltaY, 0, max);
+  if (next === current) {
+    return false;
+  }
+  shopState.scroll.all = next;
+  return true;
+}
 const BONUS_UPGRADE_LABEL_KEYS = [
   "bonus_upgrade.level_0",
   "bonus_upgrade.level_1",
@@ -493,24 +536,47 @@ function drawShopScreen(ctx, render, capsule) {
     const backRect = drawBackButton(ctx, pad, headerY, t("nav.back"));
     drawShopHeader(ctx, width, headerY, pad, coins);
 
-    const tabs = drawShopTabs(ctx, width / 2, headerY + 70, shopState.tab);
-    const contentTop = headerY + 130;
-    const upgrades = buildUpgradeCards(progress, coins);
-    const items = buildItemCards(progress, inventory, coins);
+    const contentTop = headerY + 70;
+    const contentHeight = height - contentTop - pad;
+    const listRect = {
+      x: pad,
+      y: contentTop,
+      width: width - pad * 2,
+      height: Math.max(1, contentHeight),
+    };
+    const listOptions = {
+      gap: 16,
+      cardHeight: 86,
+      fontSize: 14,
+      actionWidth: 120,
+      actionHeight: 38,
+      sectionGap: 18,
+      sectionHeaderHeight: 24,
+    };
+    ensureIapCatalog();
+    const sections = buildShopSections({
+      progress,
+      inventory,
+      coins,
+      skippers: state.skippers ?? 0,
+      allowIap: state.sdkName === "yandex",
+      iapCatalog: state.iap?.items || [],
+    });
+    const sectionHeight = getShopSectionsHeight(sections, listOptions);
+    const scrollMax = Math.max(0, sectionHeight - contentHeight);
+    clampShopScroll("all", scrollMax);
     resetShopActions();
-    drawShopCards(
-      ctx,
-      pad,
-      contentTop,
-      width - pad * 2,
-      height - contentTop - pad,
-      shopState.tab === "items" ? items : upgrades,
-      shopState.tab === "upgrades"
-    );
+    drawShopSections(ctx, pad, contentTop, width - pad * 2, sections, {
+      ...listOptions,
+      scrollOffset: shopState.scroll.all ?? 0,
+      clipRect: listRect,
+    });
     lastLayout.shop = {
       back: backRect,
-      tabs,
       actions: getActionRects(),
+      panelRect: { x: pad, y: headerY, width: width - pad * 2, height: height - pad * 2 },
+      scrollRect: listRect,
+      scrollMax: { all: scrollMax },
     };
     return;
   }
@@ -576,42 +642,52 @@ function drawShopScreen(ctx, render, capsule) {
     coins
   );
 
-  const tabHeight = clamp(32 * scale, 20, 36);
-  const tabGap = clamp(12 * scale, 6, 14);
-  const tabWidth = (panelWidth - pad * 2 - tabGap) / 2;
-  const tabsY = panelY + pad + headerHeight + clamp(8 * scale, 4, 12);
-  const tabs = drawShopTabs(ctx, panelX + panelWidth / 2, tabsY, shopState.tab, {
-    width: tabWidth,
-    height: tabHeight,
-    gap: tabGap,
-  });
-
-  const contentTop = tabsY + tabHeight + clamp(12 * scale, 6, 14);
-  const contentHeight = panelY + panelHeight - pad - contentTop;
-  const upgrades = buildUpgradeCards(progress, coins);
-  const items = buildItemCards(progress, inventory, coins);
-  resetShopActions();
-  drawShopCards(
-    ctx,
-    panelX + pad,
-    contentTop,
-    panelWidth - pad * 2,
-    contentHeight,
-    shopState.tab === "items" ? items : upgrades,
-    shopState.tab === "upgrades",
-    {
-      gap: clamp(12 * scale, 6, 14),
-      cardHeight: clamp(86 * scale, 60, 96),
-      fontSize: clamp(14 * scale, 11, 16),
-      actionWidth: clamp(120 * scale, 90, 130),
-      actionHeight: clamp(36 * scale, 24, 40),
-    }
+  const contentTop = panelY + pad + headerHeight + clamp(12 * scale, 6, 14);
+  const maxVisibleBottom = Math.min(
+    panelY + panelHeight - pad,
+    render.options.height - pad
   );
+  const contentHeight = Math.max(0, maxVisibleBottom - contentTop);
+  const listRect = {
+    x: panelX + pad,
+    y: contentTop,
+    width: panelWidth - pad * 2,
+    height: Math.max(1, contentHeight),
+  };
+  const listOptions = {
+    gap: clamp(12 * scale, 6, 14),
+    cardHeight: clamp(86 * scale, 60, 96),
+    fontSize: clamp(14 * scale, 11, 16),
+    actionWidth: clamp(120 * scale, 90, 130),
+    actionHeight: clamp(36 * scale, 24, 40),
+    sectionGap: clamp(18 * scale, 10, 20),
+    sectionHeaderHeight: clamp(28 * scale, 18, 30),
+  };
+  ensureIapCatalog();
+  const sections = buildShopSections({
+    progress,
+    inventory,
+    coins,
+    skippers: state.skippers ?? 0,
+    allowIap: state.sdkName === "yandex",
+    iapCatalog: state.iap?.items || [],
+  });
+  const sectionHeight = getShopSectionsHeight(sections, listOptions);
+  const scrollMax = Math.max(0, sectionHeight - contentHeight);
+  clampShopScroll("all", scrollMax);
+  resetShopActions();
+  drawShopSections(ctx, panelX + pad, contentTop, panelWidth - pad * 2, sections, {
+    ...listOptions,
+    scrollOffset: shopState.scroll.all ?? 0,
+    clipRect: listRect,
+  });
 
   lastLayout.shop = {
     back: backRect,
-    tabs,
     actions: getActionRects(),
+    panelRect: { x: panelX, y: panelY, width: panelWidth, height: panelHeight },
+    scrollRect: listRect,
+    scrollMax: { all: scrollMax },
   };
 }
 
@@ -645,6 +721,8 @@ function buildUpgradeCards(progress, coins) {
   return upgrades.map((upgrade) => {
     const level = progress?.upgrades?.[upgrade.id] ?? 0;
     const maxLevel = getMaxUpgradeLevel(upgrade.id);
+    const progressRatio = maxLevel > 0 ? level / maxLevel : 1;
+    const progressPercent = Math.round(Math.max(0, Math.min(1, progressRatio)) * 100);
     const current = upgrade.formatter(upgrade.levels[level] ?? 0, level);
     const nextLevel = Math.min(level + 1, maxLevel);
     const nextValue = upgrade.levels[nextLevel];
@@ -662,6 +740,8 @@ function buildUpgradeCards(progress, coins) {
       title: upgrade.title,
       current,
       next,
+      progress: progressRatio,
+      progressLabel: `${progressPercent}%`,
       actionLabel:
         level >= maxLevel
           ? t("button.max")
@@ -680,74 +760,156 @@ function getBonusUpgradeLabel(level) {
 }
 
 function buildItemCards(progress, inventory, coins) {
+  return SHOP_ITEMS.map((item) => {
+    const count = Math.max(0, Math.floor(inventory?.[item.id] || 0));
+    const canAfford = coins >= item.cost;
+    const titleKey = ITEM_TITLE_KEYS[item.id];
+    return {
+      id: item.id,
+      kind: "item",
+      title: titleKey ? t(titleKey) : item.title,
+      meta: t("label.consumable"),
+      owned: t("label.owned_prefix", { count: formatNumber(count) }),
+      actionLabel: t("button.buy", { price: formatNumber(item.cost) }),
+      actionDisabled: !canAfford,
+    };
+  });
+}
+
+function getIapFallbackTitle(id) {
+  if (id === "remove_ads") {
+    return t("label.remove_ads");
+  }
+  if (id === "coins_500") {
+    return t("label.coins_pack");
+  }
+  if (id === "skippers_30") {
+    return t("label.skippers_pack");
+  }
+  return t("label.coins_pack");
+}
+
+function getIapFallbackMeta(config) {
+  if (!config) {
+    return "";
+  }
+  if (config.id === "remove_ads") {
+    return t("label.all_ads");
+  }
+  if (config.grant?.key === "coins") {
+    return t("label.coins_amount", { amount: formatNumber(config.grant.amount || 0) });
+  }
+  if (config.grant?.key === "skippers") {
+    return t("label.skippers");
+  }
+  return "";
+}
+
+function buildInAppCards(progress, skippersCount, catalog) {
+  const cards = [];
+  if (!Array.isArray(catalog) || catalog.length === 0) {
+    return cards;
+  }
+  const byProductId = new Map();
+  if (Array.isArray(catalog)) {
+    for (const item of catalog) {
+      if (item?.productId) {
+        byProductId.set(String(item.productId), item);
+      }
+    }
+  }
+
+  for (const config of IAP_PRODUCTS) {
+    const product = byProductId.get(config.productId) || null;
+    if (!product) {
+      continue;
+    }
+    const owned = config.id === "remove_ads" ? Boolean(progress?.removeAds) : false;
+    const fallbackTitle = getIapFallbackTitle(config.id);
+    const fallbackMeta = getIapFallbackMeta(config);
+    const title = product?.title || fallbackTitle;
+    const meta = product?.description || fallbackMeta;
+    const priceLabel = product?.price || "";
+    const actionLabel = priceLabel
+      ? t("button.buy_price", { price: priceLabel })
+      : t("button.buy_now");
+    cards.push({
+      id: config.id,
+      kind: "iap",
+      title,
+      meta,
+      owned: owned
+        ? t("label.owned")
+        : config.id === "skippers_30" && skippersCount > 0
+          ? t("label.owned_prefix", { count: formatNumber(skippersCount) })
+          : null,
+      actionLabel: owned ? t("button.owned") : actionLabel,
+      actionDisabled: owned,
+    });
+  }
+  return cards;
+}
+
+function buildRewardCard(progress) {
   const coinLevel = progress?.upgrades?.[UPGRADE_TYPES.COIN_MULTIPLIER] ?? 0;
   const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
   const rewardStatus = getShopRewardStatus(Date.now(), moneyCoef);
   const rewardLabel = rewardStatus.available
     ? t("button.watch_ad_reward", { reward: formatNumber(rewardStatus.reward) })
     : t("button.try_later");
-  const rewardMeta = t("label.reward_meta", { reward: formatNumber(rewardStatus.reward) });
-  const rewardOwned = t("label.reward_owned", {
-    count: formatNumber(rewardStatus.count),
-    limit: formatNumber(rewardStatus.limit),
-  });
-  const cards = [
-    {
-      id: "rewarded_shop",
-      kind: "reward",
-      title: t("label.watch_ad"),
-      meta: rewardMeta,
-      owned: rewardOwned,
-      actionLabel: rewardLabel,
-      actionDisabled: !rewardStatus.available,
-    },
-  ];
-  cards.push(
-    ...SHOP_ITEMS.map((item) => {
-      const count = Math.max(0, Math.floor(inventory?.[item.id] || 0));
-      const canAfford = coins >= item.cost;
-      const titleKey = ITEM_TITLE_KEYS[item.id];
-      return {
-        id: item.id,
-        kind: "item",
-        title: titleKey ? t(titleKey) : item.title,
-        meta: t("label.consumable"),
-        owned: t("label.owned_prefix", { count: formatNumber(count) }),
-        actionLabel: t("button.buy", { price: formatNumber(item.cost) }),
-        actionDisabled: !canAfford,
-      };
-    })
-  );
+  return {
+    id: "rewarded_shop",
+    kind: "reward",
+    title: t("label.watch_ad"),
+    meta: t("label.reward_meta", { reward: formatNumber(rewardStatus.reward) }),
+    owned: t("label.reward_owned", {
+      count: formatNumber(rewardStatus.count),
+      limit: formatNumber(rewardStatus.limit),
+    }),
+    actionLabel: rewardLabel,
+    actionDisabled: !rewardStatus.available,
+  };
+}
 
-  for (const item of REAL_MONEY_ITEMS) {
-    if (item.id === "remove_ads") {
-      const owned = Boolean(progress?.removeAds);
-      const titleKey = REAL_ITEM_TITLE_KEYS[item.id];
-      cards.push({
-        id: item.id,
-        kind: "real",
-        title: titleKey ? t(titleKey) : item.title,
-        meta: t("label.all_ads"),
-        owned: owned ? t("label.owned") : null,
-        actionLabel: owned
-          ? t("button.owned")
-          : t("button.buy_currency", { price: formatNumber(item.price) }),
-        actionDisabled: owned,
-      });
-    } else if (item.id === "coins_1000") {
-      const titleKey = REAL_ITEM_TITLE_KEYS[item.id];
-      cards.push({
-        id: item.id,
-        kind: "real",
-        title: titleKey ? t(titleKey) : item.title,
-        meta: t("label.coins_amount", { amount: formatNumber(1000) }),
-        owned: null,
-        actionLabel: t("button.buy_currency", { price: formatNumber(item.price) }),
-        actionDisabled: false,
+function buildShopSections({ progress, inventory, coins, skippers, allowIap, iapCatalog }) {
+  const sections = [];
+  const upgrades = buildUpgradeCards(progress, coins);
+  if (upgrades.length) {
+    sections.push({
+      id: "upgrades",
+      title: t("shop.section.upgrades"),
+      cards: upgrades,
+      showNext: true,
+    });
+  }
+  const bonuses = buildItemCards(progress, inventory, coins);
+  if (bonuses.length) {
+    sections.push({
+      id: "bonuses",
+      title: t("shop.section.bonuses"),
+      cards: bonuses,
+      showNext: false,
+    });
+  }
+  if (allowIap) {
+    const inapps = buildInAppCards(progress, skippers, iapCatalog);
+    if (inapps.length) {
+      sections.push({
+        id: "inapps",
+        title: t("shop.section.inapps"),
+        cards: inapps,
+        showNext: false,
       });
     }
   }
-  return cards;
+  const rewardCard = buildRewardCard(progress);
+  sections.push({
+    id: "ads",
+    title: t("shop.section.ads"),
+    cards: [rewardCard],
+    showNext: false,
+  });
+  return sections;
 }
 
 function handleShopAction(action) {
@@ -794,22 +956,8 @@ function handleShopAction(action) {
     return;
   }
 
-  if (action.kind === "real") {
-    const result = tryBuyRealMoneyItem(progress, action.id);
-    if (!result.ok) {
-      return;
-    }
-    if (result.grant?.key === "coins") {
-      coins += result.grant.amount || 0;
-      saveCoins(coins);
-      setAppState({ coins });
-    }
-    const nextProgress = updateShopProgress({
-      upgrades: progress.upgrades,
-      removeAds: progress.removeAds,
-    });
-    applyShopStateToGame({ coins, progress: nextProgress, inventory });
-    queueCloudSave(buildCloudPayload());
+  if (action.kind === "iap") {
+    purchaseIapItem(action.id);
   }
 
   if (action.kind === "reward") {
@@ -887,27 +1035,31 @@ function drawSettingsScreen(ctx, render, capsule) {
       { capture: true }
     );
     y = audioSection.endY;
+    const showLanguage = state.sdkName !== "yandex";
+    const accountRows = [
+      { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
+      {
+        key: "login",
+        label: t("label.login"),
+        value: t("button.login"),
+        type: "action",
+      },
+    ];
+    if (showLanguage) {
+      accountRows.push({
+        key: "language",
+        label: t("label.language"),
+        value: getLanguage().toUpperCase(),
+        type: "action",
+      });
+    }
     const accountSection = drawSettingsSection(
       ctx,
       pad,
       y + 18,
       width - pad * 2,
       t("label.account"),
-      [
-        { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
-        {
-          key: "login",
-          label: t("label.login"),
-          value: t("button.login"),
-          type: "action",
-        },
-        {
-          key: "language",
-          label: t("label.language"),
-          value: getLanguage().toUpperCase(),
-          type: "action",
-        },
-      ],
+      accountRows,
       { capture: true }
     );
     const dataSection = drawSettingsSection(
@@ -923,14 +1075,6 @@ function drawSettingsScreen(ctx, render, capsule) {
           value: t("button.reset"),
           type: "action",
         },
-        {
-          key: "reset",
-          label: t("label.reset_progress"),
-          value: t("button.reset"),
-          type: "action",
-          danger: true,
-        },
-        { key: "restore", label: t("label.restore_purchases"), value: t("button.restore"), type: "action" },
       ],
       { capture: true }
     );
@@ -1022,27 +1166,31 @@ function drawSettingsScreen(ctx, render, capsule) {
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
   y = audioSection.endY + sectionGap;
+  const showLanguage = state.sdkName !== "yandex";
+  const accountRows = [
+    { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
+    {
+      key: "login",
+      label: t("label.login"),
+      value: t("button.login"),
+      type: "action",
+    },
+  ];
+  if (showLanguage) {
+    accountRows.push({
+      key: "language",
+      label: t("label.language"),
+      value: getLanguage().toUpperCase(),
+      type: "action",
+    });
+  }
   const accountSection = drawSettingsSection(
     ctx,
     panelX + pad,
     y,
     sectionWidth,
     t("label.account"),
-    [
-      { label: t("label.status"), value: resolveUserLabel(state.userName), type: "info" },
-      {
-        key: "login",
-        label: t("label.login"),
-        value: t("button.login"),
-        type: "action",
-      },
-      {
-        key: "language",
-        label: t("label.language"),
-        value: getLanguage().toUpperCase(),
-        type: "action",
-      },
-    ],
+    accountRows,
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
   const dataSection = drawSettingsSection(
@@ -1058,14 +1206,6 @@ function drawSettingsScreen(ctx, render, capsule) {
         value: t("button.reset"),
         type: "action",
       },
-      {
-        key: "reset",
-        label: t("label.reset_progress"),
-        value: t("button.reset"),
-        type: "action",
-        danger: true,
-      },
-      { key: "restore", label: t("label.restore_purchases"), value: t("button.restore"), type: "action" },
     ],
     { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
   );
@@ -1096,13 +1236,14 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
     drawLeaderboardsHeader(ctx, width, headerY, pad, user);
 
     const listTop = headerY + 96;
+    const leaderTitle = state.leaderboards?.title || t("label.all_time_title");
     drawLeaderboardsList(
       ctx,
       pad,
       listTop,
       width - pad * 2,
       height - listTop - pad,
-      t("label.all_time_title"),
+      leaderTitle,
       rows
     );
 
@@ -1174,13 +1315,14 @@ function drawLeaderboardsScreen(ctx, render, capsule) {
   );
 
   const listTop = panelY + pad + headerHeight + clamp(14 * scale, 8, 16);
+  const leaderTitle = state.leaderboards?.title || t("label.all_time_title");
   drawLeaderboardsList(
     ctx,
     panelX + pad,
     listTop,
     panelWidth - pad * 2,
     panelY + panelHeight - pad - listTop,
-    t("label.all_time_title"),
+    leaderTitle,
     rows,
     { scale, prism: true }
   );
@@ -1604,6 +1746,69 @@ function drawTabButton(ctx, x, y, w, h, label, active) {
   return { x, y, width: w, height: h };
 }
 
+function drawShopSectionHeader(ctx, x, y, width, title, options = {}) {
+  const height = options.height ?? 24;
+  const size = options.size ?? Math.max(10, Math.round(height * 0.65));
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  drawFittedText(ctx, title, x, y + height / 2, {
+    size,
+    minSize: Math.max(9, size - 3),
+    maxWidth: width,
+  });
+  ctx.restore();
+  return height;
+}
+
+function drawShopSections(ctx, x, y, width, sections, options = {}) {
+  const sectionGap = options.sectionGap ?? 18;
+  const headerHeight = options.sectionHeaderHeight ?? 24;
+  const headerSize = options.sectionHeaderSize ?? Math.max(10, Math.round(headerHeight * 0.65));
+  const scrollOffset = options.scrollOffset ?? 0;
+  const clipRect = options.clipRect ?? null;
+  if (clipRect) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
+    ctx.clip();
+  }
+  let cursor = y - scrollOffset;
+  let first = true;
+  for (const section of sections) {
+    if (!section.cards || section.cards.length === 0) {
+      continue;
+    }
+    if (!first) {
+      cursor += sectionGap;
+    }
+    if (section.title) {
+      const drawn = drawShopSectionHeader(ctx, x, cursor, width, section.title, {
+        height: headerHeight,
+        size: headerSize,
+      });
+      cursor += drawn;
+    }
+    const cardsHeight = getShopCardsHeight(
+      section.cards,
+      options.cardHeight ?? 86,
+      options.gap ?? 16
+    );
+    drawShopCards(ctx, x, cursor, width, cardsHeight, section.cards, section.showNext, {
+      ...options,
+      scrollOffset: 0,
+      clipRect: null,
+    });
+    cursor += cardsHeight;
+    first = false;
+  }
+  if (clipRect) {
+    ctx.restore();
+  }
+  return Math.max(0, cursor - (y - scrollOffset));
+}
+
 function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) {
   const cols = 1;
   const gap = options.gap ?? 16;
@@ -1611,15 +1816,27 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) 
   const fontSize = options.fontSize ?? 14;
   const actionWidth = options.actionWidth ?? 120;
   const actionHeight = options.actionHeight ?? 38;
-  const maxCards = Math.floor((height + gap) / (cardHeight + gap));
+  const scrollOffset = options.scrollOffset ?? 0;
+  const clipRect = options.clipRect ?? null;
   const textPad = Math.max(8, Math.round(cardHeight * 0.18));
   const textWidth = Math.max(40, width - actionWidth - textPad * 2 - 8);
   ctx.save();
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  for (let i = 0; i < Math.min(cards.length, maxCards); i += 1) {
+  if (clipRect) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(clipRect.x, clipRect.y, clipRect.width, clipRect.height);
+    ctx.clip();
+  }
+  const listTop = y;
+  const listBottom = y + height;
+  for (let i = 0; i < cards.length; i += 1) {
     const card = cards[i];
-    const cardY = y + i * (cardHeight + gap);
+    const cardY = y + i * (cardHeight + gap) - scrollOffset;
+    if (cardY + cardHeight < listTop || cardY > listBottom) {
+      continue;
+    }
     drawPrismPanel(ctx, x, cardY, width, cardHeight, Math.min(16, cardHeight * 0.22), {
       fill: "rgba(12, 18, 26, 0.55)",
       stroke: "rgba(95, 227, 255, 0.3)",
@@ -1648,6 +1865,35 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) 
         maxWidth: textWidth,
       });
     }
+    if (showNext && card.progress !== undefined && card.progress !== null) {
+      const barWidth = textWidth;
+      const barHeight = Math.max(4, Math.round(cardHeight * 0.08));
+      const barX = x + textPad;
+      const barY = cardY + cardHeight * 0.72;
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      roundRect(ctx, barX, barY, barWidth, barHeight, barHeight / 2);
+      ctx.fill();
+      const fillWidth = Math.max(0, Math.min(1, card.progress)) * barWidth;
+      ctx.fillStyle = "rgba(95, 227, 255, 0.85)";
+      roundRect(ctx, barX, barY, fillWidth, barHeight, barHeight / 2);
+      ctx.fill();
+      ctx.restore();
+      if (card.progressLabel) {
+        ctx.save();
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        drawFittedText(
+          ctx,
+          card.progressLabel,
+          barX + barWidth,
+          barY + barHeight * 0.5,
+          { size: Math.max(9, Math.round(fontSize * 0.9)), minSize: 8, maxWidth: barWidth }
+        );
+        ctx.restore();
+      }
+    }
 
     const actionRect = drawActionButton(
       ctx,
@@ -1661,7 +1907,51 @@ function drawShopCards(ctx, x, y, width, height, cards, showNext, options = {}) 
     );
     addShopAction(card, actionRect);
   }
+  if (clipRect) {
+    ctx.restore();
+  }
   ctx.restore();
+}
+
+function getShopCardsMaxScroll(cards, cardHeight, gap, height) {
+  if (!cards || cards.length === 0) {
+    return 0;
+  }
+  const totalHeight = cardHeight * cards.length + gap * (cards.length - 1);
+  return Math.max(0, totalHeight - height);
+}
+
+function getShopCardsHeight(cards, cardHeight, gap) {
+  if (!cards || cards.length === 0) {
+    return 0;
+  }
+  return cardHeight * cards.length + gap * (cards.length - 1);
+}
+
+function getShopSectionsHeight(sections, options = {}) {
+  if (!sections || sections.length === 0) {
+    return 0;
+  }
+  const gap = options.gap ?? 16;
+  const cardHeight = options.cardHeight ?? 86;
+  const headerHeight = options.sectionHeaderHeight ?? 24;
+  const sectionGap = options.sectionGap ?? 18;
+  let total = 0;
+  let first = true;
+  for (const section of sections) {
+    if (!section.cards || section.cards.length === 0) {
+      continue;
+    }
+    if (!first) {
+      total += sectionGap;
+    }
+    if (section.title) {
+      total += headerHeight;
+    }
+    total += getShopCardsHeight(section.cards, cardHeight, gap);
+    first = false;
+  }
+  return total;
 }
 
 function drawHeader(ctx, width, y, pad, { user, coins, best }) {

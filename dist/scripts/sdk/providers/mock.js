@@ -55,6 +55,7 @@ export function createMockSdk() {
     leaderboards: {
       submitScore: async () => true,
       getEntries: async () => sampleEntries,
+      getMeta: async () => ({ title: null, description: null }),
     },
     cloud: {
       load: async () => (cloudStore ? clonePayload(cloudStore) : null),
@@ -72,6 +73,13 @@ export function createMockSdk() {
       getName: () => null,
       getMode: () => "guest",
       requestAuthorization: async () => false,
+    },
+    payments: {
+      isAvailable: () => false,
+      getCatalog: async () => [],
+      getPurchases: async () => [],
+      purchase: async () => null,
+      consumePurchase: async () => false,
     },
   };
 }

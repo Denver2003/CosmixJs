@@ -74,5 +74,12 @@ export function createMockSdk() {
       getMode: () => "guest",
       requestAuthorization: async () => false,
     },
+    payments: {
+      isAvailable: () => false,
+      getCatalog: async () => [],
+      getPurchases: async () => [],
+      purchase: async () => null,
+      consumePurchase: async () => false,
+    },
   };
 }

@@ -133,7 +133,7 @@ export function tryBuyRealMoneyItem(progress, itemId) {
     progress.removeAds = true;
     return { ok: true, item };
   }
-  if (item.grant?.key === "coins") {
+  if (item.grant?.key === "coins" || item.grant?.key === "skippers") {
     return { ok: true, item, grant: item.grant };
   }
   return { ok: false, reason: "invalid" };

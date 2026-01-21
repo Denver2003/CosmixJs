@@ -54,11 +54,12 @@
 - **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
   - Bonus icons show key hints (`1`/`2`) when keyboard control is active and the bonus is ready.
 - **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
-- **Shop & progression**: upgrades for score/coin multiplier, bonus drop chance, and bonus upgrades (localStorage). Shop allows purchasing consumable bonuses with coins; real-money items are mocked (remove ads, coin pack) and applied immediately.
+- **Shop & progression**: upgrades for score/coin multiplier, bonus drop chance, and bonus upgrades (localStorage). Shop allows purchasing consumable bonuses with coins; Yandex in-app purchases load from SDK catalog and apply entitlements/consumables with consume flow.
 - **Ads (SDK-backed)**: rewarded continue on Game Over (up to 3 per run) clears 70/50/30% of shapes with 2.5s kill-line grace; interstitials show only on Retry with 3-session warmup and 180s cooldown (disabled by remove ads); shop rewarded grants coins with 5/hour limit and 2 min cooldown (reward scales by total spent coins and MoneyCoef, rounded to 50).
-- **SDK layer**: provider-based SDK abstraction with mock fallback; Yandex provider bootstraps when `YaGames` is available, emits pause/resume events through the game loop, provides cloud saves + language via SDK, and supports auth (prompt once on start) with player name in UI.
-- **Leaderboards (all-time)**: Yandex SDK all-time leaderboard only; weekly removed. Best score submits on game over and the leaderboard screen fetches all-time entries.
-- **Cloud saves (SDK-backed)**: on start we load cloud and apply to local (cloud wins), then save; on game over and shop actions we throttle-save (10s) coins, bestScore, shop progress, bonus inventory, audio settings, and tutorial status. LocalStorage remains fallback.
+- **Skippers**: a stored currency that can replace a rewarded continue; 1 skipper = skip 1 continue ad (still max 3 continues per run). Skippers persist in local + cloud and can be purchased via Yandex IAP.
+- **SDK layer**: provider-based SDK abstraction with mock fallback; Yandex provider bootstraps when `YaGames` is available, emits pause/resume events through the game loop, provides cloud saves + language via SDK, supports auth (prompt once on start) with player name in UI, and exposes payments (catalog/purchase/consume).
+- **Leaderboards (all-time)**: Yandex SDK all-time leaderboard only; weekly removed. Best score submits on game over and the leaderboard screen fetches all-time entries, using Yandex-provided title when available.
+- **Cloud saves (SDK-backed)**: on start we load cloud and apply to local (cloud wins), then save; on game over and shop actions we throttle-save (10s) coins, bestScore, shop progress, bonus inventory, audio settings, tutorial status, and processed purchase tokens. LocalStorage remains fallback.
 - **Bonus upgrades**: bonus drop adds to bubble spawn chance; upgrade level 4 enables bubble spawn on drop (5%); level 5 reduces consumable cooldown to 2 min; level 6 forces instant rewards on drop bubbles; level 7 increases consumable rewards to x5 and boosts their weights.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
 - **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
@@ -71,12 +72,12 @@
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
 - **Score/Coins HUD**: live score display; coins and best score persist between sessions (saved on game over, coins are rolled back if the player continues after a rewarded ad; best score stays).
 - **Canvas shell Home**: menu now aligns to the glass capsule layout with Prism Edge HUD, PLAY CTA, and bottom nav inside the capsule. Best score chip is wider and the coin chip is ~30% wider for better fit on small screens.
-- **Canvas shell Shop/Settings/Leaderboards**: screens render as Prism Edge panels inside the capsule with icon back buttons, capsule-bound tabs, and scaled cards/rows; background is dimmed around the capsule. Panels now scale down more on small screens and can expand up to +20% width/+30% height, with a 40px allowed overflow beyond the capsule.
+- **Canvas shell Shop/Settings/Leaderboards**: screens render as Prism Edge panels inside the capsule with icon back buttons and scaled cards/rows; background is dimmed around the capsule. Panels now scale down more on small screens and can expand up to +20% width/+30% height, with a 40px allowed overflow beyond the capsule. Shop is a single scrollable list with section headers (upgrades → bonuses → in-app → ads); in-app section appears only when Yandex SDK is active; upgrade cards show a progress bar.
 - **Canvas UI visibility**: gameplay-only elements (cosmometer, level progress, touch overlay) are hidden while the shell menu is active.
 - **Canvas modals**: Pause/Game Over/Confirm menus now draw in canvas, aligned to the capsule with Prism Edge styling; pause audio controls and modal buttons are hit-tested in canvas, and auto-pause uses a compact capsule-bound banner. Modal UI scale now clamps down to 0.6 on small screens.
 - **Canvas UI text fitting**: shell/overlay labels auto-shrink and ellipsize to stay inside chips, tabs, rows, and buttons on small screens (EN/RU).
-- **Localization (menus/overlays)**: UI text for shell screens and overlays uses `i18n.t()` with EN/RU dictionaries; language toggle lives in Settings (canvas + DOM fallback), stored in `localStorage` as `cosmix.lang` with EN default.
-- **Tutorial onboarding**: first-run guidance for move/drop and bubble pop (center/top messages with key boxes); bubble prompt repeats after 5s if missed; completion persists in `localStorage` and can be reset from Settings. Touch devices omit keyboard hints in tutorial copy.
+- **Localization (menus/overlays)**: UI text for shell screens and overlays uses `i18n.t()` with EN/RU dictionaries; language toggle lives in Settings (canvas + DOM fallback), stored in `localStorage` as `cosmix.lang` with EN default. When running under Yandex SDK the language toggle is hidden (language comes from the platform).
+- **Tutorial onboarding**: first-run guidance for move/drop and bubble pop (center/top messages with key boxes); bubble prompt repeats after 5s if missed; completion persists in `localStorage` and can be reset from Settings. Touch devices omit keyboard hints in tutorial copy. If the tutorial is incomplete at app launch, the game auto-starts (bypasses Home). In the tutorial only, the first piece never auto-drops (manual drop required).
 - **Site identity**: favicon and apple-touch icon load from `assets/appIcon/app_icon.png`, and the browser title updates by language (`app.page_title`).
 - **Hover cursor**: canvas hover shows `ew-resize` over the glass in active play, `pointer` over bubbles/instant bonuses/pause/touch-to-kill targets, and `pointer` on shell/overlay buttons.
 - **VFX text**: animated popups (score/coins/combo/level/cosmo) use a white 2px stroke and ~50% larger text for better readability.
@@ -126,9 +127,14 @@
 - `scripts/game/level_up_popup.js` — level-up popup animation.
 - `scripts/game/utils.js` — shared clamp, scale, color helpers.
 - `scripts/leaderboards/index.js` — SDK leaderboard submit/fetch for all-time.
+- `scripts/shop/model.js` — shop catalog data (upgrades/items).
+- `scripts/shop/progression.js` — shop progression state + purchase helpers.
+- `scripts/shop/storage.js` — shop persistence.
+- `scripts/shop/iap.js` — Yandex IAP catalog/purchase processing + consumable consume.
+- `scripts/shop/iap_config.js` — Yandex productId mapping/config.
 - `scripts/sdk/index.js` — SDK provider selection + init.
 - `scripts/sdk/providers/mock.js` — mock SDK provider.
-- `scripts/sdk/providers/yandex.js` — Yandex SDK provider (ads + leaderboards).
+- `scripts/sdk/providers/yandex.js` — Yandex SDK provider (ads + leaderboards + payments).
 - `scripts/config.js` — includes `DEBUG_OVERLAY` toggle.
 - `scripts/ui/layout.js` — HUD layout helpers (safe area + glass rects).
 - `scripts/ui/hud.js` — top HUD layout geometry.

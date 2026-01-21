@@ -1,15 +1,27 @@
 const subscribers = new Set();
 
-import { loadAudioSettings, loadBestScore, loadCoins } from "../game/storage.js";
+import {
+  loadAudioSettings,
+  loadBestScore,
+  loadCoins,
+  loadSkippers,
+} from "../game/storage.js";
 
 const state = {
   userName: "Guest",
   sdkName: "mock",
   coins: loadCoins(),
   bestScore: loadBestScore(),
+  skippers: loadSkippers(),
   audio: loadAudioSettings(),
   leaderboards: {
     allTime: [],
+    loading: false,
+    updatedAt: 0,
+    title: null,
+  },
+  iap: {
+    items: [],
     loading: false,
     updatedAt: 0,
   },

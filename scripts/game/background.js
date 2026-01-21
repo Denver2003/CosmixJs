@@ -20,6 +20,7 @@ import {
 
 const BACKGROUND_SRC = "./assets/backgrounds/space_bg_placeholder.png";
 let backgroundImage = null;
+let backgroundPromise = null;
 let starField = null;
 
 function getBackgroundImage() {
@@ -27,12 +28,38 @@ function getBackgroundImage() {
     return backgroundImage;
   }
   const image = new Image();
-  image.onerror = () => {
-    image._broken = true;
-  };
+  image.addEventListener(
+    "error",
+    () => {
+      image._broken = true;
+    },
+    { once: true }
+  );
   image.src = BACKGROUND_SRC;
   backgroundImage = image;
   return backgroundImage;
+}
+
+export function preloadBackground() {
+  if (typeof Image === "undefined") {
+    return Promise.resolve(null);
+  }
+  const image = getBackgroundImage();
+  if (image._broken) {
+    return Promise.resolve(null);
+  }
+  if (image.complete && image.naturalWidth > 0) {
+    return Promise.resolve(image);
+  }
+  if (backgroundPromise) {
+    return backgroundPromise;
+  }
+  backgroundPromise = new Promise((resolve) => {
+    const done = () => resolve(image);
+    image.addEventListener("load", done, { once: true });
+    image.addEventListener("error", () => resolve(null), { once: true });
+  });
+  return backgroundPromise;
 }
 
 function ensureStarField() {

@@ -3,10 +3,14 @@ import {
   loadBestScore,
   loadBonusInventory,
   loadCoins,
+  loadPurchaseTokens,
+  loadSkippers,
   loadTutorialProgress,
   saveBestScore,
   saveBonusInventory,
   saveCoins,
+  savePurchaseTokens,
+  saveSkippers,
   saveTutorialProgress,
 } from "../game/storage.js";
 import { setAudioSettings } from "../audio/index.js";
@@ -24,8 +28,10 @@ export function buildCloudPayload() {
     bestScore: loadBestScore(),
     bonusInventory: loadBonusInventory(),
     shopProgress: loadShopProgress(),
+    skippers: loadSkippers(),
     audio: loadAudioSettings(),
     tutorial: loadTutorialProgress(),
+    purchaseTokens: loadPurchaseTokens(),
   };
 }
 
@@ -39,17 +45,25 @@ export function applyCloudPayload(payload) {
     bestScore: resolveInt(payload?.bestScore, local.bestScore),
     bonusInventory: mergeInventory(payload?.bonusInventory, local.bonusInventory),
     shopProgress: mergeShopProgress(payload?.shopProgress, local.shopProgress),
+    skippers: resolveInt(payload?.skippers, local.skippers),
     audio: mergeAudioSettings(payload?.audio, local.audio),
     tutorial: mergeTutorial(payload?.tutorial, local.tutorial),
+    purchaseTokens: mergePurchaseTokens(payload?.purchaseTokens, local.purchaseTokens),
   };
   saveCoins(resolved.coins);
   saveBestScore(resolved.bestScore);
   saveBonusInventory(resolved.bonusInventory);
   saveShopProgress(resolved.shopProgress);
+  saveSkippers(resolved.skippers);
   saveTutorialProgress(resolved.tutorial.completed);
+  savePurchaseTokens(resolved.purchaseTokens);
   setShopProgress(resolved.shopProgress);
   setAudioSettings(resolved.audio);
-  setAppState({ coins: resolved.coins, bestScore: resolved.bestScore });
+  setAppState({
+    coins: resolved.coins,
+    bestScore: resolved.bestScore,
+    skippers: resolved.skippers,
+  });
   return { applied: true, payload: resolved };
 }
 
@@ -62,8 +76,10 @@ function hasCloudData(payload) {
     payload.bestScore !== undefined ||
     payload.bonusInventory !== undefined ||
     payload.shopProgress !== undefined ||
+    payload.skippers !== undefined ||
     payload.audio !== undefined ||
-    payload.tutorial !== undefined
+    payload.tutorial !== undefined ||
+    payload.purchaseTokens !== undefined
   );
 }
 
@@ -73,8 +89,10 @@ function buildLocalSnapshot() {
     bestScore: loadBestScore(),
     bonusInventory: loadBonusInventory(),
     shopProgress: loadShopProgress(),
+    skippers: loadSkippers(),
     audio: loadAudioSettings(),
     tutorial: loadTutorialProgress(),
+    purchaseTokens: loadPurchaseTokens(),
   };
 }
 
@@ -165,4 +183,21 @@ function mergeTutorial(value, fallback) {
         ? base.completed
         : Boolean(value.completed),
   };
+}
+
+function mergePurchaseTokens(value, fallback) {
+  const base = Array.isArray(fallback) ? fallback : [];
+  const incoming = Array.isArray(value) ? value : [];
+  const merged = new Set();
+  for (const token of base) {
+    if (typeof token === "string" && token.trim()) {
+      merged.add(token.trim());
+    }
+  }
+  for (const token of incoming) {
+    if (typeof token === "string" && token.trim()) {
+      merged.add(token.trim());
+    }
+  }
+  return Array.from(merged);
 }

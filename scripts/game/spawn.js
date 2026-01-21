@@ -132,7 +132,9 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     state.engine.timing.timestamp - state.waitStartMs >= getSpawnWaitMs(state.level)
   ) {
     if (!touchActive) {
-      dropActiveBody(state, getSpawnPoint, getGlassRect);
+      if (!shouldHoldFirstTutorialDrop(state)) {
+        dropActiveBody(state, getSpawnPoint, getGlassRect);
+      }
     }
   }
 
@@ -188,4 +190,12 @@ export function repositionWaiting(state, getSpawnPoint, getGlassRect) {
     GLASS_WIDTH,
     WALL_THICKNESS
   );
+}
+
+function shouldHoldFirstTutorialDrop(state) {
+  const tutorial = state?.tutorial;
+  if (!tutorial || tutorial.completed) {
+    return false;
+  }
+  return tutorial.dropCount === 0;
 }

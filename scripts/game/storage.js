@@ -3,6 +3,8 @@ const BONUSES_KEY = "cosmix.bonuses";
 const BEST_SCORE_KEY = "cosmix.best_score";
 const AUDIO_KEY = "cosmix.audio";
 const TUTORIAL_KEY = "cosmix.tutorial";
+const SKIPPERS_KEY = "cosmix.skippers";
+const PURCHASE_TOKENS_KEY = "cosmix.purchase_tokens";
 
 function getStorage() {
   if (typeof window === "undefined") {
@@ -165,6 +167,68 @@ export function resetTutorialProgress() {
   return true;
 }
 
+export function loadSkippers() {
+  const storage = getStorage();
+  if (!storage) {
+    return 0;
+  }
+  const raw = storage.getItem(SKIPPERS_KEY);
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return value;
+}
+
+export function saveSkippers(count) {
+  const storage = getStorage();
+  if (!storage) {
+    return false;
+  }
+  const safeCount = Math.max(0, Math.floor(count || 0));
+  storage.setItem(SKIPPERS_KEY, String(safeCount));
+  return true;
+}
+
+export function loadPurchaseTokens() {
+  const storage = getStorage();
+  if (!storage) {
+    return [];
+  }
+  const raw = storage.getItem(PURCHASE_TOKENS_KEY);
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return normalizeTokens(parsed);
+  } catch (error) {
+    return [];
+  }
+}
+
+export function savePurchaseTokens(tokens) {
+  const storage = getStorage();
+  if (!storage) {
+    return false;
+  }
+  const payload = normalizeTokens(tokens);
+  storage.setItem(PURCHASE_TOKENS_KEY, JSON.stringify(payload));
+  return true;
+}
+
+export function addPurchaseToken(token) {
+  if (!token) {
+    return false;
+  }
+  const current = loadPurchaseTokens();
+  if (current.includes(token)) {
+    return false;
+  }
+  current.push(token);
+  return savePurchaseTokens(current);
+}
+
 function sanitizeCount(value) {
   const count = Number.parseInt(value, 10);
   if (!Number.isFinite(count) || count < 0) {
@@ -179,4 +243,22 @@ function sanitizePercent(value, fallback) {
     return fallback;
   }
   return Math.max(0, Math.min(100, Math.round(parsed)));
+}
+
+function normalizeTokens(tokens) {
+  if (!Array.isArray(tokens)) {
+    return [];
+  }
+  const next = [];
+  for (const token of tokens) {
+    if (typeof token !== "string") {
+      continue;
+    }
+    const trimmed = token.trim();
+    if (!trimmed || next.includes(trimmed)) {
+      continue;
+    }
+    next.push(trimmed);
+  }
+  return next;
 }
