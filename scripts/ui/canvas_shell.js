@@ -590,17 +590,22 @@ function drawShopScreen(ctx, render, capsule) {
 
   const basePanelWidth = inner.width * 0.9;
   const basePanelHeight = inner.height * 0.78;
-  const panelWidth = Math.min(basePanelWidth * 1.2, inner.width + 80);
-  const panelHeight = Math.min(basePanelHeight * 1.3, inner.height + 80);
+  const sideBoost = clamp(inner.width * 0.1, 20, 30);
+  const upBoost = 80;
+  const panelWidth = Math.min(basePanelWidth * 1.2 + sideBoost * 2, inner.width + 80 + sideBoost * 2);
+  const panelHeight = Math.min(
+    basePanelHeight * 1.3 + upBoost * 2,
+    inner.height + 80 + upBoost * 2
+  );
   const panelX = clamp(
     inner.x + (inner.width - panelWidth) / 2,
-    inner.x - 40,
-    inner.x + inner.width - panelWidth + 40
+    inner.x - 40 - sideBoost,
+    inner.x + inner.width - panelWidth + 40 + sideBoost
   );
   const panelY = clamp(
-    inner.y + inner.height * 0.12,
-    inner.y - 40,
-    inner.y + inner.height - panelHeight + 40
+    inner.y + inner.height * 0.12 - upBoost,
+    inner.y - 40 - upBoost,
+    inner.y + inner.height - panelHeight + 40 + upBoost
   );
   const radius = Math.min(24, panelHeight * 0.08);
   drawPrismPanel(ctx, panelX, panelY, panelWidth, panelHeight, radius);
