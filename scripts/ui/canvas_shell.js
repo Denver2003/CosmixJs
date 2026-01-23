@@ -294,6 +294,9 @@ export function isShellHoverTarget(x, y, render) {
         return true;
       }
     }
+    if (layout?.account?.login && pointInRect(x, y, layout.account.login)) {
+      return true;
+    }
     if (layout?.account?.language && pointInRect(x, y, layout.account.language)) {
       return true;
     }

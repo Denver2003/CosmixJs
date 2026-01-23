@@ -129,6 +129,8 @@ const STRINGS = {
     "tutorial.bubble": "Click the bubble\nor press [W] / [↑]\nto get a bonus.",
     "tutorial.bubble_touch": "Tap the bubble\nto get\na bonus.",
     "tutorial.praise_bubble": "Great! You can pop bubbles! Enjoy.",
+    "auth.prompt_title": "Authorization",
+    "auth.prompt_body": "Want to play with friends? Log in.",
   },
   ru: {
     "app.title": "Падающие Блоки: Физическая Головоломка",
@@ -255,6 +257,8 @@ const STRINGS = {
     "tutorial.bubble": "Нажми ЛКМ на пузырь\nили [W] / [↑],\nчтобы получить бонус.",
     "tutorial.bubble_touch": "Нажми на пузырь,\nчтобы получить\nбонус.",
     "tutorial.praise_bubble": "Молодец! Ты умеешь лопать пузыри! Наслаждайся.",
+    "auth.prompt_title": "Авторизация",
+    "auth.prompt_body": "Хочешь играть с друзьями? Авторизуйся.",
   },
 };
 

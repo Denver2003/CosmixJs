@@ -84,15 +84,25 @@ export async function notifyGameReady() {
 }
 
 function selectProvider() {
-  if (typeof window !== "undefined" && window.YaGames?.init) {
+  if (isYandexEnvironment()) {
     return createYandexSdk(sdkCallbacks);
   }
   return createMockSdk();
 }
 
 function ensureYandexSdk() {
+  return isYandexEnvironment();
+}
+
+function isYandexEnvironment() {
   if (typeof window === "undefined") {
     return false;
   }
-  return Boolean(window.YaGames?.init);
+  if (!window.YaGames?.init) {
+    return false;
+  }
+  if (window.YandexGamesSDKEnvironment) {
+    return true;
+  }
+  return window.parent && window.parent !== window;
 }

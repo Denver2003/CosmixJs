@@ -29,7 +29,9 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
       player = null;
     }
     try {
-      if (typeof ysdk?.getLeaderboards === "function") {
+      if (ysdk?.leaderboards) {
+        leaderboards = ysdk.leaderboards;
+      } else if (typeof ysdk?.getLeaderboards === "function") {
         leaderboards = await ysdk.getLeaderboards();
       }
     } catch (error) {

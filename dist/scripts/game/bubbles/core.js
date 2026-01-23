@@ -12,7 +12,7 @@ import {
   GLASS_WIDTH,
 } from "../../config.js";
 import { SPAWN_BY_FIGURE_COUNT } from "./constants.js";
-import { rollBubbleReward } from "./rewards.js";
+import { registerBubbleRewardSpawn, rollBubbleReward } from "./rewards.js";
 import { drawBubbleIcon } from "./icons.js";
 import { getPercent } from "./utils.js";
 
@@ -61,6 +61,7 @@ export function spawnBubbleWithReward(state, getGlassRect, reward, source = "tut
 
 function createBubble(state, getGlassRect, reward, source) {
   const glass = getGlassRect();
+  const now = state.engine.timing.timestamp;
   const radius =
     BUBBLE_MIN_RADIUS + Math.random() * (BUBBLE_MAX_RADIUS - BUBBLE_MIN_RADIUS);
   const x = glass.left + radius + Math.random() * (GLASS_WIDTH - radius * 2);
@@ -70,6 +71,7 @@ function createBubble(state, getGlassRect, reward, source) {
     BUBBLE_FLOAT_SPEED_MIN +
     Math.random() * (BUBBLE_FLOAT_SPEED_MAX - BUBBLE_FLOAT_SPEED_MIN);
   const phase = Math.random() * Math.PI * 2;
+  registerBubbleRewardSpawn(state, reward, now);
   return {
     x,
     y,
@@ -77,7 +79,7 @@ function createBubble(state, getGlassRect, reward, source) {
     radius,
     speed,
     phase,
-    bornMs: state.engine.timing.timestamp,
+    bornMs: now,
     reward,
     source,
     tutorial: Boolean(reward?.tutorial),

@@ -11,6 +11,7 @@ import {
 import { getTopHudLayout } from "../../ui/hud.js";
 import { getGlassBorderRects, getGlassFrame } from "../../ui/layout.js";
 import { formatNumber } from "../../ui/format.js";
+import { t } from "../../ui/i18n.js";
 import { drawBubbleIcon } from "../bubbles.js";
 import { drawPauseButton } from "../pause_button.js";
 import { getLevelColor } from "../level_up_popup.js";
@@ -221,8 +222,9 @@ export function drawBottomProgress(state, ctx, getGlassRect) {
   ctx.fillStyle = "#ffffff";
   ctx.font = "15px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
+  const levelLabel = t("hud.level_short", { level: formatNumber(state.level) });
   ctx.fillText(
-    `LVL ${formatNumber(state.level)}`,
+    levelLabel,
     glassRect.left + GLASS_WIDTH / 2,
     barY - 32
   );

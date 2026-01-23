@@ -81,5 +81,6 @@ export function createMockSdk() {
       purchase: async () => null,
       consumePurchase: async () => false,
     },
+    gameReady: async () => true,
   };
 }

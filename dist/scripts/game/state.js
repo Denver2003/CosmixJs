@@ -95,6 +95,7 @@ export function createGameState() {
       touch: 0,
       gun: 0,
     },
+    bubbleConsumableDrops: 0,
     bonusInventory: {
       touch: bonusInventory.touch,
       gun: bonusInventory.gun,

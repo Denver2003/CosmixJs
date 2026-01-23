@@ -25,10 +25,10 @@ import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
 import * as bonusUi from "./game/bonus_ui.js";
 import { isBubbleHit } from "./game/bubbles.js";
 import { isPauseButtonHover } from "./game/lines/hud.js";
-import { initSdk, setSdkCallbacks } from "./sdk/index.js";
+import { initSdk, notifyGameReady, setSdkCallbacks } from "./sdk/index.js";
 import { loadCloudState, queueCloudSave } from "./cloud/index.js";
 import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
-import { requestAuthorizationOnce, syncSdkUser } from "./sdk/auth.js";
+import { syncSdkUser } from "./sdk/auth.js";
 import { loadIapCatalog, syncIapPurchases } from "./shop/iap.js";
 
 const { Engine, Render } = Matter;
@@ -83,8 +83,7 @@ async function bootstrap() {
     return;
   }
   initSdk().catch(() => {});
-  const authPromise = requestAuthorizationOnce();
-  const cloudPromise = authPromise.then(() => loadCloudState());
+  const cloudPromise = loadCloudState();
   viewport = createViewport(canvas);
   fitHeight = getFitViewHeight();
 
@@ -429,6 +428,9 @@ async function bootstrap() {
       document.body.style.cursor = "";
     }
   });
+  canvas.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
   if (shell) {
     window.shell = shell.router;
     window.shellPause = shell.pauseMenu;
@@ -446,6 +448,7 @@ async function bootstrap() {
       }
     },
   });
+  notifyGameReady().catch(() => {});
 
   window.addEventListener("resize", handleResize);
   window.visualViewport?.addEventListener("resize", handleResize);

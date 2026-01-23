@@ -294,6 +294,9 @@ export function isShellHoverTarget(x, y, render) {
         return true;
       }
     }
+    if (layout?.account?.login && pointInRect(x, y, layout.account.login)) {
+      return true;
+    }
     if (layout?.account?.language && pointInRect(x, y, layout.account.language)) {
       return true;
     }
@@ -477,12 +480,12 @@ function drawHomeScreen(ctx, render, capsule) {
 
   drawCapsuleTint(ctx, inner);
   drawProfileChip(ctx, inner.x - 40, profileY, chipHeight, user);
-  drawPrismTitle(ctx, inner, t("app.title"));
+  drawPrismTitle(ctx, inner, [t("app.title_line1"), t("app.title_line2")]);
   const chipWidth = clamp(inner.width * 0.26, 96, 170);
   const coinWidth = clamp(chipWidth * 1.3, chipWidth, inner.width + 80);
   const coinsX = inner.x + inner.width - coinWidth + 40;
   drawCoinChip(ctx, coinsX, profileY, coinWidth, chipHeight, coins);
-  const bestY = inner.y + inner.height * 0.15;
+  const bestY = inner.y + inner.height * 0.2;
   const bestWidth = clamp(chipWidth * 2, chipWidth, inner.width + 80);
   const bestX = inner.x + (inner.width - bestWidth) / 2;
   drawHudChip(ctx, bestX, bestY, bestWidth, chipHeight, t("label.best"), best);
@@ -496,8 +499,7 @@ function drawHomeScreen(ctx, render, capsule) {
     playY,
     playWidth,
     playHeight,
-    t("nav.play"),
-    getUiButtonImage("play")
+    t("nav.play")
   );
   const subtextSize = Math.max(10, Math.round(14 * getUiScale(inner)));
   drawSubtext(
@@ -2107,11 +2109,70 @@ function drawPrimaryButton(ctx, cx, cy, width, height, label) {
   const x = cx - width / 2;
   const y = cy - height / 2;
   const radius = Math.min(24, height / 2);
+  const nowMs =
+    typeof performance !== "undefined" && performance.now
+      ? performance.now()
+      : Date.now();
+  const timeSec = nowMs / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(timeSec * 0.8);
+  const glowAlpha = 0.2 + 0.2 * pulse;
+  const shimmerCycle = 5;
+  const shimmerWindow = 1.2;
+  const shimmerT = timeSec % shimmerCycle;
+  const shimmerProgress = shimmerT <= shimmerWindow ? shimmerT / shimmerWindow : -1;
+
+  const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+  gradient.addColorStop(0, "rgba(34, 210, 255, 0.55)");
+  gradient.addColorStop(1, "rgba(22, 118, 255, 0.75)");
+
   ctx.save();
-  ctx.fillStyle = "#5fe3ff";
+  ctx.shadowColor = "rgba(24, 170, 255, 0.35)";
+  ctx.shadowBlur = 22;
+  ctx.shadowOffsetY = 6;
   roundRect(ctx, x, y, width, height, radius);
+  ctx.fillStyle = gradient;
   ctx.fill();
-  ctx.fillStyle = "#0b0d12";
+  ctx.restore();
+
+  ctx.save();
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.clip();
+  const highlight = ctx.createLinearGradient(0, y, 0, y + height);
+  highlight.addColorStop(0, "rgba(225, 250, 255, 0.45)");
+  highlight.addColorStop(0.4, "rgba(130, 220, 255, 0.18)");
+  highlight.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = highlight;
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
+
+  if (shimmerProgress >= 0) {
+    const bandW = width * 0.35;
+    const bandX = x - bandW + (width + bandW * 2) * shimmerProgress;
+    ctx.save();
+    roundRect(ctx, x, y, width, height, radius);
+    ctx.clip();
+    const shimmer = ctx.createLinearGradient(bandX, y, bandX + bandW, y);
+    shimmer.addColorStop(0, "rgba(255, 255, 255, 0)");
+    shimmer.addColorStop(0.5, "rgba(255, 255, 255, 0.4)");
+    shimmer.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = shimmer;
+    ctx.globalAlpha = 0.8;
+    ctx.fillRect(bandX, y, bandW, height);
+    ctx.restore();
+  }
+
+  ctx.save();
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.strokeStyle = "rgba(120, 220, 255, 0.65)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.strokeStyle = `rgba(80, 210, 255, ${glowAlpha.toFixed(3)})`;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = "#03131f";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   drawFittedText(ctx, label, cx, cy, {
@@ -2142,11 +2203,28 @@ function drawPrismTitle(ctx, inner, title) {
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const size = Math.max(20, Math.round(inner.height * 0.06));
-  drawFittedText(ctx, title, inner.x + inner.width / 2, inner.y + inner.height * 0.09, {
-    size,
-    minSize: Math.max(12, size - 6),
-    maxWidth: inner.width - 16,
+  const lines = Array.isArray(title) ? title.filter(Boolean) : [title].filter(Boolean);
+  const size = Math.max(16, Math.round(inner.height * 0.048));
+  const secondScale = 0.7;
+  const lineSizes = lines.map((_, index) =>
+    index === 0 ? size : Math.max(10, Math.round(size * secondScale))
+  );
+  const centerY = inner.y + inner.height * 0.09;
+  const lineGap = Math.max(4, Math.round(size * 0.15));
+  const totalHeight =
+    lineSizes.reduce((sum, lineSize) => sum + lineSize, 0) +
+    (lines.length - 1) * lineGap;
+  let y = centerY - totalHeight / 2;
+  lines.forEach((line, index) => {
+    const lineSize = lineSizes[index];
+    y += lineSize / 2;
+    ctx.fillStyle = index === 0 ? "#ffffff" : "rgba(255, 255, 255, 0.7)";
+    drawFittedText(ctx, line, inner.x + inner.width / 2, y, {
+      size: lineSize,
+      minSize: Math.max(9, lineSize - 6),
+      maxWidth: inner.width - 16,
+    });
+    y += lineSize / 2 + lineGap;
   });
   ctx.restore();
 }
@@ -2289,44 +2367,81 @@ function getUiButtonImage(key) {
   return image;
 }
 
-function drawPrismPrimaryButton(ctx, cx, cy, width, height, label, sprite) {
+function drawPrismPrimaryButton(ctx, cx, cy, width, height, label) {
   const x = cx - width / 2;
   const y = cy - height / 2;
   const radius = Math.min(height / 2, 26);
+  const nowMs =
+    typeof performance !== "undefined" && performance.now
+      ? performance.now()
+      : Date.now();
+  const timeSec = nowMs / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(timeSec * 0.8);
+  const glowAlpha = 0.25 + 0.2 * pulse;
+  const shimmerCycle = 5;
+  const shimmerWindow = 1.2;
+  const shimmerT = timeSec % shimmerCycle;
+  const shimmerProgress = shimmerT <= shimmerWindow ? shimmerT / shimmerWindow : -1;
+
+  const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+  gradient.addColorStop(0, "rgba(38, 215, 255, 0.6)");
+  gradient.addColorStop(1, "rgba(24, 120, 255, 0.78)");
+
   ctx.save();
-  const hasSprite = sprite && sprite.complete && sprite.naturalWidth > 0;
-  if (!hasSprite) {
-    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-    gradient.addColorStop(0, "rgba(95, 227, 255, 0.45)");
-    gradient.addColorStop(1, "rgba(44, 150, 220, 0.6)");
+  ctx.shadowColor = "rgba(34, 185, 255, 0.4)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 6;
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.clip();
+  const highlight = ctx.createLinearGradient(0, y, 0, y + height);
+  highlight.addColorStop(0, "rgba(230, 250, 255, 0.5)");
+  highlight.addColorStop(0.4, "rgba(120, 220, 255, 0.2)");
+  highlight.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = highlight;
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
+
+  if (shimmerProgress >= 0) {
+    const bandW = width * 0.35;
+    const bandX = x - bandW + (width + bandW * 2) * shimmerProgress;
+    ctx.save();
     roundRect(ctx, x, y, width, height, radius);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    ctx.clip();
+    const shimmer = ctx.createLinearGradient(bandX, y, bandX + bandW, y);
+    shimmer.addColorStop(0, "rgba(255, 255, 255, 0)");
+    shimmer.addColorStop(0.5, "rgba(255, 255, 255, 0.38)");
+    shimmer.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = shimmer;
+    ctx.globalAlpha = 0.8;
+    ctx.fillRect(bandX, y, bandW, height);
+    ctx.restore();
   }
-  if (hasSprite) {
-    const targetHeight = height * 1.2;
-    const scale = targetHeight / sprite.naturalHeight;
-    const targetWidth = sprite.naturalWidth * scale;
-    ctx.drawImage(
-      sprite,
-      cx - targetWidth / 2,
-      cy - targetHeight / 2,
-      targetWidth,
-      targetHeight
-    );
-  } else {
-    ctx.fillStyle = "#081018";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    drawFittedText(ctx, label, cx, cy, {
-      size: Math.max(16, Math.round(height * 0.45)),
-      minSize: 12,
-      maxWidth: width - 16,
-    });
-  }
+
+  ctx.save();
+  roundRect(ctx, x, y, width, height, radius);
+  ctx.strokeStyle = "rgba(120, 220, 255, 0.65)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.strokeStyle = `rgba(80, 210, 255, ${glowAlpha.toFixed(3)})`;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = "#03131f";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  drawFittedText(ctx, label, cx, cy, {
+    size: Math.max(16, Math.round(height * 0.45)),
+    minSize: 12,
+    maxWidth: width - 16,
+  });
   ctx.restore();
   return { x, y, width, height };
 }

@@ -44,6 +44,23 @@ export async function requestAuthorization() {
   return ok;
 }
 
+export async function getAuthStatus() {
+  const sdk = await initSdk();
+  applySdkUser(sdk);
+  return {
+    sdkName: sdk?.name || "mock",
+    authorized: sdk?.player?.getMode?.() === "authorized",
+  };
+}
+
+export function isAuthPrompted() {
+  return getPromptFlag();
+}
+
+export function markAuthPrompted() {
+  setPromptFlag();
+}
+
 export async function syncSdkUser() {
   const sdk = await initSdk();
   applySdkUser(sdk);

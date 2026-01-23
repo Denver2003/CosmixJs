@@ -10,7 +10,7 @@ import { setupLeaderboardsScreen } from "./leaderboards.js";
 import { setupLoading } from "./loading.js";
 import { setupToast } from "./toast.js";
 import { createInterstitialOverlay } from "../ads/interstitial_overlay.js";
-import { subscribeLanguage } from "../ui/i18n.js";
+import { subscribeLanguage, t } from "../ui/i18n.js";
 import { getAppState, setAppState } from "./app_state.js";
 import {
   canContinueRun,
@@ -30,6 +30,12 @@ import { getShopProgress } from "../shop/progression.js";
 import { saveSkippers } from "../game/storage.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
+import {
+  getAuthStatus,
+  isAuthPrompted,
+  markAuthPrompted,
+  requestAuthorization,
+} from "../sdk/auth.js";
 
 export function createShell({ onPlay, onPause, onGameOver } = {}) {
   const shellRoot = document.getElementById("shell-root");
@@ -78,6 +84,26 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
   setupSettingsScreen(settingsScreen, router, confirmDialog);
   const leaderboardsScreen = screens.find((screen) => screen.dataset.screen === ScreenId.LEADERBOARDS);
   setupLeaderboardsScreen(leaderboardsScreen, router);
+
+  const showAuthPrompt = async () => {
+    if (isAuthPrompted()) {
+      return;
+    }
+    const status = await getAuthStatus();
+    if (status.sdkName !== "yandex" || status.authorized) {
+      return;
+    }
+    markAuthPrompted();
+    confirmDialog?.open({
+      titleText: t("auth.prompt_title"),
+      bodyText: t("auth.prompt_body"),
+      confirmLabel: t("button.login"),
+      cancelLabel: t("button.try_later"),
+      onConfirm: () => {
+        requestAuthorization();
+      },
+    });
+  };
 
   const runRetryFlow = async () => {
     resetContinueCount();
@@ -189,6 +215,7 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
     gameOverMenu.open = () => {
       updateContinueUi();
       originalOpen();
+      showAuthPrompt();
     };
   }
 

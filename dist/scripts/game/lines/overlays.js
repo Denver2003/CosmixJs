@@ -1,5 +1,6 @@
 import { hexToRgba } from "../utils.js";
 import { formatNumber } from "../../ui/format.js";
+import { t } from "../../ui/i18n.js";
 
 export function drawPauseOverlay(state, ctx, render) {
   if (!state.paused) {
@@ -28,7 +29,7 @@ export function drawPauseOverlay(state, ctx, render) {
   ctx.font = "14px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   const isAuto = state.pausedReason && state.pausedReason !== "manual";
-  const label = isAuto ? "PAUSED (AUTO)" : "PAUSED";
+  const label = isAuto ? t("pause.auto") : t("pause.title");
   ctx.fillText(label, centerX, centerY - 6);
   if (isAuto && state.pausedResumeMs) {
     const nowMs =
@@ -37,11 +38,12 @@ export function drawPauseOverlay(state, ctx, render) {
         : Date.now();
     const remaining = Math.max(0, state.pausedResumeMs - nowMs);
     const seconds = Math.ceil(remaining / 1000);
+    const secondsLabel = formatNumber(seconds);
     ctx.font = "12px \"RussoOne\", sans-serif";
-    ctx.fillText(`RESUMING IN ${formatNumber(seconds)}`, centerX, centerY + 12);
+    ctx.fillText(t("pause.resuming_in", { seconds: secondsLabel }), centerX, centerY + 12);
   } else {
     ctx.font = "12px \"RussoOne\", sans-serif";
-    ctx.fillText("PRESS P TO RESUME", centerX, centerY + 12);
+    ctx.fillText(t("pause.resume_hint"), centerX, centerY + 12);
   }
   ctx.restore();
 }

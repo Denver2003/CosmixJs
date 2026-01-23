@@ -21,6 +21,8 @@ const overlayState = {
     open: false,
     title: t("confirm.title"),
     body: "",
+    confirmLabel: null,
+    cancelLabel: null,
     onConfirm: null,
     onCancel: null,
   },
@@ -75,18 +77,24 @@ export function setupCanvasConfirmDialog() {
 export function openCanvasConfirmDialog({
   titleText,
   bodyText,
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
 } = {}) {
   overlayState.confirm.open = true;
   overlayState.confirm.title = titleText || t("confirm.title");
   overlayState.confirm.body = bodyText || "";
+  overlayState.confirm.confirmLabel = confirmLabel || null;
+  overlayState.confirm.cancelLabel = cancelLabel || null;
   overlayState.confirm.onConfirm = onConfirm || null;
   overlayState.confirm.onCancel = onCancel || null;
 }
 
 export function closeCanvasConfirmDialog() {
   overlayState.confirm.open = false;
+  overlayState.confirm.confirmLabel = null;
+  overlayState.confirm.cancelLabel = null;
   overlayState.confirm.onConfirm = null;
   overlayState.confirm.onCancel = null;
 }
@@ -647,13 +655,15 @@ function drawConfirmDialog(ctx, inner) {
 
   const buttonWidth = (panelWidth - pad * 2 - rowGap) / 2;
   const buttonsY = panelY + panelHeight - pad - buttonHeight;
+  const cancelLabel = overlayState.confirm.cancelLabel || t("button.cancel");
+  const confirmLabel = overlayState.confirm.confirmLabel || t("button.confirm");
   const cancel = drawModalButton(
     ctx,
     panelX + pad,
     buttonsY,
     buttonWidth,
     buttonHeight,
-    t("button.cancel")
+    cancelLabel
   );
   const confirm = drawModalButton(
     ctx,
@@ -661,7 +671,7 @@ function drawConfirmDialog(ctx, inner) {
     buttonsY,
     buttonWidth,
     buttonHeight,
-    t("button.confirm"),
+    confirmLabel,
     { primary: true }
   );
 

@@ -8,7 +8,7 @@ let sdkState = {
   error: null,
 };
 let initPromise = null;
-let loadPromise = null;
+let gameReadySent = false;
 let sdkCallbacks = {
   onPause: null,
   onResume: null,
@@ -66,53 +66,43 @@ export async function initSdk() {
   return initPromise;
 }
 
+export async function notifyGameReady() {
+  if (gameReadySent) {
+    return false;
+  }
+  gameReadySent = true;
+  const provider = await initSdk();
+  if (typeof provider?.gameReady === "function") {
+    try {
+      await provider.gameReady();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+  return false;
+}
+
 function selectProvider() {
-  if (typeof window !== "undefined" && window.YaGames?.init) {
+  if (isYandexEnvironment()) {
     return createYandexSdk(sdkCallbacks);
   }
   return createMockSdk();
 }
 
 function ensureYandexSdk() {
-  if (typeof window === "undefined") {
-    return Promise.resolve(false);
-  }
-  if (window.YaGames?.init) {
-    return Promise.resolve(true);
-  }
-  if (!shouldLoadYandexSdk()) {
-    return Promise.resolve(false);
-  }
-  if (loadPromise) {
-    return loadPromise;
-  }
-  loadPromise = new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://yandex.ru/games/sdk/v2";
-    script.async = true;
-    script.onload = () => resolve(Boolean(window.YaGames?.init));
-    script.onerror = () => resolve(false);
-    document.head.appendChild(script);
-  });
-  return loadPromise;
+  return isYandexEnvironment();
 }
 
-function shouldLoadYandexSdk() {
+function isYandexEnvironment() {
   if (typeof window === "undefined") {
     return false;
   }
-  const protocol = window.location?.protocol || "";
-  if (protocol === "file:") {
+  if (!window.YaGames?.init) {
     return false;
   }
-  const host = window.location?.hostname || "";
-  if (
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host === "0.0.0.0" ||
-    host.endsWith(".local")
-  ) {
-    return false;
+  if (window.YandexGamesSDKEnvironment) {
+    return true;
   }
-  return true;
+  return window.parent && window.parent !== window;
 }
