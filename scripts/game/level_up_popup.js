@@ -1,5 +1,6 @@
 import { GLASS_HEIGHT, GLASS_WIDTH } from "../config.js";
 import { formatNumber } from "../ui/format.js";
+import { t } from "../ui/i18n.js";
 import { hexToRgba } from "./utils.js";
 
 export function spawnLevelUpPopup(state, getGlassRect, level) {
@@ -41,6 +42,9 @@ export function drawLevelUpPopups(state, ctx) {
   const phase2 = 1000;
   const phase3 = 300;
   const total = delay + phase1 + phase2 + phase3;
+
+  const labelNew = t("level_up.new");
+  const labelLevel = t("level_up.label");
 
   ctx.save();
   ctx.textAlign = "center";
@@ -122,8 +126,8 @@ export function drawLevelUpPopups(state, ctx) {
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.fillStyle = hexToRgba("#ffffff", alpha);
     ctx.font = `${Math.round(baseFont * newScale)}px "RussoOne", sans-serif`;
-    ctx.strokeText("NEW", newPos.x, newPos.y);
-    ctx.fillText("NEW", newPos.x, newPos.y);
+    ctx.strokeText(labelNew, newPos.x, newPos.y);
+    ctx.fillText(labelNew, newPos.x, newPos.y);
     ctx.restore();
 
     ctx.save();
@@ -144,8 +148,8 @@ export function drawLevelUpPopups(state, ctx) {
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.fillStyle = hexToRgba("#ffffff", alpha);
     ctx.font = `${Math.round(baseFont * levelLabelScale)}px "RussoOne", sans-serif`;
-    ctx.strokeText("LEVEL", levelLabelPos.x, levelLabelPos.y);
-    ctx.fillText("LEVEL", levelLabelPos.x, levelLabelPos.y);
+    ctx.strokeText(labelLevel, levelLabelPos.x, levelLabelPos.y);
+    ctx.fillText(labelLevel, levelLabelPos.x, levelLabelPos.y);
     ctx.restore();
   }
   ctx.restore();

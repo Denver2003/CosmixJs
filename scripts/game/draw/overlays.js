@@ -1,5 +1,6 @@
 import { GLASS_WIDTH } from "../../config.js";
 import { formatNumber } from "../../ui/format.js";
+import { t } from "../../ui/i18n.js";
 
 export function drawTouchOverlay(state, ctx, getGlassRect, spawnY) {
   const now = state.engine.timing.timestamp;
@@ -26,10 +27,10 @@ export function drawTouchOverlay(state, ctx, getGlassRect, spawnY) {
   ctx.font = "16px \"RussoOne\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("TOUCH TO KILL", centerX, boxY + 18);
+  ctx.fillText(t("bonus.touch.title"), centerX, boxY + 18);
   ctx.font = "11px \"RussoOne\", sans-serif";
-  ctx.fillText("TAP FIGURES TO DESTROY", centerX, boxY + 34);
+  ctx.fillText(t("bonus.touch.body"), centerX, boxY + 34);
   ctx.font = "11px \"RussoOne\", sans-serif";
-  ctx.fillText(`ENDS IN ${formatNumber(seconds)}s`, centerX, boxY + 48);
+  ctx.fillText(t("bonus.touch.ends_in", { seconds: formatNumber(seconds) }), centerX, boxY + 48);
   ctx.restore();
 }

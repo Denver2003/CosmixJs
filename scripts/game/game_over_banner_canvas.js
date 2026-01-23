@@ -1,4 +1,5 @@
 import { GLASS_WIDTH } from "../config.js";
+import { t } from "../ui/i18n.js";
 
 export function drawGameOverBanner(ctx, state, render, getGlassRect, killY) {
   if (!state.gameOver) {
@@ -65,7 +66,7 @@ function drawBanner(ctx, width, height, timeSec) {
   ctx.stroke();
 
   const fontSize = Math.round(height * 0.46);
-  const text = "GAME OVER";
+  const text = t("game_over.title");
   ctx.font = `${fontSize}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";

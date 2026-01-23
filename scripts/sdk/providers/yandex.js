@@ -231,6 +231,18 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     return false;
   }
 
+  async function gameReady() {
+    if (!ysdk?.features?.LoadingAPI?.ready) {
+      return false;
+    }
+    try {
+      ysdk.features.LoadingAPI.ready();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   function isPaymentsAvailable() {
     return ready && payments && typeof payments.getCatalog === "function";
   }
@@ -358,5 +370,6 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
       purchase,
       consumePurchase,
     },
+    gameReady,
   };
 }

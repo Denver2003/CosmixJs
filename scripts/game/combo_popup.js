@@ -1,4 +1,5 @@
 import { GLASS_HEIGHT, GLASS_WIDTH } from "../config.js";
+import { t } from "../ui/i18n.js";
 
 const PHASE1_MS = 300;
 const PHASE2_MS = 1000;
@@ -21,15 +22,15 @@ function worldToScreen(state, x, y) {
 
 function getPopupLabel(multiplier) {
   if (multiplier >= 5) {
-    return "COSMO COMBO";
+    return t("combo.cosmo");
   }
   if (multiplier >= 4) {
-    return "MEGA COMBO";
+    return t("combo.mega");
   }
   if (multiplier >= 3) {
-    return "SUPER COMBO";
+    return t("combo.super");
   }
-  return "COMBO";
+  return t("combo.basic");
 }
 
 function getActivePopupTarget(state) {
