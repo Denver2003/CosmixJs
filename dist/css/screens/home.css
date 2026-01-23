@@ -1,0 +1,45 @@
+.home-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  gap: 16px;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.home-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.home-play {
+  border: none;
+  border-radius: 18px;
+  padding: 14px 44px;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--bg-deep);
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+
+.home-subtitle {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.home-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}

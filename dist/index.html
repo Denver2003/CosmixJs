@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Falling Blocks: Physics Puzzle</title>
+    <link rel="icon" href="./assets/appIcon/app_icon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./assets/appIcon/app_icon.png" />
+    <link rel="stylesheet" href="./css/base.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./css/components.css" />
+    <link rel="stylesheet" href="./css/screens/home.css" />
+    <link rel="stylesheet" href="./css/screens/shop.css" />
+    <link rel="stylesheet" href="./css/screens/settings.css" />
+    <link rel="stylesheet" href="./css/screens/leaderboards.css" />
+    <link rel="stylesheet" href="./css/overlays/confirm.css" />
+    <link rel="stylesheet" href="./css/overlays/pause.css" />
+    <link rel="stylesheet" href="./css/overlays/gameover.css" />
+    <link rel="stylesheet" href="./css/overlays/toast-loading.css" />
+    <link rel="stylesheet" href="./css/overlays/ads.css" />
+    <link rel="stylesheet" href="./css/debug.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="world"></canvas>
+      <div id="shell-root" class="ui-layer"></div>
+      <div id="overlay-root" class="ui-layer overlay-layer is-hidden"></div>
+    </div>
+    <script src="./lib/matter.min.js"></script>
+    <script type="module" src="./scripts/main.js"></script>
+  </body>
+</html>

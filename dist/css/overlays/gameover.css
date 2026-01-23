@@ -1,0 +1,43 @@
+.gameover-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 12, 16, 0.78);
+}
+
+.gameover-menu {
+  width: min(320px, 90vw);
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(18, 22, 28, 0.96);
+  border: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.gameover-menu__title {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f5f7fb;
+}
+
+.gameover-menu__buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.gameover-menu .icon-button {
+  color: #f5f7fb;
+}

@@ -1,0 +1,32 @@
+.confirm-overlay {
+  display: grid;
+  place-items: center;
+  background: rgba(10, 12, 16, 0.7);
+}
+
+.confirm-dialog {
+  width: min(320px, 90vw);
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(18, 22, 28, 0.95);
+  border: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.confirm-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.confirm-dialog__body {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
