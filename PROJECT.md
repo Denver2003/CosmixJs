@@ -50,15 +50,15 @@
 - **Combo system**: each collapse opens a 4s window for the next; streak-based multiplier capped at x5 (Combo/Super/Mega/Cosmo).
 - **Combo popup**: combo label bursts from collapse center to glass center, blinks on peak (1–4), then floats up and fades; stacked vertically when overlapping.
 - **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups.
-- **Bubbles**: spawn chance uses legacy tables (count+combo); rewards roll on spawn with per-type cooldowns; bubbles pop on tap with VFX + reward icons.
+- **Bubbles**: spawn chance uses legacy tables (count+combo); rewards roll on spawn with per-type cooldowns that start when the bubble appears; consumable bubble rewards (touch/gun) are capped per run (1 base, 2 at bonus upgrade level 4+, 3 at level 7); bubbles pop on tap with VFX + reward icons.
 - **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
   - Bonus icons show key hints (`1`/`2`) when keyboard control is active and the bonus is ready.
 - **Bonus persistence**: consumable inventory is saved on game over and loaded on the next session.
 - **Shop & progression**: upgrades for score/coin multiplier, bonus drop chance, and bonus upgrades (localStorage). Shop allows purchasing consumable bonuses with coins; real-money items are mocked (remove ads, coin pack) and applied immediately.
 - **Ads (mock)**: rewarded continue on Game Over (up to 3 per run) clears 70/50/30% of shapes with 2.5s kill-line grace; interstitials show only on Retry with 3-session warmup and 180s cooldown (disabled by remove ads); shop rewarded grants coins with 5/hour limit and 2 min cooldown (reward scales by total spent coins and MoneyCoef, rounded to 50).
-- **Bonus upgrades**: bonus drop adds to bubble spawn chance; upgrade level 4 enables bubble spawn on drop (5%); level 5 reduces consumable cooldown to 2 min; level 6 forces instant rewards on drop bubbles; level 7 increases consumable rewards to x5 and boosts their weights.
+- **Bonus upgrades**: bonus drop adds to bubble spawn chance; upgrade level 4 enables bubble spawn on drop (5%); level 5 reduces consumable cooldown to 3 min; level 6 forces instant rewards on drop bubbles; level 7 increases consumable rewards to x5 and boosts their weights.
 - **Auto-fit viewport**: fit-to-height scaling with top (3u) and bottom (wall thickness) reserves; letterbox allowed; iOS-friendly viewport handling.
-- **Pause mode**: `P` toggles pause; auto-pause on resize and loss of focus with 3s countdown to resume.
+- **Pause mode**: `P` toggles pause; auto-pause on resize (3s) and loss of focus (1s) before resuming.
 - **Runner safety**: large idle gaps clamp delta steps and reset accumulator to prevent time catch-up speedups after long inactivity.
 - **State machine**: gameplay modes are explicit (shell/gameplay/paused/gameover) to prevent desync; leaving game screens moves to shell mode and stops the runner; pause/game over overlays sync with state.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
@@ -78,7 +78,7 @@
 - **Hover cursor**: canvas hover shows `ew-resize` over the glass in active play, `pointer` over bubbles/instant bonuses/pause/touch-to-kill targets, and `pointer` on shell/overlay buttons.
 - **VFX text**: animated popups (score/coins/combo/level/cosmo) use a white 2px stroke and ~50% larger text for better readability.
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
-- **Startup preload**: first-run gate loads background, UI/shape sprites, scaled HUD/bonus icons, fonts, audio, and the pause icon; shows a canvas loading bar centered on the glass, then initializes the game after assets are ready.
+- **Startup preload**: first-run gate loads background, glass frame, UI/shape sprites, scaled HUD/bonus icons, fonts, audio, and the pause icon; shows a canvas loading bar centered on the glass, then initializes the game after assets are ready.
 
 ## File layout
 

@@ -21,11 +21,9 @@ export function applyBubbleReward(state, reward, getGlassRect) {
   if (!reward) {
     return;
   }
-  const now = state.engine.timing.timestamp;
   switch (reward.type) {
     case "coins":
       state.coins += reward.amount;
-      state.bubbleRewardCooldowns.coins = now + BUBBLE_COOLDOWN_COINS_MS;
       playSfx("bonus_coin_pick");
       if (state.render) {
         spawnRewardFloater(
@@ -57,33 +55,67 @@ export function applyBubbleReward(state, reward, getGlassRect) {
               : "#4aa7ff"
         );
       }
-      if (reward.subtype === "points1") {
-        state.bubbleRewardCooldowns.points1 = now + BUBBLE_COOLDOWN_POINTS1_MS;
-      } else if (reward.subtype === "points2") {
-        state.bubbleRewardCooldowns.points2 = now + BUBBLE_COOLDOWN_POINTS2_MS;
-      } else if (reward.subtype === "points3") {
-        state.bubbleRewardCooldowns.points3 = now + BUBBLE_COOLDOWN_POINTS3_MS;
-      }
       break;
     case "instant":
       if (reward.subtype === "hail") {
-        state.bubbleRewardCooldowns.hail = now + BUBBLE_COOLDOWN_HAIL_MS;
         triggerHail(state, getGlassRect);
       } else if (reward.subtype === "grenade") {
-        state.bubbleRewardCooldowns.grenade = now + BUBBLE_COOLDOWN_GRENADE_MS;
         triggerGrenade(state, reward.color, getGlassRect);
       }
       break;
     case "consumable":
       if (reward.subtype === "touch") {
-        state.bubbleRewardCooldowns.touch = now + BUBBLE_COOLDOWN_TOUCH_MS;
         state.bonusInventory.touch += reward.amount || 1;
         playSfx("bonus_instant_pick");
       } else if (reward.subtype === "machine") {
-        state.bubbleRewardCooldowns.gun = now + BUBBLE_COOLDOWN_GUN_MS;
         state.bonusInventory.gun += reward.amount || 1;
         playSfx("bonus_instant_pick");
       }
+      break;
+    default:
+      break;
+  }
+}
+
+export function registerBubbleRewardSpawn(state, reward, nowMs) {
+  if (!state || !reward) {
+    return;
+  }
+  const now = Number.isFinite(nowMs)
+    ? nowMs
+    : state.engine?.timing?.timestamp || 0;
+  switch (reward.type) {
+    case "coins":
+      state.bubbleRewardCooldowns.coins = now + BUBBLE_COOLDOWN_COINS_MS;
+      break;
+    case "points": {
+      const subtype = reward.subtype || "points1";
+      if (subtype === "points1") {
+        state.bubbleRewardCooldowns.points1 = now + BUBBLE_COOLDOWN_POINTS1_MS;
+      } else if (subtype === "points2") {
+        state.bubbleRewardCooldowns.points2 = now + BUBBLE_COOLDOWN_POINTS2_MS;
+      } else if (subtype === "points3") {
+        state.bubbleRewardCooldowns.points3 = now + BUBBLE_COOLDOWN_POINTS3_MS;
+      }
+      break;
+    }
+    case "instant":
+      if (reward.subtype === "hail") {
+        state.bubbleRewardCooldowns.hail = now + BUBBLE_COOLDOWN_HAIL_MS;
+      } else if (reward.subtype === "grenade") {
+        state.bubbleRewardCooldowns.grenade = now + BUBBLE_COOLDOWN_GRENADE_MS;
+      }
+      break;
+    case "consumable":
+      if (reward.subtype === "touch") {
+        state.bubbleRewardCooldowns.touch = now + BUBBLE_COOLDOWN_TOUCH_MS;
+      } else if (reward.subtype === "machine") {
+        state.bubbleRewardCooldowns.gun = now + BUBBLE_COOLDOWN_GUN_MS;
+      }
+      state.bubbleConsumableDrops = Math.max(
+        0,
+        Math.floor(state.bubbleConsumableDrops || 0)
+      ) + 1;
       break;
     default:
       break;
@@ -98,6 +130,12 @@ export function rollBubbleReward(state, options = {}) {
   const moneyCoef = state.moneyCoef || 1;
   const bonusUpgradeLevel = state.bonusUpgradeLevel || 0;
   const source = options?.source || "collapse";
+  const consumableLimit = getBubbleConsumableLimit(bonusUpgradeLevel);
+  const consumableDrops = Math.max(
+    0,
+    Math.floor(state.bubbleConsumableDrops || 0)
+  );
+  const canSpawnConsumable = consumableDrops < consumableLimit;
 
   const entries = [];
   const addEntry = (key, type, subtype) => {
@@ -126,10 +164,10 @@ export function rollBubbleReward(state, options = {}) {
   if (now >= (state.bubbleRewardCooldowns.grenade || 0)) {
     addEntry("grenade", "instant", "grenade");
   }
-  if (now >= (state.bubbleRewardCooldowns.touch || 0)) {
+  if (canSpawnConsumable && now >= (state.bubbleRewardCooldowns.touch || 0)) {
     addEntry("touch", "consumable", "touch");
   }
-  if (now >= (state.bubbleRewardCooldowns.gun || 0)) {
+  if (canSpawnConsumable && now >= (state.bubbleRewardCooldowns.gun || 0)) {
     addEntry("gun", "consumable", "machine");
   }
 
@@ -244,4 +282,14 @@ function applyBonusUpgradeModifiers(entries, bonusUpgradeLevel) {
       }
     }
   }
+}
+
+function getBubbleConsumableLimit(bonusUpgradeLevel) {
+  if (bonusUpgradeLevel >= 7) {
+    return 3;
+  }
+  if (bonusUpgradeLevel >= 4) {
+    return 2;
+  }
+  return 1;
 }

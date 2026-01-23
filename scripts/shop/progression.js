@@ -76,7 +76,7 @@ export function applyShopToGameState(state, progress = shopProgress) {
   state.scoreCoef = SCORE_MULTIPLIER_LEVELS[scoreLevel] ?? 1;
   state.bonusDropChance = BONUS_DROP_LEVELS[bonusDropLevel] ?? 0;
   state.bonusUpgradeLevel = bonusUpgradeLevel;
-  state.bonusCooldownMs = bonusUpgradeLevel >= 5 ? 120000 : BONUS_COOLDOWN_MS;
+  state.bonusCooldownMs = bonusUpgradeLevel >= 5 ? 180000 : BONUS_COOLDOWN_MS;
   state.removeAds = Boolean(progress?.removeAds);
   return state;
 }
