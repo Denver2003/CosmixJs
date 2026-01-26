@@ -13,6 +13,7 @@ import { buildCloudPayload } from "../cloud/state.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { getShopProgress, updateShopProgress } from "./progression.js";
 import { IAP_PRODUCTS, getIapProductById, getIapProductByKey } from "./iap_config.js";
+import { syncStickyBanner } from "../ads/index.js";
 
 let catalogPromise = null;
 
@@ -213,6 +214,7 @@ function applyShopStateToGame() {
     return;
   }
   const progress = getShopProgress();
+  syncStickyBanner(progress?.removeAds);
   const coins = loadCoins();
   const inventory = loadBonusInventory();
   if (typeof window.__applyShopState === "function") {

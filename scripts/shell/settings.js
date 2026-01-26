@@ -33,7 +33,11 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   const audioSection = createSection(t("label.audio"), [musicRow, sfxRow, muteRow]);
 
   const statusRow = createInfoRow(t("label.status"), t("user.guest"));
-  const loginRow = createActionRow(t("label.login"), t("button.login"));
+  const loginRow = createActionRowWithDesc(
+    t("label.login"),
+    resolveLoginNoteText(),
+    t("button.login")
+  );
   const loginButton = loginRow.querySelector("button");
   if (loginButton) {
     loginButton.addEventListener("click", () => {
@@ -46,7 +50,11 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     const next = getLanguage() === "en" ? "ru" : "en";
     setLanguage(next);
   });
-  const accountSection = createSection(t("label.account"), [statusRow, loginRow, languageRow]);
+  const accountSection = createSection(t("label.account"), [
+    statusRow,
+    loginRow,
+    languageRow,
+  ]);
 
   const resetTutorialButton = createActionRow(t("label.reset_tutorial"), t("button.reset"));
   resetTutorialButton.querySelector("button").addEventListener("click", () => {
@@ -82,8 +90,9 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
   const muteLabel = muteRow.querySelector(".settings-row__label");
   const statusLabel = statusRow.querySelector(".settings-row__label");
   const statusValue = statusRow.querySelector(".settings-row__control");
-  const loginLabel = loginRow.querySelector(".settings-row__label");
+  const loginLabel = loginRow.querySelector(".settings-row__label-title");
   const loginButtonRef = loginRow.querySelector("button");
+  const loginNoteLabel = loginRow.querySelector(".settings-row__label-desc");
   const languageLabel = languageRow.querySelector(".settings-row__label");
   const resetTutorialLabel = resetTutorialButton.querySelector(".settings-row__label");
   const resetTutorialAction = resetTutorialButton.querySelector("button");
@@ -104,6 +113,7 @@ export function setupSettingsScreen(screen, router, confirmDialog) {
     if (statusValue) statusValue.textContent = resolveUserLabel(currentUserName);
     if (loginLabel) loginLabel.textContent = t("label.login");
     if (loginButtonRef) loginButtonRef.textContent = t("button.login");
+    if (loginNoteLabel) loginNoteLabel.textContent = resolveLoginNoteText();
     if (languageLabel) languageLabel.textContent = t("label.language");
     if (languageButton) languageButton.textContent = getLanguage().toUpperCase();
     if (resetTutorialLabel) resetTutorialLabel.textContent = t("label.reset_tutorial");
@@ -132,6 +142,14 @@ function resolveUserLabel(value) {
     return t("user.guest");
   }
   return value;
+}
+
+function resolveLoginNoteText() {
+  const note = t("label.login_note");
+  if (note && note !== "label.login_note") {
+    return note;
+  }
+  return "Play with friends and sync progress on any device.";
 }
 
 function createSection(title, rows) {
@@ -203,4 +221,29 @@ function createActionRow(label, actionLabel) {
   button.className = "icon-button";
   button.textContent = actionLabel;
   return createRow(label, button);
+}
+
+function createActionRowWithDesc(label, description, actionLabel) {
+  const row = document.createElement("div");
+  row.className = "settings-row";
+  const labelWrap = document.createElement("div");
+  labelWrap.className = "settings-row__label settings-row__label--stack";
+  const title = document.createElement("div");
+  title.className = "settings-row__label-title";
+  title.textContent = label;
+  const desc = document.createElement("div");
+  desc.className = "settings-row__label-desc";
+  desc.textContent = description;
+  labelWrap.appendChild(title);
+  labelWrap.appendChild(desc);
+  const control = document.createElement("div");
+  control.className = "settings-row__control";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "icon-button";
+  button.textContent = actionLabel;
+  control.appendChild(button);
+  row.appendChild(labelWrap);
+  row.appendChild(control);
+  return row;
 }

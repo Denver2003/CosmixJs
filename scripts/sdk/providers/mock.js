@@ -51,6 +51,8 @@ export function createMockSdk() {
       isAvailable: () => ready && !adLock,
       showInterstitial: async () => runAdFlow(3000),
       showRewarded: async () => runAdFlow(1200),
+      showBanner: async () => true,
+      hideBanner: async () => true,
     },
     leaderboards: {
       submitScore: async () => true,

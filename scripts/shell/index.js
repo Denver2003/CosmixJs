@@ -21,15 +21,12 @@ import {
   incrementContinueCount,
   incrementSessionCount,
   markInterstitialShown,
-  playRewarded,
+  playRewardedOrSkipper,
   playInterstitial,
   resetContinueCount,
 } from "../ads/index.js";
 import { applyContinueCleanup } from "../game/continue_cleanup.js";
 import { getShopProgress } from "../shop/progression.js";
-import { saveSkippers } from "../game/storage.js";
-import { queueCloudSave } from "../cloud/index.js";
-import { buildCloudPayload } from "../cloud/state.js";
 import {
   getAuthStatus,
   isAuthPrompted,
@@ -145,18 +142,9 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
         });
         return;
       }
-      const appState = getAppState();
-      const skippers = appState.skippers ?? 0;
-      if (skippers > 0) {
-        const nextSkippers = Math.max(0, Math.floor(skippers - 1));
-        saveSkippers(nextSkippers);
-        setAppState({ skippers: nextSkippers });
-        queueCloudSave(buildCloudPayload());
-      } else {
-        const ok = await playRewarded();
-        if (!ok) {
-          return;
-        }
+      const result = await playRewardedOrSkipper();
+      if (!result.ok) {
+        return;
       }
       const percent = getContinuePercent();
       incrementContinueCount();

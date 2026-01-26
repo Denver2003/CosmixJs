@@ -21,7 +21,11 @@ import {
   UPGRADE_TYPES,
   getUpgradePrice,
 } from "../shop/model.js";
-import { applyShopReward, getShopRewardStatus, playRewarded } from "../ads/index.js";
+import {
+  applyShopReward,
+  getShopRewardStatus,
+  playRewardedOrSkipper,
+} from "../ads/index.js";
 import {
   getMaxUpgradeLevel,
   getShopProgress,
@@ -974,8 +978,8 @@ function handleShopAction(action) {
     if (!status.available) {
       return;
     }
-    playRewarded().then((ok) => {
-      if (!ok) {
+    playRewardedOrSkipper().then((result) => {
+      if (!result.ok) {
         return;
       }
       const now = Date.now();
@@ -1048,8 +1052,9 @@ function drawSettingsScreen(ctx, render, capsule) {
       {
         key: "login",
         label: t("label.login"),
+        description: resolveLoginNoteText(),
         value: t("button.login"),
-        type: "action",
+        type: "action_desc",
       },
     ];
     if (showLanguage) {
@@ -1067,7 +1072,7 @@ function drawSettingsScreen(ctx, render, capsule) {
       width - pad * 2,
       t("label.account"),
       accountRows,
-      { capture: true }
+      { capture: true, rowHeight: 56 }
     );
     const dataSection = drawSettingsSection(
       ctx,
@@ -1179,8 +1184,9 @@ function drawSettingsScreen(ctx, render, capsule) {
     {
       key: "login",
       label: t("label.login"),
+      description: resolveLoginNoteText(),
       value: t("button.login"),
-      type: "action",
+      type: "action_desc",
     },
   ];
   if (showLanguage) {
@@ -1191,6 +1197,7 @@ function drawSettingsScreen(ctx, render, capsule) {
       type: "action",
     });
   }
+  const accountRowHeight = Math.max(rowHeight, Math.round(rowHeight * 1.5));
   const accountSection = drawSettingsSection(
     ctx,
     panelX + pad,
@@ -1198,7 +1205,7 @@ function drawSettingsScreen(ctx, render, capsule) {
     sectionWidth,
     t("label.account"),
     accountRows,
-    { capture: true, rowHeight, headerHeight: headerSize, scale, prism: true }
+    { capture: true, rowHeight: accountRowHeight, headerHeight: headerSize, scale, prism: true }
   );
   const dataSection = drawSettingsSection(
     ctx,
@@ -1575,6 +1582,39 @@ function drawSettingsRow(ctx, x, y, width, row, options = {}) {
       size: labelSize,
       minSize: 8,
       maxWidth: Math.max(40, width - actionWidth - 24),
+    });
+    controlRect = drawActionButton(
+      ctx,
+      x + width - actionWidth - 12,
+      y + (rowHeight - actionHeight) / 2,
+      actionWidth,
+      actionHeight,
+      row.value,
+      row.danger
+    );
+  } else if (row.type === "action_desc") {
+    const actionWidth = Math.max(74, Math.round(100 * scale));
+    const actionHeight = Math.max(20, Math.round(rowHeight * 0.6));
+    const labelMaxWidth = Math.max(40, width - actionWidth - 24);
+    const titleY = y + rowHeight * 0.38;
+    const descY = y + rowHeight * 0.62;
+    ctx.fillStyle = "#ffffff";
+    drawFittedText(ctx, row.label, labelX, titleY, {
+      size: labelSize,
+      minSize: 8,
+      maxWidth: labelMaxWidth,
+    });
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    const descText = row.description || "";
+    const descSize = Math.max(8, Math.round(10 * scale));
+    const descLines = String(descText).split("\n");
+    const descLineHeight = Math.max(10, Math.round(descSize * 1.2));
+    descLines.forEach((line, index) => {
+      drawFittedText(ctx, line, labelX, descY + index * descLineHeight, {
+        size: descSize,
+        minSize: 8,
+        maxWidth: labelMaxWidth,
+      });
     });
     controlRect = drawActionButton(
       ctx,
@@ -2516,6 +2556,14 @@ function resolveUserLabel(value) {
     return t("user.guest");
   }
   return value;
+}
+
+function resolveLoginNoteText() {
+  const note = t("label.login_note");
+  if (note && note !== "label.login_note") {
+    return note;
+  }
+  return "Play with friends and sync progress on any device.";
 }
 
 function formatValue(value) {

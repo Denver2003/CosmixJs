@@ -144,6 +144,54 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
     });
   }
 
+  function resolveBannerFn(names) {
+    for (const name of names) {
+      const fn = ysdk?.adv?.[name];
+      if (typeof fn === "function") {
+        return fn.bind(ysdk.adv);
+      }
+    }
+    return null;
+  }
+
+  async function showBanner() {
+    if (!ready || !ysdk?.adv) {
+      return false;
+    }
+    const fn = resolveBannerFn(["showBannerAdv", "showBannerAd", "showBanner"]);
+    if (!fn) {
+      return false;
+    }
+    try {
+      const result = fn();
+      if (result?.then) {
+        await result;
+      }
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async function hideBanner() {
+    if (!ready || !ysdk?.adv) {
+      return false;
+    }
+    const fn = resolveBannerFn(["hideBannerAdv", "hideBannerAd", "hideBanner"]);
+    if (!fn) {
+      return false;
+    }
+    try {
+      const result = fn();
+      if (result?.then) {
+        await result;
+      }
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   async function submitScore(leaderboardId, score) {
     if (!ready || !leaderboards || !leaderboardId) {
       return false;
@@ -349,6 +397,8 @@ export function createYandexSdk({ onPause, onResume, onLanguage } = {}) {
       isAvailable: isAdAvailable,
       showInterstitial,
       showRewarded,
+      showBanner,
+      hideBanner,
     },
     leaderboards: {
       submitScore,

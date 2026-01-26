@@ -3,6 +3,11 @@ const DEFAULT_LANGUAGE = "en";
 const SUPPORTED_LANGUAGES = ["en", "ru"];
 const listeners = new Set();
 
+const LOGIN_NOTE_TEXT = {
+  en: "Play with friends and sync progress on any device.",
+  ru: "Чтобы играть с друзьями\nи сохранять прогресс на любом устройстве.",
+};
+
 const STRINGS = {
   en: {
     "app.title": "Falling Blocks: Physics Puzzle",
@@ -31,6 +36,7 @@ const STRINGS = {
     "label.mute_caps": "MUTE",
     "label.status": "Status",
     "label.login": "Login",
+    "label.login_note": LOGIN_NOTE_TEXT.en,
     "label.account": "Account",
     "label.data": "Data",
     "label.reset_progress": "Reset progress",
@@ -159,6 +165,7 @@ const STRINGS = {
     "label.mute_caps": "БЕЗ ЗВУКА",
     "label.status": "Статус",
     "label.login": "Войти",
+    "label.login_note": LOGIN_NOTE_TEXT.ru,
     "label.account": "Аккаунт",
     "label.data": "Данные",
     "label.reset_progress": "Сброс прогресса",
@@ -304,6 +311,14 @@ export function t(key, params = {}) {
     return key;
   }
   return interpolate(value, params);
+}
+
+export function getLoginNoteText() {
+  const value = t("label.login_note");
+  if (value !== "label.login_note") {
+    return value;
+  }
+  return LOGIN_NOTE_TEXT[currentLanguage] || LOGIN_NOTE_TEXT[DEFAULT_LANGUAGE];
 }
 
 function interpolate(text, params) {

@@ -19,7 +19,12 @@ import {
 } from "./ui/canvas_overlays.js";
 import { setLanguage, subscribeLanguage, t } from "./ui/i18n.js";
 import { getCapsuleLayout } from "./ui/layout.js";
-import { incrementSessionCount, resetContinueCount, setAdCallbacks } from "./ads/index.js";
+import {
+  incrementSessionCount,
+  resetContinueCount,
+  setAdCallbacks,
+  syncStickyBanner,
+} from "./ads/index.js";
 import { preloadAssets } from "./preload.js";
 import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
 import * as bonusUi from "./game/bonus_ui.js";
@@ -30,6 +35,7 @@ import { loadCloudState, queueCloudSave } from "./cloud/index.js";
 import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
 import { syncSdkUser } from "./sdk/auth.js";
 import { loadIapCatalog, syncIapPurchases } from "./shop/iap.js";
+import { getShopProgress } from "./shop/progression.js";
 
 const { Engine, Render } = Matter;
 
@@ -95,6 +101,7 @@ async function bootstrap() {
   const cloudPayload = await cloudPromise;
   applyCloudPayload(cloudPayload);
   queueCloudSave(buildCloudPayload());
+  syncStickyBanner(getShopProgress()?.removeAds);
   syncSdkUser();
   syncIapPurchases();
   loadIapCatalog();
