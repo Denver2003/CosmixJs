@@ -1,3 +1,5 @@
+import { trackOverlayOpen, trackScreenOpen, trackShopOpen } from "../analytics/events.js";
+
 export class ScreenRouter {
   constructor({
     shellRoot,
@@ -61,6 +63,10 @@ export class ScreenRouter {
     this.activeScreen = target;
     const hideShell = target === "game" && !this.keepShellOnGame;
     this.shellRoot.classList.toggle("is-hidden", hideShell);
+    trackScreenOpen(target);
+    if (target === "shop") {
+      trackShopOpen();
+    }
   }
 
   pushOverlay(id) {
@@ -71,6 +77,7 @@ export class ScreenRouter {
     overlay.style.display = "block";
     this.overlayRoot.classList.remove("is-hidden");
     this.overlayStack.push(overlay);
+    trackOverlayOpen(id);
   }
 
   popOverlay() {

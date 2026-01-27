@@ -58,6 +58,8 @@ export function dropActiveBody(state, getSpawnPoint, getGlassRect) {
   state.aimGuideFadeOutStartMs = state.engine.timing.timestamp;
   state.aimGuideFadeInStartMs = 0;
 
+  state.totalDrops = Math.max(0, Math.floor(state.totalDrops || 0)) + 1;
+
   setBodyScale(state.waitingBody, 1);
   removePreview(state);
   state.waitingBody.plugin.stopAtSpawn = false;

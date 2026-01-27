@@ -1,4 +1,5 @@
 import { getSdk } from "../sdk/index.js";
+import { trackAdResult, trackAdShow } from "../analytics/events.js";
 
 let adOpenCallback = null;
 let adCloseCallback = null;
@@ -13,8 +14,10 @@ export function canShowAds() {
   return Boolean(sdk?.ads?.isAvailable?.());
 }
 
-export async function playInterstitial() {
+export async function playInterstitial({ placement } = {}) {
+  trackAdShow({ adType: "interstitial", placement });
   if (!canShowAds()) {
+    trackAdResult({ adType: "interstitial", placement, outcome: "unavailable" });
     return false;
   }
   const sdk = getSdk();
@@ -26,11 +29,18 @@ export async function playInterstitial() {
     ok = false;
   }
   adCloseCallback?.();
+  trackAdResult({
+    adType: "interstitial",
+    placement,
+    outcome: ok ? "success" : "fail",
+  });
   return Boolean(ok);
 }
 
-export async function playRewarded() {
+export async function playRewarded({ placement } = {}) {
+  trackAdShow({ adType: "rewarded", placement });
   if (!canShowAds()) {
+    trackAdResult({ adType: "rewarded", placement, outcome: "unavailable" });
     return false;
   }
   const sdk = getSdk();
@@ -42,5 +52,10 @@ export async function playRewarded() {
     ok = false;
   }
   adCloseCallback?.();
+  trackAdResult({
+    adType: "rewarded",
+    placement,
+    outcome: ok ? "success" : "fail",
+  });
   return Boolean(ok);
 }

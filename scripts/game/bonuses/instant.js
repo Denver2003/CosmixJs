@@ -17,6 +17,7 @@ import { spawnScoreParticles } from "../score_particles.js";
 import { spawnComboPopup } from "../combo_popup.js";
 import { spawnLevelUpPopup } from "../level_up_popup.js";
 import { playSfx } from "../../audio/index.js";
+import { trackLevelUp } from "../../analytics/events.js";
 
 const { Body, Composite, World } = Matter;
 
@@ -104,6 +105,7 @@ export function triggerGrenade(state, targetColor, getGlassRect) {
       spawnLevelUpPopup(state, getGlassRect, state.level);
     }
     playSfx("level_up");
+    trackLevelUp({ runId: state.runId, level: state.level });
   }
   return removedCount;
 }

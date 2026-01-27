@@ -15,6 +15,7 @@ import { spawnComboPopup } from "../combo_popup.js";
 import { spawnLevelUpPopup } from "../level_up_popup.js";
 import { buildGunRays } from "./gun_marks.js";
 import { playSfx } from "../../audio/index.js";
+import { trackLevelUp } from "../../analytics/events.js";
 
 const { Composite } = Matter;
 
@@ -194,6 +195,7 @@ function triggerComponentRemoval(state, bodies, color, getGlassRect) {
     if (getGlassRect) {
       spawnLevelUpPopup(state, getGlassRect, state.level);
     }
+    trackLevelUp({ runId: state.runId, level: state.level });
   }
 }
 

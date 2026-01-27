@@ -54,6 +54,10 @@ export const IMPACT_FLASH_ALPHA = 0.85;
 export const PREVIEW_FADE_MS = 350;
 export const PREVIEW_DELAY_MS = 200;
 export const DEBUG_OVERLAY = true;
+export const ANALYTICS_PROVIDER = "appmetrica";
+export const APP_METRICA_APP_ID = "6248974";
+export const APP_METRICA_SCRIPT_URL =
+  "https://cdn.appmetrica.yandex.net/sdk/web/appmetrica.js";
 
 export const COSMO_ENERGY_GAIN = 4;
 export const COSMO_ENERGY_DECAY = 2;

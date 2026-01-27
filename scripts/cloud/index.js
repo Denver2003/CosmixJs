@@ -1,5 +1,6 @@
 import { CLOUD_SAVE_THROTTLE_MS } from "../config.js";
 import { initSdk } from "../sdk/index.js";
+import { trackCloudSaveFail, trackCloudSaveSuccess } from "../analytics/events.js";
 
 let pendingPayload = null;
 let lastSaveAttemptAt = 0;
@@ -55,6 +56,7 @@ export async function flushCloudSave({ ignoreThrottle = false } = {}) {
     const sdk = await initSdk();
     if (!sdk?.cloud?.save) {
       pendingPayload = payload;
+      trackCloudSaveFail("unavailable");
       return false;
     }
     let ok = false;
@@ -62,6 +64,11 @@ export async function flushCloudSave({ ignoreThrottle = false } = {}) {
       ok = await sdk.cloud.save(payload);
     } catch (error) {
       ok = false;
+    }
+    if (ok) {
+      trackCloudSaveSuccess();
+    } else {
+      trackCloudSaveFail("error");
     }
     if (!ok && !pendingPayload) {
       pendingPayload = payload;

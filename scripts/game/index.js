@@ -30,6 +30,8 @@ import { playMusic, playSfx, preloadAudio } from "../audio/index.js";
 import { submitLeaderboardScore } from "../leaderboards/index.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
+import { createRunId } from "../analytics/ids.js";
+import { trackLevelUp, trackRunEnd, trackRunStart } from "../analytics/events.js";
 
 const { Events } = Matter;
 
@@ -109,6 +111,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
         applyLevelUpReward(state, prevToNextLevel);
         spawnLevelUpPopup(state, getGlassRect, state.level);
         playSfx("level_up");
+        trackLevelUp({ runId: state.runId, level: state.level });
       }
     }
     updatePreview(state, engine.timing.timestamp);
@@ -161,11 +164,12 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     state.viewHeight = height;
   }
 
-  function start() {
+  function start({ source } = {}) {
     if (state.gameOverMenuTimer) {
       window.clearTimeout(state.gameOverMenuTimer);
       state.gameOverMenuTimer = 0;
     }
+    beginRun(source || "play");
     mode.startGame();
     preloadAudio();
     playMusic("bgm_main_loop");
@@ -190,11 +194,12 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     }
   }
 
-  function restartSession() {
+  function restartSession({ source } = {}) {
     if (state.gameOverMenuTimer) {
       window.clearTimeout(state.gameOverMenuTimer);
       state.gameOverMenuTimer = 0;
     }
+    endRun("restart");
     clearDynamicBodies();
     const fresh = createGameState();
     const preserved = {
@@ -209,6 +214,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     };
     Object.assign(state, fresh, preserved);
     applyShopToGameState(state);
+    beginRun(source || "restart");
     mode.startGame();
     preloadAudio();
     playMusic("bgm_main_loop");
@@ -246,6 +252,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function finalizeGameOver() {
+    endRun("game_over");
     if (state.gameOverHandled) {
       return;
     }
@@ -278,6 +285,30 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     state.lastGameOverCoins = 0;
   }
 
+  function beginRun(source) {
+    state.runId = createRunId();
+    state.runStartMs = Date.now();
+    state.runEnded = false;
+    state.totalDrops = 0;
+    trackRunStart({ runId: state.runId, source });
+  }
+
+  function endRun(reason) {
+    if (!state.runId || state.runEnded) {
+      return;
+    }
+    state.runEnded = true;
+    const durationMs = Date.now() - (state.runStartMs || Date.now());
+    trackRunEnd({
+      runId: state.runId,
+      reason,
+      durationMs,
+      level: state.level,
+      score: state.score,
+      totalDrops: state.totalDrops,
+    });
+  }
+
   return {
     state,
     start,
@@ -293,7 +324,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       mode.setGameOver();
       finalizeGameOver();
     },
-    openShell: mode.openShell,
+    openShell: () => {
+      endRun("leave");
+      mode.openShell();
+    },
     startGame: mode.startGame,
     getMode: mode.getMode,
     applyShopState,

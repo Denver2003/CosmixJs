@@ -117,7 +117,7 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
 
     if (canShowInterstitial) {
       interstitialOverlay?.open();
-      await playInterstitial();
+      await playInterstitial({ placement: "game_over_retry" });
       interstitialOverlay?.close();
       markInterstitialShown(now);
     }
@@ -142,7 +142,7 @@ export function createShell({ onPlay, onPause, onGameOver } = {}) {
         });
         return;
       }
-      const result = await playRewardedOrSkipper();
+      const result = await playRewardedOrSkipper({ placement: "game_over_continue" });
       if (!result.ok) {
         return;
       }

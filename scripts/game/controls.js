@@ -5,6 +5,7 @@ import { popBubbleAt, popTopBubble } from "./bubbles.js";
 import { getBonusSlots, hitTestBonusSlot } from "./bonus_ui.js";
 import { activateGunBonus, activateTouchBonus, tryTouchKill } from "./bonuses.js";
 import { clampWaitingBody } from "./utils.js";
+import { resolveInputMethod, trackBonusUse, trackUiClick } from "../analytics/events.js";
 
 export function attachControls(
   state,
@@ -23,6 +24,11 @@ export function attachControls(
       if (state.mode === "shell" || state.mode === "gameover") {
         return;
       }
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_hotkey",
+        inputMethod: "keyboard",
+      });
       if (typeof window !== "undefined" && window.openPauseMenu) {
         window.openPauseMenu();
       } else {
@@ -50,6 +56,16 @@ export function attachControls(
       state.keyboardControlActive = true;
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         if (activateTouchBonus(state)) {
+          trackUiClick({
+            screenId: "game",
+            controlId: "bonus_touch_hotkey",
+            inputMethod: "keyboard",
+          });
+          trackBonusUse({
+            runId: state.runId,
+            bonusId: "touch",
+            source: "keyboard",
+          });
           event.preventDefault();
           return;
         }
@@ -62,6 +78,16 @@ export function attachControls(
       state.keyboardControlActive = true;
       if (!state.paused && !state.gameOver && state.keyboardControlActive) {
         if (activateGunBonus(state, getGlassRect)) {
+          trackUiClick({
+            screenId: "game",
+            controlId: "bonus_gun_hotkey",
+            inputMethod: "keyboard",
+          });
+          trackBonusUse({
+            runId: state.runId,
+            bonusId: "gun",
+            source: "keyboard",
+          });
           event.preventDefault();
           return;
         }
@@ -124,6 +150,7 @@ export function attachControls(
     if (state.mode === "shell" || state.mode === "gameover") {
       return;
     }
+    const inputMethod = resolveInputMethod(event.pointerType);
     const target = event.target || canvas;
     const rect = target?.getBoundingClientRect?.();
     if (rect) {
@@ -133,6 +160,11 @@ export function attachControls(
       const dx = x - layout.pause.centerX;
       const dy = y - layout.pause.centerY;
       if (dx * dx + dy * dy <= layout.pause.radius * layout.pause.radius) {
+        trackUiClick({
+          screenId: "game",
+          controlId: "pause_button",
+          inputMethod,
+        });
         if (typeof window !== "undefined" && window.openPauseMenu) {
           window.openPauseMenu();
         } else {
@@ -157,6 +189,16 @@ export function attachControls(
               ? activateTouchBonus(state)
               : activateGunBonus(state, getGlassRect);
           if (activated) {
+            trackUiClick({
+              screenId: "game",
+              controlId: hit.key === "touch" ? "bonus_touch_button" : "bonus_gun_button",
+              inputMethod,
+            });
+            trackBonusUse({
+              runId: state.runId,
+              bonusId: hit.key === "touch" ? "touch" : "gun",
+              source: "ui",
+            });
             event.preventDefault();
             return;
           }

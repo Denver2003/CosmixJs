@@ -2,6 +2,7 @@ import { getAudioSettings, setAudioSettings } from "../audio/index.js";
 import { getCapsuleLayout } from "./layout.js";
 import { formatNumber } from "./format.js";
 import { t } from "./i18n.js";
+import { trackOverlayOpen, trackUiClick } from "../analytics/events.js";
 
 const overlayState = {
   pause: {
@@ -49,6 +50,7 @@ export function setupCanvasGameOverMenu(handlers = {}) {
     open() {
       overlayState.gameOver.visible = true;
       overlayState.gameOver.openedAt = getNowMs();
+      trackOverlayOpen("game_over");
     },
     close() {
       overlayState.gameOver.visible = false;
@@ -89,6 +91,7 @@ export function openCanvasConfirmDialog({
   overlayState.confirm.cancelLabel = cancelLabel || null;
   overlayState.confirm.onConfirm = onConfirm || null;
   overlayState.confirm.onCancel = onCancel || null;
+  trackOverlayOpen("confirm");
 }
 
 export function closeCanvasConfirmDialog() {
@@ -181,6 +184,7 @@ export function handleCanvasOverlayPointer({
   render,
   state,
   isGameActive,
+  inputMethod = "unknown",
 }) {
   if (!render) {
     return false;
@@ -188,11 +192,21 @@ export function handleCanvasOverlayPointer({
   if (overlayState.confirm.open) {
     if (overlayLayout.confirm) {
       if (hitButton(x, y, overlayLayout.confirm.cancel)) {
+        trackUiClick({
+          screenId: "game",
+          controlId: "confirm_cancel",
+          inputMethod,
+        });
         overlayState.confirm.onCancel?.();
         closeCanvasConfirmDialog();
         return true;
       }
       if (hitButton(x, y, overlayLayout.confirm.confirm)) {
+        trackUiClick({
+          screenId: "game",
+          controlId: "confirm_confirm",
+          inputMethod,
+        });
         overlayState.confirm.onConfirm?.();
         closeCanvasConfirmDialog();
         return true;
@@ -208,32 +222,67 @@ export function handleCanvasOverlayPointer({
   if (isGameActive && state?.paused && state?.pausedReason === "manual") {
     const { buttons, sliders, toggle } = overlayLayout.pause || {};
     if (hitButton(x, y, buttons?.resume)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_resume",
+        inputMethod,
+      });
       overlayState.pause.handlers.onResume?.();
       return true;
     }
     if (hitButton(x, y, buttons?.restart)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_restart",
+        inputMethod,
+      });
       overlayState.pause.handlers.onRestart?.();
       return true;
     }
     if (hitButton(x, y, buttons?.home)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_home",
+        inputMethod,
+      });
       overlayState.pause.handlers.onHome?.();
       return true;
     }
     if (hitButton(x, y, buttons?.shop)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_shop",
+        inputMethod,
+      });
       overlayState.pause.handlers.onShop?.();
       return true;
     }
     if (sliders?.music && pointInRect(x, y, sliders.music)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_music_slider",
+        inputMethod,
+      });
       const next = sliderValueAt(sliders.music, x);
       setAudioSettings({ music: next });
       return true;
     }
     if (sliders?.sfx && pointInRect(x, y, sliders.sfx)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_sfx_slider",
+        inputMethod,
+      });
       const next = sliderValueAt(sliders.sfx, x);
       setAudioSettings({ sfx: next });
       return true;
     }
     if (toggle?.mute && pointInRect(x, y, toggle.mute)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "pause_mute_toggle",
+        inputMethod,
+      });
       const current = getAudioSettings();
       setAudioSettings({ mute: !current.mute });
       return true;
@@ -248,20 +297,40 @@ export function handleCanvasOverlayPointer({
       !overlayState.gameOver.continue.disabled &&
       hitButton(x, y, buttons.continue)
     ) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "game_over_continue",
+        inputMethod,
+      });
       overlayState.gameOver.handlers.onContinue?.();
       return true;
     }
     if (hitButton(x, y, buttons?.retry)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "game_over_retry",
+        inputMethod,
+      });
       overlayState.gameOver.visible = false;
       overlayState.gameOver.handlers.onRetry?.();
       return true;
     }
     if (hitButton(x, y, buttons?.home)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "game_over_home",
+        inputMethod,
+      });
       overlayState.gameOver.visible = false;
       overlayState.gameOver.handlers.onHome?.();
       return true;
     }
     if (hitButton(x, y, buttons?.shop)) {
+      trackUiClick({
+        screenId: "game",
+        controlId: "game_over_shop",
+        inputMethod,
+      });
       overlayState.gameOver.visible = false;
       overlayState.gameOver.handlers.onShop?.();
       return true;

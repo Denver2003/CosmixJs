@@ -1,6 +1,7 @@
 import { getSdk, initSdk } from "../sdk/index.js";
 import { setAppState, getAppState } from "../shell/app_state.js";
 import { YANDEX_LEADERBOARD_ID } from "../config.js";
+import { trackLeaderboardSubmit } from "../analytics/events.js";
 
 const DEFAULT_LIMIT = 10;
 
@@ -8,12 +9,28 @@ export async function submitLeaderboardScore(score) {
   await initSdk();
   const sdk = getSdk();
   if (!sdk?.leaderboards?.submitScore) {
+    trackLeaderboardSubmit({
+      leaderboardId: YANDEX_LEADERBOARD_ID,
+      score,
+      ok: false,
+    });
     return false;
   }
   const safeScore = Math.max(0, Math.floor(score || 0));
   try {
-    return await sdk.leaderboards.submitScore(YANDEX_LEADERBOARD_ID, safeScore);
+    const ok = await sdk.leaderboards.submitScore(YANDEX_LEADERBOARD_ID, safeScore);
+    trackLeaderboardSubmit({
+      leaderboardId: YANDEX_LEADERBOARD_ID,
+      score: safeScore,
+      ok,
+    });
+    return ok;
   } catch (error) {
+    trackLeaderboardSubmit({
+      leaderboardId: YANDEX_LEADERBOARD_ID,
+      score: safeScore,
+      ok: false,
+    });
     return false;
   }
 }

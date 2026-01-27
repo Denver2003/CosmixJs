@@ -14,6 +14,11 @@ import { queueCloudSave } from "../cloud/index.js";
 import { getShopProgress, updateShopProgress } from "./progression.js";
 import { IAP_PRODUCTS, getIapProductById, getIapProductByKey } from "./iap_config.js";
 import { syncStickyBanner } from "../ads/index.js";
+import {
+  trackIapPurchaseAttempt,
+  trackIapPurchaseFail,
+  trackIapPurchaseSuccess,
+} from "../analytics/events.js";
 
 let catalogPromise = null;
 
@@ -95,20 +100,29 @@ export async function purchaseIapItem(itemId) {
   await initSdk();
   const sdk = getSdk();
   if (!sdk?.payments?.isAvailable?.()) {
+    trackIapPurchaseFail({ productId: itemId, reason: "unavailable" });
     return false;
   }
   const config = getIapProductByKey(itemId);
   if (!config) {
+    trackIapPurchaseFail({ productId: itemId, reason: "missing" });
     return false;
   }
+  trackIapPurchaseAttempt({ productId: config.productId });
   const purchase = await sdk.payments.purchase(config.productId);
   if (!purchase) {
+    trackIapPurchaseFail({ productId: config.productId, reason: "purchase" });
     return false;
   }
   const processed = loadPurchaseTokens();
   const processedSet = new Set(processed);
   const result = await processPurchase(purchase, processedSet);
-  return Boolean(result);
+  if (!result) {
+    trackIapPurchaseFail({ productId: config.productId, reason: "process" });
+    return false;
+  }
+  trackIapPurchaseSuccess({ productId: config.productId });
+  return true;
 }
 
 function mapCatalogToItems(catalog) {

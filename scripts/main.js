@@ -17,7 +17,7 @@ import {
   handleCanvasOverlayPointer,
   isCanvasOverlayHover,
 } from "./ui/canvas_overlays.js";
-import { setLanguage, subscribeLanguage, t } from "./ui/i18n.js";
+import { getLanguage, setLanguage, subscribeLanguage, t } from "./ui/i18n.js";
 import { getCapsuleLayout } from "./ui/layout.js";
 import {
   incrementSessionCount,
@@ -30,7 +30,15 @@ import { GLASS_HEIGHT, GLASS_WIDTH, HUD_TOP_RESERVE } from "./config.js";
 import * as bonusUi from "./game/bonus_ui.js";
 import { isBubbleHit } from "./game/bubbles.js";
 import { isPauseButtonHover } from "./game/lines/hud.js";
-import { initSdk, notifyGameReady, setSdkCallbacks } from "./sdk/index.js";
+import { getSdkState, initSdk, notifyGameReady, setSdkCallbacks } from "./sdk/index.js";
+import { initAnalytics, setAnalyticsContext } from "./analytics/index.js";
+import { createSessionId } from "./analytics/ids.js";
+import {
+  resolveInputMethod,
+  trackOverlayOpen,
+  trackSessionEnd,
+  trackSessionStart,
+} from "./analytics/events.js";
 import { loadCloudState, queueCloudSave } from "./cloud/index.js";
 import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
 import { syncSdkUser } from "./sdk/auth.js";
@@ -51,6 +59,9 @@ let game = null;
 let shell = null;
 let gameStarted = false;
 const AUTO_RESUME_DELAY_MS = 1000;
+let sessionId = null;
+let sessionStartMs = 0;
+let sessionEndSent = false;
 
 setSdkCallbacks({
   onPause: () => {
@@ -88,7 +99,19 @@ async function bootstrap() {
   if (!canvas) {
     return;
   }
-  initSdk().catch(() => {});
+  sessionId = createSessionId();
+  sessionStartMs = Date.now();
+  setAnalyticsContext({ session_id: sessionId });
+  initAnalytics().catch(() => {});
+  initSdk()
+    .then(() => {
+      const sdkState = getSdkState();
+      trackSessionStart({ sdkName: sdkState?.name, lang: getLanguage() });
+    })
+    .catch(() => {
+      const sdkState = getSdkState();
+      trackSessionStart({ sdkName: sdkState?.name || "unknown", lang: getLanguage() });
+    });
   const cloudPromise = loadCloudState();
   viewport = createViewport(canvas);
   fitHeight = getFitViewHeight();
@@ -163,7 +186,7 @@ async function bootstrap() {
       }
       resetContinueCount();
       incrementSessionCount();
-      game.start();
+      game.start({ source: "home_play" });
       gameStarted = true;
     },
     onPause: {
@@ -171,7 +194,7 @@ async function bootstrap() {
         game.setPaused(false, "manual");
       },
       restart: () => {
-        game.restartSession?.();
+        game.restartSession?.({ source: "pause_restart" });
       },
       home: () => {
         game.openShell?.();
@@ -184,7 +207,7 @@ async function bootstrap() {
     },
     onGameOver: {
       retry: () => {
-        game.restartSession?.();
+        game.restartSession?.({ source: "retry" });
       },
       home: () => {
         game.openShell?.();
@@ -221,7 +244,8 @@ async function bootstrap() {
     window.__shellRoot = document.getElementById("shell-root");
     window.__overlayRoot = document.getElementById("overlay-root");
   }
-  window.__canvasStartGame = () => {
+  window.__canvasStartGame = ({ source } = {}) => {
+    const resolvedSource = source || "home_play";
     if (game.state?.gameOver && shell?.router) {
       shell.router.__skipGameOverMenuOnce = true;
     }
@@ -236,12 +260,12 @@ async function bootstrap() {
     if (!gameStarted) {
       resetContinueCount();
       incrementSessionCount();
-      game.start();
+      game.start({ source: resolvedSource });
       gameStarted = true;
     }
   };
   if (!gameStarted && game?.state?.tutorial && !game.state.tutorial.completed) {
-    window.__canvasStartGame();
+    window.__canvasStartGame({ source: "auto_tutorial" });
   }
   window.__applyShopState = (payload) => {
     game.applyShopState?.(payload);
@@ -280,6 +304,7 @@ async function bootstrap() {
     const scaleY = render.options.height / rect.height;
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
+    const inputMethod = resolveInputMethod(event.pointerType);
     if (
       handleCanvasOverlayPointer({
         x,
@@ -287,6 +312,7 @@ async function bootstrap() {
         render,
         state: game.state,
         isGameActive: isGameScreenActive(),
+        inputMethod,
       })
     ) {
       event.preventDefault();
@@ -304,7 +330,7 @@ async function bootstrap() {
       event.stopPropagation();
       return;
     }
-    if (handleShellPointer(x, y, render)) {
+    if (handleShellPointer(x, y, render, inputMethod)) {
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -336,11 +362,12 @@ async function bootstrap() {
     const scaleY = render.options.height / rect.height;
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
+    const inputMethod = resolveInputMethod(event.pointerType);
     const wasMoved = shopDrag.moved;
     shopDrag.active = false;
     shopDrag.pointerId = null;
     if (!wasMoved) {
-      if (handleShellPointer(x, y, render)) {
+      if (handleShellPointer(x, y, render, inputMethod)) {
         event.preventDefault();
         event.stopPropagation();
       }
@@ -457,9 +484,22 @@ async function bootstrap() {
   });
   notifyGameReady().catch(() => {});
 
+  const sendSessionEnd = (reason) => {
+    if (sessionEndSent) {
+      return;
+    }
+    sessionEndSent = true;
+    trackSessionEnd({
+      durationMs: Date.now() - (sessionStartMs || Date.now()),
+      reason,
+    });
+  };
+
   window.addEventListener("resize", handleResize);
   window.visualViewport?.addEventListener("resize", handleResize);
   window.visualViewport?.addEventListener("scroll", handleResize);
+  window.addEventListener("pagehide", () => sendSessionEnd("pagehide"));
+  window.addEventListener("beforeunload", () => sendSessionEnd("beforeunload"));
   window.addEventListener("blur", () => {
     clearAutoResumeTimer();
     game.setPaused(true, "focus");
@@ -675,6 +715,7 @@ function openPauseMenu() {
     return;
   }
   game.setPaused(true, "manual");
+  trackOverlayOpen("pause");
   shell?.pauseMenu?.open();
 }
 

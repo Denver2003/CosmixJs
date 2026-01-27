@@ -46,6 +46,15 @@ import { buildCloudPayload } from "../cloud/state.js";
 import { requestAuthorization } from "../sdk/auth.js";
 import { ensureIapCatalog, purchaseIapItem } from "../shop/iap.js";
 import { IAP_PRODUCTS } from "../shop/iap_config.js";
+import {
+  trackShopPurchaseAttempt,
+  trackShopPurchaseFail,
+  trackShopPurchaseSuccess,
+  trackShopRewardAttempt,
+  trackShopRewardFail,
+  trackShopRewardSuccess,
+  trackUiClick,
+} from "../analytics/events.js";
 
 
 function resetTutorialState() {
@@ -149,7 +158,7 @@ export function isGameScreenActive() {
   return router.activeScreen === ScreenId.GAME;
 }
 
-export function handleShellPointer(x, y, render) {
+export function handleShellPointer(x, y, render, inputMethod = "unknown") {
   const router = getShellRouter();
   if (!router) {
     return false;
@@ -157,6 +166,11 @@ export function handleShellPointer(x, y, render) {
   if (router.activeScreen === ScreenId.HOME) {
     const layout = lastLayout.home;
     if (layout?.play && pointInRect(x, y, layout.play)) {
+      trackUiClick({
+        screenId: ScreenId.HOME,
+        controlId: "home_play",
+        inputMethod,
+      });
       if (typeof window !== "undefined" && window.__canvasStartGame) {
         window.__canvasStartGame();
       }
@@ -164,14 +178,29 @@ export function handleShellPointer(x, y, render) {
     }
     if (layout?.footer) {
       if (layout.footer.shop && pointInRect(x, y, layout.footer.shop)) {
+        trackUiClick({
+          screenId: ScreenId.HOME,
+          controlId: "home_shop",
+          inputMethod,
+        });
         router.showScreen(ScreenId.SHOP);
         return true;
       }
       if (layout.footer.leaders && pointInRect(x, y, layout.footer.leaders)) {
+        trackUiClick({
+          screenId: ScreenId.HOME,
+          controlId: "home_leaderboards",
+          inputMethod,
+        });
         router.showScreen(ScreenId.LEADERBOARDS);
         return true;
       }
       if (layout.footer.settings && pointInRect(x, y, layout.footer.settings)) {
+        trackUiClick({
+          screenId: ScreenId.HOME,
+          controlId: "home_settings",
+          inputMethod,
+        });
         router.showScreen(ScreenId.SETTINGS);
         return true;
       }
@@ -180,12 +209,22 @@ export function handleShellPointer(x, y, render) {
   if (router.activeScreen === ScreenId.SHOP) {
     const layout = lastLayout.shop;
     if (layout?.back && pointInRect(x, y, layout.back)) {
+      trackUiClick({
+        screenId: ScreenId.SHOP,
+        controlId: "shop_back",
+        inputMethod,
+      });
       router.back?.();
       return true;
     }
     if (layout?.actions) {
       const action = layout.actions.find((entry) => pointInRect(x, y, entry.rect));
       if (action) {
+        trackUiClick({
+          screenId: ScreenId.SHOP,
+          controlId: `shop_${action.kind}_${action.id}`,
+          inputMethod,
+        });
         handleShopAction(action);
         return true;
       }
@@ -194,38 +233,73 @@ export function handleShellPointer(x, y, render) {
   if (router.activeScreen === ScreenId.SETTINGS) {
     const layout = lastLayout.settings;
     if (layout?.back && pointInRect(x, y, layout.back)) {
+      trackUiClick({
+        screenId: ScreenId.SETTINGS,
+        controlId: "settings_back",
+        inputMethod,
+      });
       router.back?.();
       return true;
     }
     if (layout?.audio) {
       const audio = layout.audio;
       if (audio.music && pointInRect(x, y, audio.music)) {
+        trackUiClick({
+          screenId: ScreenId.SETTINGS,
+          controlId: "settings_audio_music",
+          inputMethod,
+        });
         const value = sliderValueAt(audio.music, x);
         setAudioSettings({ music: value });
         return true;
       }
       if (audio.sfx && pointInRect(x, y, audio.sfx)) {
+        trackUiClick({
+          screenId: ScreenId.SETTINGS,
+          controlId: "settings_audio_sfx",
+          inputMethod,
+        });
         const value = sliderValueAt(audio.sfx, x);
         setAudioSettings({ sfx: value });
         return true;
       }
       if (audio.mute && pointInRect(x, y, audio.mute)) {
+        trackUiClick({
+          screenId: ScreenId.SETTINGS,
+          controlId: "settings_audio_mute",
+          inputMethod,
+        });
         const current = getAudioSettings();
         setAudioSettings({ mute: !current.mute });
         return true;
       }
     }
     if (layout?.account?.language && pointInRect(x, y, layout.account.language)) {
+      trackUiClick({
+        screenId: ScreenId.SETTINGS,
+        controlId: "settings_language",
+        inputMethod,
+      });
       const next = getLanguage() === "en" ? "ru" : "en";
       setLanguage(next);
       return true;
     }
     if (layout?.account?.login && pointInRect(x, y, layout.account.login)) {
+      trackUiClick({
+        screenId: ScreenId.SETTINGS,
+        controlId: "settings_login",
+        inputMethod,
+      });
       requestAuthorization();
       return true;
     }
     if (layout?.actions) {
       if (layout.actions.resetTutorial && pointInRect(x, y, layout.actions.resetTutorial)) {
+        trackUiClick({
+          screenId: ScreenId.SETTINGS,
+          controlId: "settings_reset_tutorial",
+          inputMethod,
+        });
         openCanvasConfirmDialog({
           titleText: t("confirm.reset_tutorial_title"),
           bodyText: t("confirm.reset_tutorial_body"),
@@ -238,6 +312,11 @@ export function handleShellPointer(x, y, render) {
   if (router.activeScreen === ScreenId.LEADERBOARDS) {
     const layout = lastLayout.leaderboards;
     if (layout?.back && pointInRect(x, y, layout.back)) {
+      trackUiClick({
+        screenId: ScreenId.LEADERBOARDS,
+        controlId: "leaderboards_back",
+        inputMethod,
+      });
       router.back?.();
       return true;
     }
@@ -925,6 +1004,9 @@ function buildShopSections({ progress, inventory, coins, skippers, allowIap, iap
 
 function handleShopAction(action) {
   if (action.disabled) {
+    if (action.kind === "reward") {
+      trackShopRewardFail("cooldown");
+    }
     return;
   }
   const appState = getAppState();
@@ -933,10 +1015,25 @@ function handleShopAction(action) {
   let coins = appState.coins ?? 0;
 
   if (action.kind === "upgrade") {
+    const currentLevel = progress?.upgrades?.[action.id] ?? 0;
+    const price = getUpgradePrice(currentLevel);
+    const itemId = `upgrade_${action.id}`;
+    trackShopPurchaseAttempt({ itemId, price, currency: "coins" });
     const result = tryBuyUpgrade(progress, action.id, coins);
     if (!result.ok) {
+      trackShopPurchaseFail({
+        itemId,
+        price,
+        currency: "coins",
+        reason: result.reason,
+      });
       return;
     }
+    trackShopPurchaseSuccess({
+      itemId,
+      price: result.price ?? price,
+      currency: "coins",
+    });
     coins = result.coins;
     addTotalSpentCoins(result.price || 0);
     const nextProgress = updateShopProgress({
@@ -951,10 +1048,24 @@ function handleShopAction(action) {
   }
 
   if (action.kind === "item") {
+    const itemConfig = SHOP_ITEMS.find((entry) => entry.id === action.id);
+    const price = itemConfig?.cost;
+    trackShopPurchaseAttempt({ itemId: action.id, price, currency: "coins" });
     const result = tryBuyItem(progress, action.id, coins, inventory);
     if (!result.ok) {
+      trackShopPurchaseFail({
+        itemId: action.id,
+        price,
+        currency: "coins",
+        reason: result.reason,
+      });
       return;
     }
+    trackShopPurchaseSuccess({
+      itemId: action.id,
+      price: result.item?.cost ?? price,
+      currency: "coins",
+    });
     coins = result.coins;
     addTotalSpentCoins(result.item?.cost || 0);
     saveCoins(coins);
@@ -976,12 +1087,16 @@ function handleShopAction(action) {
     const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
     const status = getShopRewardStatus(Date.now(), moneyCoef);
     if (!status.available) {
+      trackShopRewardFail("cooldown");
       return;
     }
-    playRewardedOrSkipper().then((result) => {
+    trackShopRewardAttempt();
+    playRewardedOrSkipper({ placement: "shop_reward" }).then((result) => {
       if (!result.ok) {
+        trackShopRewardFail("ad_failed");
         return;
       }
+      trackShopRewardSuccess();
       const now = Date.now();
       applyShopReward(now);
       coins += status.reward;

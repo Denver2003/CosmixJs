@@ -16,10 +16,19 @@ import { calcBubbleMoney, calcBubbleScore } from "../rewards.js";
 import { playSfx } from "../../audio/index.js";
 import { triggerGrenade, triggerHail } from "../bonuses.js";
 import { spawnRewardFloater } from "../reward_floaters.js";
+import { trackBonusAward } from "../../analytics/events.js";
 
 export function applyBubbleReward(state, reward, getGlassRect) {
   if (!reward) {
     return;
+  }
+  const source = reward.source || "bubble";
+  const runId = state?.runId;
+  if (reward.type === "instant") {
+    trackBonusAward({ runId, bonusId: reward.subtype || "instant", source });
+  } else if (reward.type === "consumable") {
+    const bonusId = reward.subtype === "machine" ? "gun" : reward.subtype || "consumable";
+    trackBonusAward({ runId, bonusId, source });
   }
   switch (reward.type) {
     case "coins":
@@ -207,24 +216,29 @@ export function rollBubbleReward(state, options = {}) {
   if (selected.type === "coins") {
     const rollValue = randomInt(1, 5);
     const amount = calcBubbleMoney({ roll: rollValue, level, multiplier, moneyCoef });
-    return { type: "coins", amount };
+    return { type: "coins", amount, source };
   }
   if (selected.type === "points") {
     const rollValue = randomInt(1, 5);
     let amount = calcBubbleScore({ roll: rollValue, level, multiplier, pointCoef });
     const mult = selected.subtype === "points2" ? 2 : selected.subtype === "points3" ? 4 : 1;
     amount *= mult;
-    return { type: "points", subtype: selected.subtype, amount };
+    return { type: "points", subtype: selected.subtype, amount, source };
   }
   if (selected.type === "instant") {
     if (selected.subtype === "grenade") {
-      return { type: "instant", subtype: selected.subtype, color: pickColors(state, 1)[0] };
+      return {
+        type: "instant",
+        subtype: selected.subtype,
+        color: pickColors(state, 1)[0],
+        source,
+      };
     }
-    return { type: "instant", subtype: selected.subtype };
+    return { type: "instant", subtype: selected.subtype, source };
   }
   if (selected.type === "consumable") {
     const amount = bonusUpgradeLevel >= 7 ? 5 : 1;
-    return { type: "consumable", subtype: selected.subtype, amount };
+    return { type: "consumable", subtype: selected.subtype, amount, source };
   }
   return null;
 }

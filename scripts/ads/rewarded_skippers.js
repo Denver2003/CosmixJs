@@ -4,7 +4,8 @@ import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
 import { playRewarded } from "./controller.js";
 
-export async function playRewardedOrSkipper() {
+export async function playRewardedOrSkipper(options = {}) {
+  const placement = options?.placement;
   const skippers = normalizeSkippers(getAppState().skippers ?? loadSkippers());
   if (skippers > 0) {
     const next = skippers - 1;
@@ -13,7 +14,7 @@ export async function playRewardedOrSkipper() {
     queueCloudSave(buildCloudPayload());
     return { ok: true, usedSkipper: true };
   }
-  const ok = await playRewarded();
+  const ok = await playRewarded({ placement });
   return { ok, usedSkipper: false };
 }
 
