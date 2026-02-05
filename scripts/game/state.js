@@ -44,6 +44,7 @@ export function createGameState() {
     killGraceUntil: 0,
     killWarningActive: false,
     chainStates: [],
+    chainShimmerEvents: [],
     chainGraceMs: 0,
     burstBodies: new Set(),
     viewScale: 1,

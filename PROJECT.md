@@ -49,6 +49,7 @@
   - After drop: fill follows chain size: `alpha = 0.60 + 0.10 * min(chainSize, 4)` (cap 0.90).
   - Chain blink: chains of 4+ blink (0.55–0.75 alpha) while timer runs; outline jitters by 1px during blink.
   - Chain halo: chains of 4+ add a white halo outline (separate from active figure halo).
+  - Chain shimmer: when a chain reaches 4+, a white shimmer band runs left→right across each figure with 0.2s stagger; each figure has 3s cooldown; duration 1.0s.
 - **Combo system**: each collapse opens a 4s window for the next; streak-based multiplier capped at x5 (Combo/Super/Mega/Cosmo).
 - **Combo popup**: combo label bursts from collapse center to glass center, blinks on peak (1–4), then floats up and fades; stacked vertically when overlapping.
 - **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups.

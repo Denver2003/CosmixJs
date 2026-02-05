@@ -4,6 +4,9 @@ import {
   CHAIN_HALO_BLUR_MAX,
   CHAIN_HALO_BLUR_MIN,
   CHAIN_HALO_PAD_PX,
+  CHAIN_SHIMMER_ALPHA,
+  CHAIN_SHIMMER_BAND_RATIO,
+  CHAIN_SHIMMER_DURATION_MS,
   GLASS_HEIGHT,
   SHAPE_SPRITE_SCALE,
   WAIT_FILL_OVERLAY_ALPHA,
@@ -40,6 +43,10 @@ export function drawCustomOutlines(state, ctx) {
       body.plugin?.preview ? body.plugin?.previewAlpha ?? 0.4 : 1;
     const chainSize = body.plugin?.chainSize || 0;
     const chainHalo = chainSize >= 4 && body !== state.waitingBody;
+    const shimmer = getChainShimmer(state, body);
+    if (shimmer) {
+      drawChainShimmerBandWorld(ctx, body, shimmer.progress);
+    }
     const stroke = hexToRgba(color, outlineAlpha);
     const fillAlpha = body.plugin?.fillAlpha ?? 0;
     const fill =
@@ -321,5 +328,83 @@ export function drawWaitFill(state, ctx) {
     bounds.max.x - bounds.min.x,
     fillHeight
   );
+  ctx.restore();
+}
+
+function getChainShimmer(state, body) {
+  if (!state?.chainShimmerEvents || state.chainShimmerEvents.length === 0) {
+    return null;
+  }
+  const now =
+    state?.engine?.timing?.timestamp ??
+    (typeof performance !== "undefined" && performance.now
+      ? performance.now()
+      : Date.now());
+  for (const event of state.chainShimmerEvents) {
+    if (!event || event.bodyId !== body.id) {
+      continue;
+    }
+    if (now < event.startMs || now > event.endMs) {
+      continue;
+    }
+    const duration = Math.max(1, CHAIN_SHIMMER_DURATION_MS);
+    const t = Math.max(0, Math.min(1, (now - event.startMs) / duration));
+    return { progress: t };
+  }
+  return null;
+}
+
+function drawChainShimmerBand(ctx, body, drawWidth, drawHeight, progress) {
+  const bandWidth = drawWidth * CHAIN_SHIMMER_BAND_RATIO;
+  const bandX = -drawWidth / 2 - bandWidth + (drawWidth + bandWidth * 2) * progress;
+  const bandY = -drawHeight / 2;
+  ctx.save();
+  const cos = Math.cos(-body.angle);
+  const sin = Math.sin(-body.angle);
+  ctx.beginPath();
+  const vx0 = body.vertices[0].x - body.position.x;
+  const vy0 = body.vertices[0].y - body.position.y;
+  ctx.moveTo(vx0 * cos - vy0 * sin, vx0 * sin + vy0 * cos);
+  for (let i = 1; i < body.vertices.length; i += 1) {
+    const vx = body.vertices[i].x - body.position.x;
+    const vy = body.vertices[i].y - body.position.y;
+    ctx.lineTo(vx * cos - vy * sin, vx * sin + vy * cos);
+  }
+  ctx.closePath();
+  ctx.clip();
+
+  const shimmer = ctx.createLinearGradient(bandX, bandY, bandX + bandWidth, bandY);
+  shimmer.addColorStop(0, "rgba(255, 255, 255, 0)");
+  shimmer.addColorStop(0.5, `rgba(255, 255, 255, ${CHAIN_SHIMMER_ALPHA})`);
+  shimmer.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = shimmer;
+  ctx.fillRect(bandX, bandY, bandWidth, drawHeight);
+  ctx.restore();
+}
+
+function drawChainShimmerBandWorld(ctx, body, progress) {
+  const bounds = body.bounds;
+  const width = bounds.max.x - bounds.min.x;
+  const height = bounds.max.y - bounds.min.y;
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+  const bandWidth = width * CHAIN_SHIMMER_BAND_RATIO;
+  const bandX = bounds.min.x - bandWidth + (width + bandWidth * 2) * progress;
+  const bandY = bounds.min.y;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(body.vertices[0].x, body.vertices[0].y);
+  for (let i = 1; i < body.vertices.length; i += 1) {
+    ctx.lineTo(body.vertices[i].x, body.vertices[i].y);
+  }
+  ctx.closePath();
+  ctx.clip();
+  const shimmer = ctx.createLinearGradient(bandX, bandY, bandX + bandWidth, bandY);
+  shimmer.addColorStop(0, "rgba(255, 255, 255, 0)");
+  shimmer.addColorStop(0.5, `rgba(255, 255, 255, ${CHAIN_SHIMMER_ALPHA})`);
+  shimmer.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = shimmer;
+  ctx.fillRect(bandX, bandY, bandWidth, height);
   ctx.restore();
 }
