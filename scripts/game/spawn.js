@@ -3,8 +3,10 @@ import {
   CONTROL_SPEED,
   DROP_SPEED,
   GLASS_WIDTH,
+  PREVIEW_FILL_ALPHA,
   SPAWN_OFFSET,
   SPAWN_START_OFFSET,
+  WAITING_FILL_ALPHA,
   WALL_THICKNESS,
 } from "../config.js";
 import { createRandomSpec, createShape } from "../shapes.js";
@@ -29,10 +31,10 @@ export function spawnBlock(state, getSpawnPoint) {
   body.plugin = {
     ...(body.plugin || {}),
     stopAtSpawn: true,
-    fillLocked: 0.3,
-    fillAlpha: 0.3,
+    fillLocked: PREVIEW_FILL_ALPHA,
+    fillAlpha: PREVIEW_FILL_ALPHA,
   };
-  setBodyFillAlpha(body, 0.3);
+  setBodyFillAlpha(body, PREVIEW_FILL_ALPHA);
   setBodyScale(body, 0.5);
   body.plugin.scaleTarget = 1;
   body.plugin.scaleStartY = spawnY;
@@ -119,10 +121,10 @@ export function updateSpawn(state, getSpawnPoint, getGlassRect, deltaMs) {
     state.aimGuideFadeOutStartMs = 0;
     state.waitingBody.plugin = {
       ...(state.waitingBody.plugin || {}),
-      fillLocked: 0.45,
-      fillAlpha: 0.45,
+      fillLocked: WAITING_FILL_ALPHA,
+      fillAlpha: WAITING_FILL_ALPHA,
     };
-    setBodyFillAlpha(state.waitingBody, 0.45);
+    setBodyFillAlpha(state.waitingBody, WAITING_FILL_ALPHA);
     state.waitingState = "armed";
     state.waitStartMs = state.engine.timing.timestamp;
   }

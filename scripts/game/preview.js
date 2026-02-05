@@ -1,6 +1,7 @@
 import {
   PREVIEW_DELAY_MS,
   PREVIEW_FADE_MS,
+  PREVIEW_FILL_ALPHA,
   SPAWN_START_OFFSET,
 } from "../config.js";
 import { createShape } from "../shapes.js";
@@ -24,10 +25,10 @@ export function setPreview(state, spec, getSpawnPoint) {
     ...(previewBody.plugin || {}),
     preview: true,
     previewAlpha: 0,
-    fillLocked: 0.3,
-    fillAlpha: 0.3,
+    fillLocked: PREVIEW_FILL_ALPHA,
+    fillAlpha: PREVIEW_FILL_ALPHA,
   };
-  setBodyFillAlpha(previewBody, 0.3);
+  setBodyFillAlpha(previewBody, PREVIEW_FILL_ALPHA);
   state.previewStartMs = state.engine.timing.timestamp;
   state.previewBody = previewBody;
   World.add(state.world, previewBody);
@@ -55,7 +56,7 @@ export function updatePreview(state, timestamp) {
       ? "rgba(0, 0, 0, 0)"
       : stroke;
   }
-  setBodyFillAlpha(state.previewBody, 0.3);
+  setBodyFillAlpha(state.previewBody, PREVIEW_FILL_ALPHA);
 }
 
 export function removePreview(state) {

@@ -1,7 +1,12 @@
 import {
   CHAIN_ALPHA_LERP,
   CHAIN_BASE_ALPHA,
+  CHAIN_BLINK_ALPHA_MAX,
+  CHAIN_BLINK_ALPHA_MIN,
   CHAIN_DURATION_MS,
+  CHAIN_FILL_BASE,
+  CHAIN_FILL_MAX,
+  CHAIN_FILL_STEP,
   CHAIN_BURST_DURATION_MS,
   CHAIN_BURST_GRAVITY,
   CHAIN_BURST_SCALE_MAX,
@@ -40,6 +45,7 @@ export function applyChainFillStyles(state, bodies, components, deltaMs) {
     const lockedAlpha = body.plugin?.fillLocked;
     if (typeof lockedAlpha === "number") {
       body.plugin.fillAlpha = lockedAlpha;
+      body.plugin.chainSize = size;
       if (body.plugin.customOutline || body.plugin.useSpriteFill) {
         for (const part of parts) {
           part.render.fillStyle = "rgba(0, 0, 0, 0)";
@@ -53,16 +59,22 @@ export function applyChainFillStyles(state, bodies, components, deltaMs) {
       continue;
     }
     const cappedSize = Math.min(4, size);
-    let targetAlpha = Math.min(0.75, 0.45 + 0.075 * cappedSize);
+    let targetAlpha = Math.min(
+      CHAIN_FILL_MAX,
+      CHAIN_FILL_BASE + CHAIN_FILL_STEP * cappedSize
+    );
     const timerMs = timerById.get(body.id) || 0;
     const blinking = size >= 4;
     if (!body.plugin) {
       body.plugin = {};
     }
+    body.plugin.chainSize = size;
     body.plugin.chainBlink = blinking;
     if (blinking) {
       const blink = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 90);
-      targetAlpha = 0.35 + 0.2 * blink;
+      targetAlpha =
+        CHAIN_BLINK_ALPHA_MIN +
+        (CHAIN_BLINK_ALPHA_MAX - CHAIN_BLINK_ALPHA_MIN) * blink;
     }
     const flashAlpha = body.plugin?.flashAlpha || 0;
     if (flashAlpha > targetAlpha) {

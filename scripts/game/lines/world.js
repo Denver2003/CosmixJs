@@ -1,4 +1,13 @@
-import { GLASS_HEIGHT, SHAPE_SPRITE_SCALE } from "../../config.js";
+import {
+  CHAIN_HALO_ALPHA_MAX,
+  CHAIN_HALO_ALPHA_MIN,
+  CHAIN_HALO_BLUR_MAX,
+  CHAIN_HALO_BLUR_MIN,
+  CHAIN_HALO_PAD_PX,
+  GLASS_HEIGHT,
+  SHAPE_SPRITE_SCALE,
+  WAIT_FILL_OVERLAY_ALPHA,
+} from "../../config.js";
 import { getSpawnWaitMs } from "../state.js";
 import { getShapeSprite } from "../shape_sprites.js";
 import { hexToRgba } from "../utils.js";
@@ -29,6 +38,8 @@ export function drawCustomOutlines(state, ctx) {
     const scale = body.plugin?.scaleCurrent || 1;
     const outlineAlpha =
       body.plugin?.preview ? body.plugin?.previewAlpha ?? 0.4 : 1;
+    const chainSize = body.plugin?.chainSize || 0;
+    const chainHalo = chainSize >= 4 && body !== state.waitingBody;
     const stroke = hexToRgba(color, outlineAlpha);
     const fillAlpha = body.plugin?.fillAlpha ?? 0;
     const fill =
@@ -82,6 +93,38 @@ export function drawCustomOutlines(state, ctx) {
         );
         ctx.restore();
       }
+      if (chainHalo) {
+        const haloWidth =
+          (outlineSprite.width + CHAIN_HALO_PAD_PX * 2) / SHAPE_SPRITE_SCALE;
+        const haloHeight =
+          (outlineSprite.height + CHAIN_HALO_PAD_PX * 2) / SHAPE_SPRITE_SCALE;
+        const haloPulse = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 220);
+        const haloAlpha =
+          CHAIN_HALO_ALPHA_MIN +
+          (CHAIN_HALO_ALPHA_MAX - CHAIN_HALO_ALPHA_MIN) * haloPulse;
+        const haloBlur =
+          CHAIN_HALO_BLUR_MIN +
+          (CHAIN_HALO_BLUR_MAX - CHAIN_HALO_BLUR_MIN) * haloPulse;
+        ctx.save();
+        ctx.globalAlpha = haloAlpha;
+        ctx.shadowColor = "rgba(255, 255, 255, 1)";
+        ctx.shadowBlur = haloBlur;
+        ctx.drawImage(
+          outlineSprite,
+          -haloWidth / 2,
+          -haloHeight / 2,
+          haloWidth,
+          haloHeight
+        );
+        ctx.drawImage(
+          outlineSprite,
+          -haloWidth / 2,
+          -haloHeight / 2,
+          haloWidth,
+          haloHeight
+        );
+        ctx.restore();
+      }
       const jitter = body.plugin?.chainBlink ? 1 : 0;
       const jitterX = body.plugin?.chainBlink ? (Math.random() < 0.5 ? -jitter : jitter) : 0;
       const jitterY = body.plugin?.chainBlink ? (Math.random() < 0.5 ? -jitter : jitter) : 0;
@@ -102,12 +145,17 @@ export function drawCustomOutlines(state, ctx) {
       }
       body.plugin = { ...(body.plugin || {}), spriteReady: false };
     } else if (outlineEdges) {
+      const outlineBoostAlpha = chainHalo
+        ? Math.max(outlineAlpha, CHAIN_HALO_ALPHA_MAX)
+        : outlineAlpha;
+      const outlineWidth = chainHalo ? 3 : 2;
       ctx.beginPath();
       for (const edge of outlineEdges) {
         ctx.moveTo(edge.x1, edge.y1);
         ctx.lineTo(edge.x2, edge.y2);
       }
-      ctx.strokeStyle = hexToRgba(OUTLINE_FALLBACK_COLOR, outlineAlpha);
+      ctx.lineWidth = outlineWidth;
+      ctx.strokeStyle = hexToRgba(OUTLINE_FALLBACK_COLOR, outlineBoostAlpha);
       ctx.stroke();
     }
 
@@ -266,7 +314,7 @@ export function drawWaitFill(state, ctx) {
   }
   ctx.closePath();
   ctx.clip();
-  ctx.fillStyle = hexToRgba(color, 0.25);
+  ctx.fillStyle = hexToRgba(color, WAIT_FILL_OVERLAY_ALPHA);
   ctx.fillRect(
     bounds.min.x,
     bounds.min.y,
