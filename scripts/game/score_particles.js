@@ -1,5 +1,6 @@
 import { getTopHudLayout } from "../ui/hud.js";
 import { formatNumber } from "../ui/format.js";
+import { getVfxTextScale } from "./utils.js";
 
 function worldToScreen(render, x, y) {
   const bounds = render.bounds;
@@ -114,8 +115,9 @@ export function drawScoreParticles(state, ctx) {
   if (!particles || particles.length === 0) {
     return;
   }
+  const textScale = getVfxTextScale(state);
   ctx.save();
-  ctx.font = "42px \"RussoOne\", sans-serif";
+  ctx.font = `${Math.round(42 * textScale)}px "RussoOne", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const particle of particles) {
@@ -129,7 +131,7 @@ export function drawScoreParticles(state, ctx) {
     ctx.translate(particle.x, particle.y);
     ctx.scale(scale, scale);
     ctx.lineJoin = "round";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, 2 * textScale);
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.strokeText(`+${formatNumber(particle.value)}`, 0, 0);
     ctx.fillStyle = fillColor;

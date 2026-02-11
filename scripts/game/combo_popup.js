@@ -1,5 +1,6 @@
 import { GLASS_HEIGHT, GLASS_WIDTH } from "../config.js";
 import { t } from "../ui/i18n.js";
+import { getVfxTextScale } from "./utils.js";
 
 const PHASE1_MS = 300;
 const PHASE2_MS = 1000;
@@ -86,6 +87,7 @@ export function spawnComboPopup(state, getGlassRect, bodies, multiplier) {
 
   const lift = GLASS_HEIGHT * 0.1 * glassCenter.scaleY;
   const now = state.engine.timing.timestamp;
+  const textScale = getVfxTextScale(state);
   const popup = {
     label,
     color,
@@ -96,7 +98,7 @@ export function spawnComboPopup(state, getGlassRect, bodies, multiplier) {
     lift,
     startMs: now,
     done: false,
-    stackOffset: FONT_SIZE * 2,
+    stackOffset: FONT_SIZE * 2 * textScale,
     blinkCount: Math.max(1, Math.min(4, multiplier - 1)),
   };
   state.comboPopups.push(popup);
@@ -124,8 +126,9 @@ export function drawComboPopups(state, ctx) {
     return;
   }
   const now = state.engine.timing.timestamp;
+  const textScale = getVfxTextScale(state);
   ctx.save();
-  ctx.font = `${FONT_SIZE}px ${FONT_FAMILY}`;
+  ctx.font = `${Math.round(FONT_SIZE * textScale)}px ${FONT_FAMILY}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (const popup of popups) {
@@ -163,7 +166,7 @@ export function drawComboPopups(state, ctx) {
     ctx.translate(x, y);
     ctx.scale(scale, scale);
     ctx.lineJoin = "round";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, 2 * textScale);
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.strokeText(popup.label, 0, 0);
     ctx.fillStyle = colorWithAlpha(popup.color || DEFAULT_COLOR, alpha);

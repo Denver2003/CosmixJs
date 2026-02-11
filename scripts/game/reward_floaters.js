@@ -1,5 +1,6 @@
 import { getTopHudLayout } from "../ui/hud.js";
 import { formatNumber } from "../ui/format.js";
+import { getVfxTextScale } from "./utils.js";
 
 const DURATION_MS = 1200;
 
@@ -80,18 +81,19 @@ export function drawRewardFloaters(state, ctx) {
   if (!floaters || floaters.length === 0) {
     return;
   }
+  const textScale = getVfxTextScale(state);
   ctx.save();
   for (const floater of floaters) {
     const alpha = Math.max(0, Math.min(1, floater.alpha ?? 1));
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     if (floater.type === "coins") {
-      ctx.font = "bold 48px \"RussoOne\", sans-serif";
+      ctx.font = `bold ${Math.round(48 * textScale)}px "RussoOne", sans-serif`;
     } else {
-      ctx.font = "42px \"RussoOne\", sans-serif";
+      ctx.font = `${Math.round(42 * textScale)}px "RussoOne", sans-serif`;
     }
     ctx.lineJoin = "round";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, 2 * textScale);
     ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
     ctx.strokeText(`+${formatNumber(floater.value)}`, floater.x, floater.y);
     ctx.fillStyle = colorWithAlpha(floater.color || "#ffffff", alpha);

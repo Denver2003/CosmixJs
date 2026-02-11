@@ -1,3 +1,5 @@
+import { VFX_TEXT_SCALE_MAX, VFX_TEXT_SCALE_MIN } from "../config.js";
+
 const { Body } = Matter;
 
 export function clampWaitingBody(body, getGlassRect, glassWidth, wallThickness) {
@@ -43,4 +45,11 @@ export function hexToRgba(hex, alpha) {
   const g = parseInt(value.slice(2, 4), 16);
   const b = parseInt(value.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function getVfxTextScale(state) {
+  const raw = state?.viewScale ?? 1;
+  const min = VFX_TEXT_SCALE_MIN ?? 0.5;
+  const max = VFX_TEXT_SCALE_MAX ?? 1;
+  return Math.max(min, Math.min(max, raw));
 }

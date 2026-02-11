@@ -88,6 +88,7 @@
 - **Site identity**: favicon and apple-touch icon load from `assets/appIcon/app_icon.png`, and the browser title updates by language (`app.page_title`).
 - **Hover cursor**: canvas hover shows `ew-resize` over the glass in active play, `pointer` over bubbles/instant bonuses/pause/touch-to-kill targets, and `pointer` on shell/overlay buttons. Text selection and context menus are disabled for the game canvas.
 - **VFX text**: animated popups (score/coins/combo/level/cosmo) use a white 2px stroke and ~50% larger text for better readability.
+- **VFX text scaling**: combo/score/reward popups downscale on small screens via `viewScale`, clamped by `VFX_TEXT_SCALE_MIN/MAX` in `scripts/config.js`.
 - **Number formatting**: scores/coins/levels and other numeric UI values now render with spaced thousands (e.g. 1 000 000).
 - **Startup preload**: first-run gate loads background, glass frame, UI/shape sprites, scaled HUD/bonus icons, fonts, audio, and the pause icon; shows a canvas loading bar centered on the glass, then initializes the game after assets are ready.
 
