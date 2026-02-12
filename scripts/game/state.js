@@ -45,6 +45,8 @@ export function createGameState() {
     killWarningActive: false,
     chainStates: [],
     chainShimmerEvents: [],
+    chainShimmerProgressByBodyId: new Map(),
+    debugPerf: null,
     chainGraceMs: 0,
     burstBodies: new Set(),
     viewScale: 1,

@@ -110,13 +110,30 @@ function updateChainShimmer(state) {
     (typeof performance !== "undefined" && performance.now
       ? performance.now()
       : Date.now());
+  if (!state.chainShimmerProgressByBodyId) {
+    state.chainShimmerProgressByBodyId = new Map();
+  } else {
+    state.chainShimmerProgressByBodyId.clear();
+  }
   if (!state.chainShimmerEvents || state.chainShimmerEvents.length === 0) {
     return;
   }
-  state.chainShimmerEvents = state.chainShimmerEvents.filter((event) => {
+
+  const nextEvents = [];
+  for (const event of state.chainShimmerEvents) {
     if (!event || typeof event.endMs !== "number") {
-      return false;
+      continue;
     }
-    return event.endMs > now;
-  });
+    if (event.endMs <= now) {
+      continue;
+    }
+    nextEvents.push(event);
+    if (now < event.startMs || now > event.endMs) {
+      continue;
+    }
+    const duration = Math.max(1, event.endMs - event.startMs);
+    const progress = Math.max(0, Math.min(1, (now - event.startMs) / duration));
+    state.chainShimmerProgressByBodyId.set(event.bodyId, progress);
+  }
+  state.chainShimmerEvents = nextEvents;
 }

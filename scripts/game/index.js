@@ -299,7 +299,6 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     applyShopState,
     resumeAfterContinue,
     restartSession,
-    state,
   };
 }
 

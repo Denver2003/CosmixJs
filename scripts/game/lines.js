@@ -1,10 +1,8 @@
 import {
-  DEBUG_OVERLAY,
   GLASS_HEIGHT,
   GLASS_WIDTH,
   KILL_DURATION_MS,
   KILL_OFFSET,
-  SPAWN_OFFSET,
 } from "../config.js";
 import { drawScoreParticles } from "./score_particles.js";
 import { drawComboPopups } from "./combo_popup.js";
@@ -33,8 +31,8 @@ const { Render } = Matter;
 
 export function drawLines(state, render, getGlassRect) {
   const { left, top } = getGlassRect();
-  const spawnY = top + SPAWN_OFFSET;
   const killY = top + KILL_OFFSET;
+  const bodies = Matter.Composite.allBodies(state.world);
 
   const ctx = render.context;
   ctx.save();
@@ -48,7 +46,7 @@ export function drawLines(state, render, getGlassRect) {
   ctx.rect(left, top, GLASS_WIDTH, GLASS_HEIGHT);
   ctx.clip();
   ctx.translate(left, 0);
-  const laserState = getLaserState(state, killY, 150, getGlassRect);
+  const laserState = getLaserState(state, killY, 150, getGlassRect, bodies);
   const danger = laserState.danger;
   drawLaserBarrier(
     ctx,
@@ -65,13 +63,9 @@ export function drawLines(state, render, getGlassRect) {
   ctx.restore();
   // Control line rendering intentionally hidden; logic remains.
 
-  if (DEBUG_OVERLAY) {
-    // Reserved for future debug visuals.
-  }
-
   drawWaitFill(state, ctx);
-  drawAimGuides(state, ctx, getGlassRect);
-  drawCustomOutlines(state, ctx);
+  drawAimGuides(state, ctx, getGlassRect, bodies);
+  drawCustomOutlines(state, ctx, bodies);
   drawBonusButtons(state, ctx, getGlassRect);
   drawBubbles(state, ctx);
   drawBubblePopParticles(state, ctx);
@@ -92,9 +86,8 @@ export function drawLines(state, render, getGlassRect) {
   ctx.restore();
 }
 
-function getLaserState(state, deathLineY, thresholdPx, getGlassRect) {
+function getLaserState(state, deathLineY, thresholdPx, getGlassRect, bodies) {
   let highestY = Infinity;
-  const bodies = Matter.Composite.allBodies(state.world);
   for (const body of bodies) {
     if (body.isStatic || body.parent !== body) {
       continue;

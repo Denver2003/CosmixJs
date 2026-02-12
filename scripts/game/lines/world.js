@@ -6,7 +6,6 @@ import {
   CHAIN_HALO_PAD_PX,
   CHAIN_SHIMMER_ALPHA,
   CHAIN_SHIMMER_BAND_RATIO,
-  CHAIN_SHIMMER_DURATION_MS,
   GLASS_HEIGHT,
   SHAPE_SPRITE_SCALE,
   WAIT_FILL_OVERLAY_ALPHA,
@@ -14,23 +13,24 @@ import {
 import { getSpawnWaitMs } from "../state.js";
 import { getShapeSprite } from "../shape_sprites.js";
 import { hexToRgba } from "../utils.js";
-
-const { Composite } = Matter;
 const OUTLINE_FALLBACK_COLOR = "#ffffff";
 
 function isSpriteReady(sprite) {
   return sprite && !sprite._broken && sprite.complete && sprite.naturalWidth > 0;
 }
 
-export function drawCustomOutlines(state, ctx) {
-  const bodies = Composite.allBodies(state.world);
+export function drawCustomOutlines(state, ctx, bodies) {
+  const framePulse220 = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 220);
+  const framePulse280 = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 280);
+  const frameJitterTick = Math.floor(state.engine.timing.timestamp / 55);
   ctx.save();
   ctx.lineWidth = 2;
   for (const body of bodies) {
-    const outlineEdges = body.plugin?.outlineEdges;
-    const cellRects = body.plugin?.cellRects;
-    const color = body.plugin?.color;
-    const shapeType = body.plugin?.shapeType;
+    const plugin = body.plugin || (body.plugin = {});
+    const outlineEdges = plugin.outlineEdges;
+    const cellRects = plugin.cellRects;
+    const color = plugin.color;
+    const shapeType = plugin.shapeType;
     const outlineSprite = shapeType ? getShapeSprite(shapeType, "outline") : null;
     const detailsSprite = shapeType ? getShapeSprite(shapeType, "details") : null;
     const outlineReady = isSpriteReady(outlineSprite);
@@ -38,17 +38,16 @@ export function drawCustomOutlines(state, ctx) {
     if ((!outlineEdges && !outlineSprite) || !color) {
       continue;
     }
-    const scale = body.plugin?.scaleCurrent || 1;
-    const outlineAlpha =
-      body.plugin?.preview ? body.plugin?.previewAlpha ?? 0.4 : 1;
-    const chainSize = body.plugin?.chainSize || 0;
+    const scale = plugin.scaleCurrent || 1;
+    const outlineAlpha = plugin.preview ? plugin.previewAlpha ?? 0.4 : 1;
+    const chainSize = plugin.chainSize || 0;
     const chainHalo = chainSize >= 4 && body !== state.waitingBody;
     const shimmer = getChainShimmer(state, body);
     if (shimmer) {
       drawChainShimmerBandWorld(ctx, body, shimmer.progress);
     }
     const stroke = hexToRgba(color, outlineAlpha);
-    const fillAlpha = body.plugin?.fillAlpha ?? 0;
+    const fillAlpha = plugin.fillAlpha ?? 0;
     const fill =
       fillAlpha > 0 ? hexToRgba(color, Math.min(fillAlpha, 1)) : null;
     ctx.save();
@@ -64,13 +63,13 @@ export function drawCustomOutlines(state, ctx) {
     }
 
     if (outlineReady) {
-      if (!body.plugin.spriteReady) {
+      if (!plugin.spriteReady) {
         const parts = body.parts.length > 1 ? body.parts : [body];
         for (const part of parts) {
           part.render.strokeStyle = "rgba(0, 0, 0, 0)";
         }
       }
-      body.plugin = { ...(body.plugin || {}), spriteReady: true };
+      plugin.spriteReady = true;
       const drawWidth = outlineSprite.width / SHAPE_SPRITE_SCALE;
       const drawHeight = outlineSprite.height / SHAPE_SPRITE_SCALE;
       if (body === state.waitingBody) {
@@ -80,17 +79,9 @@ export function drawCustomOutlines(state, ctx) {
         const haloHeight =
           (outlineSprite.height + haloPadPx * 2) / SHAPE_SPRITE_SCALE;
         ctx.save();
-        const glowPulse = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 280);
-        ctx.globalAlpha = 0.5 + 0.2 * glowPulse;
+        ctx.globalAlpha = 0.5 + 0.2 * framePulse280;
         ctx.shadowColor = "rgba(255, 255, 255, 1)";
-        ctx.shadowBlur = 12 + 6 * glowPulse;
-        ctx.drawImage(
-          outlineSprite,
-          -haloWidth / 2,
-          -haloHeight / 2,
-          haloWidth,
-          haloHeight
-        );
+        ctx.shadowBlur = 12 + 6 * framePulse280;
         ctx.drawImage(
           outlineSprite,
           -haloWidth / 2,
@@ -105,13 +96,12 @@ export function drawCustomOutlines(state, ctx) {
           (outlineSprite.width + CHAIN_HALO_PAD_PX * 2) / SHAPE_SPRITE_SCALE;
         const haloHeight =
           (outlineSprite.height + CHAIN_HALO_PAD_PX * 2) / SHAPE_SPRITE_SCALE;
-        const haloPulse = 0.5 + 0.5 * Math.sin(state.engine.timing.timestamp / 220);
         const haloAlpha =
           CHAIN_HALO_ALPHA_MIN +
-          (CHAIN_HALO_ALPHA_MAX - CHAIN_HALO_ALPHA_MIN) * haloPulse;
+          (CHAIN_HALO_ALPHA_MAX - CHAIN_HALO_ALPHA_MIN) * framePulse220;
         const haloBlur =
           CHAIN_HALO_BLUR_MIN +
-          (CHAIN_HALO_BLUR_MAX - CHAIN_HALO_BLUR_MIN) * haloPulse;
+          (CHAIN_HALO_BLUR_MAX - CHAIN_HALO_BLUR_MIN) * framePulse220;
         ctx.save();
         ctx.globalAlpha = haloAlpha;
         ctx.shadowColor = "rgba(255, 255, 255, 1)";
@@ -123,18 +113,13 @@ export function drawCustomOutlines(state, ctx) {
           haloWidth,
           haloHeight
         );
-        ctx.drawImage(
-          outlineSprite,
-          -haloWidth / 2,
-          -haloHeight / 2,
-          haloWidth,
-          haloHeight
-        );
         ctx.restore();
       }
-      const jitter = body.plugin?.chainBlink ? 1 : 0;
-      const jitterX = body.plugin?.chainBlink ? (Math.random() < 0.5 ? -jitter : jitter) : 0;
-      const jitterY = body.plugin?.chainBlink ? (Math.random() < 0.5 ? -jitter : jitter) : 0;
+      const jitter = plugin.chainBlink ? 1 : 0;
+      const jitterSignX = ((body.id + frameJitterTick) & 1) === 0 ? -1 : 1;
+      const jitterSignY = ((body.id * 3 + frameJitterTick) & 1) === 0 ? -1 : 1;
+      const jitterX = plugin.chainBlink ? jitterSignX * jitter : 0;
+      const jitterY = plugin.chainBlink ? jitterSignY * jitter : 0;
       ctx.save();
       ctx.globalAlpha = outlineAlpha;
       ctx.drawImage(
@@ -145,12 +130,12 @@ export function drawCustomOutlines(state, ctx) {
         drawHeight
       );
       ctx.restore();
-    } else if (body.plugin?.spriteReady) {
+    } else if (plugin.spriteReady) {
       const parts = body.parts.length > 1 ? body.parts : [body];
       for (const part of parts) {
         part.render.strokeStyle = stroke;
       }
-      body.plugin = { ...(body.plugin || {}), spriteReady: false };
+      plugin.spriteReady = false;
     } else if (outlineEdges) {
       const outlineBoostAlpha = chainHalo
         ? Math.max(outlineAlpha, CHAIN_HALO_ALPHA_MAX)
@@ -182,7 +167,7 @@ export function drawCustomOutlines(state, ctx) {
   ctx.restore();
 }
 
-export function drawAimGuides(state, ctx, getGlassRect) {
+export function drawAimGuides(state, ctx, getGlassRect, bodies) {
   const body = state.waitingBody || state.aimGuideBody;
   if (!body || !getGlassRect) {
     return;
@@ -207,8 +192,8 @@ export function drawAimGuides(state, ctx, getGlassRect) {
   const bottomY = bounds.max.y;
   const leftX = bounds.min.x;
   const rightX = bounds.max.x;
-  const leftEndY = getGuideEndY(state, glass, body, bottomY, leftX);
-  const rightEndY = getGuideEndY(state, glass, body, bottomY, rightX);
+  const leftEndY = getGuideEndY(glass, body, bottomY, leftX, bodies);
+  const rightEndY = getGuideEndY(glass, body, bottomY, rightX, bodies);
   if (leftEndY <= bottomY && rightEndY <= bottomY) {
     return;
   }
@@ -276,10 +261,9 @@ export function drawAimGuides(state, ctx, getGlassRect) {
   }
 }
 
-function getGuideEndY(state, glass, activeBody, bottomY, guideX) {
+function getGuideEndY(glass, activeBody, bottomY, guideX, bodies) {
   const floorY = glass.top + GLASS_HEIGHT;
   let nearestY = floorY;
-  const bodies = Composite.allBodies(state.world);
   for (const body of bodies) {
     if (body === activeBody || body.parent !== body) {
       continue;
@@ -332,54 +316,11 @@ export function drawWaitFill(state, ctx) {
 }
 
 function getChainShimmer(state, body) {
-  if (!state?.chainShimmerEvents || state.chainShimmerEvents.length === 0) {
+  const progress = state?.chainShimmerProgressByBodyId?.get(body.id);
+  if (typeof progress !== "number") {
     return null;
   }
-  const now =
-    state?.engine?.timing?.timestamp ??
-    (typeof performance !== "undefined" && performance.now
-      ? performance.now()
-      : Date.now());
-  for (const event of state.chainShimmerEvents) {
-    if (!event || event.bodyId !== body.id) {
-      continue;
-    }
-    if (now < event.startMs || now > event.endMs) {
-      continue;
-    }
-    const duration = Math.max(1, CHAIN_SHIMMER_DURATION_MS);
-    const t = Math.max(0, Math.min(1, (now - event.startMs) / duration));
-    return { progress: t };
-  }
-  return null;
-}
-
-function drawChainShimmerBand(ctx, body, drawWidth, drawHeight, progress) {
-  const bandWidth = drawWidth * CHAIN_SHIMMER_BAND_RATIO;
-  const bandX = -drawWidth / 2 - bandWidth + (drawWidth + bandWidth * 2) * progress;
-  const bandY = -drawHeight / 2;
-  ctx.save();
-  const cos = Math.cos(-body.angle);
-  const sin = Math.sin(-body.angle);
-  ctx.beginPath();
-  const vx0 = body.vertices[0].x - body.position.x;
-  const vy0 = body.vertices[0].y - body.position.y;
-  ctx.moveTo(vx0 * cos - vy0 * sin, vx0 * sin + vy0 * cos);
-  for (let i = 1; i < body.vertices.length; i += 1) {
-    const vx = body.vertices[i].x - body.position.x;
-    const vy = body.vertices[i].y - body.position.y;
-    ctx.lineTo(vx * cos - vy * sin, vx * sin + vy * cos);
-  }
-  ctx.closePath();
-  ctx.clip();
-
-  const shimmer = ctx.createLinearGradient(bandX, bandY, bandX + bandWidth, bandY);
-  shimmer.addColorStop(0, "rgba(255, 255, 255, 0)");
-  shimmer.addColorStop(0.5, `rgba(255, 255, 255, ${CHAIN_SHIMMER_ALPHA})`);
-  shimmer.addColorStop(1, "rgba(255, 255, 255, 0)");
-  ctx.fillStyle = shimmer;
-  ctx.fillRect(bandX, bandY, bandWidth, drawHeight);
-  ctx.restore();
+  return { progress };
 }
 
 function drawChainShimmerBandWorld(ctx, body, progress) {
