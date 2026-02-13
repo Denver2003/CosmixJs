@@ -3,6 +3,7 @@
 ## What exists now
 
 - **Obfuscated dist build**: `build_dist_obf.sh` bundles `scripts/main.js` into `dist/app.min.js` with minification and light mangling, writes `dist/index.html` with the bundled script, copies `assets/`, `css/`, `lib/`, and packs `cosmix_yandex_build_obf.zip` (requires `npm install` for esbuild).
+- **Local Codex skill (Yandex build)**: `.codex/skills/yandex-games-build` provides Build + Verify flow for Yandex release artifacts (`dist/app.min.js`, `cosmix_yandex_build_obf.zip`) with a fixed readiness report.
 - **Matter.js playground** with a centered glass (~340px wide); glass physics remain but visual glass is now PNG overlay.
 - **Spawn/kill lines** drawn as horizontal guides.
 - **Spawn flow**: a piece appears above the spawn line, drops to the line, freezes (L1=4.0s; -0.16s per level; min 1.0s), then auto-drops.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yandex Build"
+  short_description: "Локальная сборка и проверка артефактов для Яндекс Игр"
+  default_prompt: "Собери obfuscated билд для Яндекс Игр и проверь, что dist/app.min.js и cosmix_yandex_build_obf.zip готовы к загрузке."
