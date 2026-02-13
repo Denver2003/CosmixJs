@@ -112,8 +112,6 @@ export function createGameState() {
     bonusGunMarks: [],
     keyboardControlActive: false,
     keyboardControlMode: null,
-    lastGameOverCoins: 0,
-    lastGameOverStoredCoins: 0,
     tutorial: createTutorialState(),
     level,
     clearedThisLevel: 0,

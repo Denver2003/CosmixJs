@@ -10,7 +10,6 @@ import { spawnBlock, updateSpawn, repositionWaiting } from "./spawn.js";
 import { applyChainRewards, applyLevelUpReward } from "./rewards.js";
 import {
   loadBestScore,
-  loadCoins,
   saveBestScore,
   saveBonusInventory,
   saveCoins,
@@ -30,6 +29,7 @@ import { playMusic, playSfx, preloadAudio } from "../audio/index.js";
 import { submitLeaderboardScore } from "../leaderboards/index.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
+import { setAppState } from "../shell/app_state.js";
 
 const { Events } = Matter;
 
@@ -39,8 +39,18 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   state.world = world;
   state.render = render;
   state.spawnBlockResumeAt = 0;
+  let lastSyncedCoins = null;
   const mode = createGameStateMachine(state, runner);
   mode.openShell();
+
+  function syncCoinsToAppState() {
+    const coins = Math.max(0, Math.floor(state.coins || 0));
+    if (lastSyncedCoins === coins) {
+      return;
+    }
+    lastSyncedCoins = coins;
+    setAppState({ coins });
+  }
 
   function getSpawnPoint() {
     const { left, top } = getGlassRect();
@@ -51,6 +61,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
   }
 
   function update() {
+    syncCoinsToAppState();
     if (state.gameOver && mode.getMode() !== mode.MODES.GAMEOVER) {
       mode.setGameOver();
     }
@@ -179,7 +190,6 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       window.clearTimeout(state.gameOverMenuTimer);
       state.gameOverMenuTimer = 0;
     }
-    rollbackGameOverCoins();
     state.gameOver = false;
     state.gameOverHandled = false;
     state.paused = false;
@@ -195,6 +205,10 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       window.clearTimeout(state.gameOverMenuTimer);
       state.gameOverMenuTimer = 0;
     }
+    // Restart commits current run economy so reload keeps the latest balance.
+    saveCoins(state.coins);
+    saveBonusInventory(state.bonusInventory);
+    queueCloudSave(buildCloudPayload());
     clearDynamicBodies();
     const fresh = createGameState();
     const preserved = {
@@ -236,6 +250,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     }
     if (Number.isFinite(payload?.coins)) {
       state.coins = payload.coins;
+      syncCoinsToAppState();
     }
     if (payload?.inventory) {
       state.bonusInventory = {
@@ -249,9 +264,6 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     if (state.gameOverHandled) {
       return;
     }
-    const prevCoins = loadCoins();
-    state.lastGameOverStoredCoins = prevCoins;
-    state.lastGameOverCoins = Math.max(0, Math.floor(state.coins - prevCoins));
     saveCoins(state.coins);
     saveBonusInventory(state.bonusInventory);
     const prevBest = loadBestScore();
@@ -264,18 +276,6 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     }
     queueCloudSave(buildCloudPayload());
     state.gameOverHandled = true;
-  }
-
-  function rollbackGameOverCoins() {
-    if (!state.gameOverHandled || state.lastGameOverCoins <= 0) {
-      return;
-    }
-    const restored = Math.max(0, Math.floor(state.lastGameOverStoredCoins || 0));
-    if (state.coins !== restored) {
-      state.coins = restored;
-      saveCoins(state.coins);
-    }
-    state.lastGameOverCoins = 0;
   }
 
   return {
