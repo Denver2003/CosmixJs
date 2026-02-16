@@ -946,7 +946,7 @@ function handleShopAction(action) {
     saveCoins(coins);
     setAppState({ coins });
     applyShopStateToGame({ coins, progress: nextProgress, inventory });
-    queueCloudSave(buildCloudPayload());
+    queueCloudSave(buildCloudPayload(), { force: true });
     return;
   }
 
@@ -963,7 +963,7 @@ function handleShopAction(action) {
       saveBonusInventory(result.inventory);
       applyShopStateToGame({ coins, progress, inventory: result.inventory });
     }
-    queueCloudSave(buildCloudPayload());
+    queueCloudSave(buildCloudPayload(), { force: true });
     return;
   }
 

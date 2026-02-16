@@ -171,7 +171,7 @@ async function processPurchase(purchase, processedSet) {
     const sdk = getSdk();
     await sdk.payments.consumePurchase(token);
   }
-  queueCloudSave(buildCloudPayload());
+  await queueCloudSave(buildCloudPayload(), { force: true });
   return { productId, token };
 }
 
