@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-02-16T11:47:19.704Z",
+  "generator": "local-sfx MCP generate_sfx_batch",
+  "items": [
+    {
+      "event": "impact_first",
+      "id": "70c6bdf740e44aed98647889814ce156",
+      "seed": 3101,
+      "raw": "assets/audio/staging/v1/soft_pass/raw/impact_first.wav"
+    },
+    {
+      "event": "drop_whoosh",
+      "id": "e67b8fb2aa944d7fa3bf808f16eb5918",
+      "seed": 3102,
+      "raw": "assets/audio/staging/v1/soft_pass/raw/drop_whoosh.wav"
+    },
+    {
+      "event": "bonus_bubble_pop",
+      "id": "5aa514e7e54b463c831b395b2dceff22",
+      "seed": 3103,
+      "raw": "assets/audio/staging/v1/soft_pass/raw/bonus_bubble_pop.wav"
+    },
+    {
+      "event": "bonus_coin_pick",
+      "id": "37f008c5b57d4ae2982d1daef13da07f",
+      "seed": 3104,
+      "raw": "assets/audio/staging/v1/soft_pass/raw/bonus_coin_pick.wav"
+    },
+    {
+      "event": "bonus_points_pick",
+      "id": "c31a5dd89b564d3083060c743fda9547",
+      "seed": 3105,
+      "raw": "assets/audio/staging/v1/soft_pass/raw/bonus_points_pick.wav"
+    }
+  ]
+}

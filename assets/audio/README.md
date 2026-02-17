@@ -1,6 +1,12 @@
-# Audio Asset List (Placeholders)
+# Audio Asset List
 
 ## SFX
+
+Source: local-sfx MCP (`generate_sfx_batch`), pass `v1 + v2 shortlist + v3-soft + v4-soft`, generated on 2026-02-16.
+Processing: loudness target `~ -16 LUFS`, true peak `<= -1.0 dBTP`, target-duration alignment per event.
+Manifest: `assets/audio/generation_manifest.json`.
+Soft-pass notes (A/B): `assets/audio/staging/v1/logs/SFX_SOFT_PASS_NOTES.md`.
+Kill-line warning throttle notes: `assets/audio/staging/v1/logs/KILL_WARNING_THROTTLE_NOTES.md`.
 
 - `assets/audio/sfx/drop_whoosh.wav` — сброс/падение фигуры.
 - `assets/audio/sfx/impact_first.wav` — первый удар после падения (единожды на фигуру).
@@ -24,4 +30,4 @@
 
 ## BGM
 
-- `assets/audio/bgm/bgm_main_loop.ogg` — основная луп‑музыка.
+- `assets/audio/bgm/bgm_main_loop.ogg` — основная луп‑музыка (без изменений в SFX-only проходе 2026-02-16).

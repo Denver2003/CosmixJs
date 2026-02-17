@@ -38,6 +38,7 @@ export const SHAPE_SPRITE_SCALE = 2;
 export const YANDEX_LEADERBOARD_ID = "main";
 export const CLOUD_SAVE_THROTTLE_MS = 10000;
 export const KILL_DURATION_MS = 10000;
+export const KILL_WARNING_DELAY_MS = 3000;
 export const CHAIN_MIN = 4;
 export const CHAIN_DURATION_MS = 1800;
 export const CHAIN_GRACE_MS = 250;

@@ -25,12 +25,12 @@
   - Oval: ellipse area = 4L^2, aspect ratio 1.6
   - Pentagon: regular, area = 4L^2
 - **Colors**: 4 random stroke colors per piece; transparent fill.
-- **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over.
+- **Kill line logic**: any non-waiting piece continuously touching the kill line for 10s triggers game over; warning siren now starts only after 3s of continuous contact (resets on contact break and during kill grace).
 - **Kill line pulse**: always visible; laser barrier shifts from cyan→purple→red with increased activity; alpha grows with cup fill (0.2→0.8) and forces 1.0 in last 5 seconds.
 - **Laser barrier danger logic**: 0–0.5 danger from stack height vs death line, 0.5–1.0 from kill timer progress; barrier ignores the current waiting piece and only reacts after first contact.
 - **Game Over banner**: large canvas banner appears above the death line with a fast scale+alpha pop and laser-text glow; the menu overlay shows 2 seconds later.
 - **Game Over menu flow**: returning to `game` while in game-over state opens the menu immediately; pressing Play from Home during game-over triggers a full Retry flow (with interstitials) instead of staying stuck.
-- **Audio (runtime)**: WebAudio-backed manager with HTMLAudio fallback, decoded buffers for SFX/BGM, resume-on-gesture unlock for Safari, persisted settings (music/sfx/mute), BGM loop, placeholder assets in `assets/audio/`, and SFX hooks for spawn/drop, first impact, chain burst, bubble pop + reward (coins/points/instant), grenade, hail drop, gun shots, kill-line warning + timeout, combo (basic/super/mega/cosmo), level up, and cosmo multiplier up.
+- **Audio (runtime)**: WebAudio-backed manager with HTMLAudio fallback, decoded buffers for SFX/BGM, resume-on-gesture unlock for Safari, persisted settings (music/sfx/mute), BGM loop, and SFX hooks for spawn/drop, first impact, chain burst, bubble pop + reward (coins/points/instant), grenade, hail drop, gun shots, kill-line warning + timeout, combo (basic/super/mega/cosmo), level up, and cosmo multiplier up. Runtime SFX in `assets/audio/sfx/` are local-generated and retuned through `v4-soft` (including softer warning/game-over family and coin ring refresh), with a temporary in-game test override for `combo_*` from `r4-v1-test`; BGM is unchanged. Generation metadata is tracked in `assets/audio/generation_manifest.json`.
 - **Color chains**: if a connected chain of same-color pieces (by collision contacts) reaches 4+ and stays for 1.8s, those pieces disappear instantly.
 - **Chain burst**: matched chains now play a 1.0s burst (scatter, scale-by-distance, fade), get a small upward kick, then fall with extra gravity; removed after the burst. Burst adds spin: rightward -> clockwise, leftward -> counterclockwise, random speed.
 - **Scoring**: collapse score uses NR formula with a chain-size bonus (+10% per piece above 4); level-up grants NLR bonus.

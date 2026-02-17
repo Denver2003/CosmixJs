@@ -1,0 +1,325 @@
+{
+  "generatedAtUtc": "2026-02-16T12:11:36Z",
+  "rows": [
+    {
+      "eventId": "chain_burst",
+      "durationTargetSec": 0.55,
+      "before": {
+        "durationSec": 0.55,
+        "lufs": -15.85,
+        "truePeakDbtp": -3.07,
+        "roughness": 0.185231
+      },
+      "after": {
+        "durationSec": 0.55,
+        "lufs": -22.34,
+        "truePeakDbtp": -1.01,
+        "roughness": 1.6e-05
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "bonus_instant_pick",
+      "durationTargetSec": 0.24,
+      "before": {
+        "durationSec": 0.24,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "roughness": 0.391183
+      },
+      "after": {
+        "durationSec": 0.24,
+        "lufs": null,
+        "truePeakDbtp": -4.65,
+        "roughness": 0.424039
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "bonus_grenade",
+      "durationTargetSec": 0.6,
+      "before": {
+        "durationSec": 0.6,
+        "lufs": -16.26,
+        "truePeakDbtp": -1.0,
+        "roughness": 0.011256
+      },
+      "after": {
+        "durationSec": 0.6,
+        "lufs": -21.65,
+        "truePeakDbtp": -1.04,
+        "roughness": 0.002178
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "bonus_hail_fall",
+      "durationTargetSec": 0.65,
+      "before": {
+        "durationSec": 0.65,
+        "lufs": -24.95,
+        "truePeakDbtp": -1.73,
+        "roughness": 0.514636
+      },
+      "after": {
+        "durationSec": 0.65,
+        "lufs": -29.15,
+        "truePeakDbtp": -7.24,
+        "roughness": 0.214108
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "bonus_gun_shot",
+      "durationTargetSec": 0.11,
+      "before": {
+        "durationSec": 0.11,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "roughness": 0.021079
+      },
+      "after": {
+        "durationSec": 0.11,
+        "lufs": null,
+        "truePeakDbtp": -3.75,
+        "roughness": 0.061448
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "laser_warning_loop",
+      "durationTargetSec": 0.8,
+      "before": {
+        "durationSec": 0.8,
+        "lufs": -16.1,
+        "truePeakDbtp": -10.26,
+        "roughness": 0.192356
+      },
+      "after": {
+        "durationSec": 0.8,
+        "lufs": -20.41,
+        "truePeakDbtp": -13.52,
+        "roughness": 0.25833,
+        "loopSeamRmsDeltaRatio": 0.194452
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true,
+        "loopSeamOk": true
+      }
+    },
+    {
+      "eventId": "laser_timeout_hit",
+      "durationTargetSec": 0.45,
+      "before": {
+        "durationSec": 0.45,
+        "lufs": -15.95,
+        "truePeakDbtp": -3.79,
+        "roughness": 0.007528
+      },
+      "after": {
+        "durationSec": 0.45,
+        "lufs": -21.25,
+        "truePeakDbtp": -2.01,
+        "roughness": 0.01417
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "game_over",
+      "durationTargetSec": 1.2,
+      "before": {
+        "durationSec": 1.2,
+        "lufs": -16.3,
+        "truePeakDbtp": -3.91,
+        "roughness": 0.033484
+      },
+      "after": {
+        "durationSec": 1.2,
+        "lufs": -16.07,
+        "truePeakDbtp": -5.94,
+        "roughness": 0.002244
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "combo_basic",
+      "durationTargetSec": 0.35,
+      "before": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "roughness": 0.110079
+      },
+      "after": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -4.18,
+        "roughness": 0.035695
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "combo_super",
+      "durationTargetSec": 0.42,
+      "before": {
+        "durationSec": 0.42,
+        "lufs": -22.95,
+        "truePeakDbtp": -1.0,
+        "roughness": 7e-06
+      },
+      "after": {
+        "durationSec": 0.42,
+        "lufs": -8.55,
+        "truePeakDbtp": -1.07,
+        "roughness": 0.003473
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "combo_mega",
+      "durationTargetSec": 0.5,
+      "before": {
+        "durationSec": 0.5,
+        "lufs": -20.38,
+        "truePeakDbtp": -1.0,
+        "roughness": 0.007106
+      },
+      "after": {
+        "durationSec": 0.5,
+        "lufs": -21.39,
+        "truePeakDbtp": -3.42,
+        "roughness": 0.029608
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "combo_cosmo",
+      "durationTargetSec": 0.6,
+      "before": {
+        "durationSec": 0.6,
+        "lufs": -16.0,
+        "truePeakDbtp": -3.84,
+        "roughness": 0.000527
+      },
+      "after": {
+        "durationSec": 0.6,
+        "lufs": -16.08,
+        "truePeakDbtp": -2.62,
+        "roughness": 9.2e-05
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "level_up",
+      "durationTargetSec": 0.7,
+      "before": {
+        "durationSec": 0.7,
+        "lufs": -23.85,
+        "truePeakDbtp": -1.0,
+        "roughness": 1.1e-05
+      },
+      "after": {
+        "durationSec": 0.7,
+        "lufs": -19.79,
+        "truePeakDbtp": -15.71,
+        "roughness": 0.251959
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "cosmo_level_up",
+      "durationTargetSec": 0.75,
+      "before": {
+        "durationSec": 0.75,
+        "lufs": -22.75,
+        "truePeakDbtp": -1.0,
+        "roughness": 0.053353
+      },
+      "after": {
+        "durationSec": 0.75,
+        "lufs": -22.79,
+        "truePeakDbtp": -1.16,
+        "roughness": 0.004786
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    {
+      "eventId": "bonus_coin_pick",
+      "durationTargetSec": 0.16,
+      "before": {
+        "durationSec": 0.16,
+        "lufs": null,
+        "truePeakDbtp": -2.71,
+        "roughness": 0.048486
+      },
+      "after": {
+        "durationSec": 0.16,
+        "lufs": null,
+        "truePeakDbtp": -3.59,
+        "roughness": 0.366986
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true
+      }
+    }
+  ],
+  "acceptedEvents": [
+    "chain_burst",
+    "bonus_instant_pick",
+    "bonus_grenade",
+    "bonus_hail_fall",
+    "bonus_gun_shot",
+    "laser_warning_loop",
+    "laser_timeout_hit",
+    "game_over",
+    "combo_basic",
+    "combo_super",
+    "combo_mega",
+    "combo_cosmo",
+    "level_up",
+    "cosmo_level_up",
+    "bonus_coin_pick"
+  ],
+  "rejectedEvents": []
+}

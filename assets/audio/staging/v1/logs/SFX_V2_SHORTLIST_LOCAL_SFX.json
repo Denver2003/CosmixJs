@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-02-16T11:31:19.271Z",
+  "generator": "local-sfx MCP generate_sfx_batch",
+  "parallelism": 1,
+  "items": [
+    {
+      "event": "chain_burst",
+      "id": "2a7f2e1988c541c19163ea442779f84d",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/2a7f2e1988c541c19163ea442779f84d.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/chain_burst.wav",
+      "seed": 2001
+    },
+    {
+      "event": "bonus_bubble_pop",
+      "id": "27e7765cef07423fbd4d25a810013006",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/27e7765cef07423fbd4d25a810013006.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/bonus_bubble_pop.wav",
+      "seed": 2002
+    },
+    {
+      "event": "bonus_coin_pick",
+      "id": "9ca1ea2ab85b4601bb772021cb855b6b",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/9ca1ea2ab85b4601bb772021cb855b6b.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/bonus_coin_pick.wav",
+      "seed": 2003
+    },
+    {
+      "event": "bonus_instant_pick",
+      "id": "75708cc832364ee6914d42d55c2f2d37",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/75708cc832364ee6914d42d55c2f2d37.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/bonus_instant_pick.wav",
+      "seed": 2004
+    },
+    {
+      "event": "bonus_grenade",
+      "id": "3f9fd60a14234bf6b44756cb523850df",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/3f9fd60a14234bf6b44756cb523850df.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/bonus_grenade.wav",
+      "seed": 2005
+    },
+    {
+      "event": "bonus_hail_fall",
+      "id": "1d31c72a8f3f4468a79c63c71c54b485",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/1d31c72a8f3f4468a79c63c71c54b485.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/bonus_hail_fall.wav",
+      "seed": 2006
+    },
+    {
+      "event": "combo_mega",
+      "id": "d665788c438f46d8b8b0968faffcff54",
+      "wav_path": "/Users/deniskhlopin/dev/sfx-local/out/d665788c438f46d8b8b0968faffcff54.wav",
+      "staging_raw": "assets/audio/staging/v1/sfx_raw/combo_mega.wav",
+      "seed": 2007
+    }
+  ]
+}
