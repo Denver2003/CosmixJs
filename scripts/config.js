@@ -83,6 +83,7 @@ export const COSMO_ENERGY_MAX_INTERNAL = 125;
 export const COSMO_ENERGY_L2 = 35;
 export const COSMO_ENERGY_L3 = 70;
 export const COSMO_ENERGY_L5 = 100;
+export const COSMO_LEVEL_UP_SFX_THROTTLE_MS = 7000;
 
 export const BUBBLE_SPAWN_CHANCE = 0.1;
 export const BUBBLE_MIN_RADIUS = 25;

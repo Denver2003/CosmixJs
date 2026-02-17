@@ -4,6 +4,7 @@ import {
   COSMO_ENERGY_L2,
   COSMO_ENERGY_L3,
   COSMO_ENERGY_L5,
+  COSMO_LEVEL_UP_SFX_THROTTLE_MS,
   COSMO_ENERGY_MAX,
   COSMO_ENERGY_MAX_INTERNAL,
 } from "../config.js";
@@ -81,7 +82,13 @@ export function updateCosmometerMultiplier(state, nowMs) {
       color: toColor,
       startMs: nowMs,
     });
-    playSfx("cosmo_level_up");
+    const lastSfxMs = Number.isFinite(state.cosmoLevelUpLastSfxMs)
+      ? state.cosmoLevelUpLastSfxMs
+      : -Infinity;
+    if (nowMs - lastSfxMs >= COSMO_LEVEL_UP_SFX_THROTTLE_MS) {
+      playSfx("cosmo_level_up");
+      state.cosmoLevelUpLastSfxMs = nowMs;
+    }
   }
   return state.gameMultiplier;
 }

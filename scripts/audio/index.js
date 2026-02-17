@@ -51,19 +51,27 @@ const SFX = {
 };
 
 const MUSIC = {
-  bgm_main_loop: { src: "./assets/audio/bgm/bgm_main_loop.ogg" },
+  bgm_loop_1: { src: "./assets/audio/bgm/bgm_loop_1.ogg" },
+  bgm_loop_2: { src: "./assets/audio/bgm/bgm_loop_2.ogg" },
+  bgm_loop_3: { src: "./assets/audio/bgm/bgm_loop_3.ogg" },
+  bgm_loop_4: { src: "./assets/audio/bgm/bgm_loop_4.ogg" },
+  // Backward-compatible alias for older callers.
+  bgm_main_loop: { src: "./assets/audio/bgm/bgm_loop_1.ogg" },
 };
 
 const AudioContextClass =
   typeof window !== "undefined" ? window.AudioContext || window.webkitAudioContext : null;
 const WEB_AUDIO_SUPPORTED = Boolean(AudioContextClass);
+const MUSIC_ZERO_SNAP_PERCENT = 5;
+const MUSIC_CROSSFADE_SEC = 2;
 
-let settings = loadAudioSettings();
+let settings = normalizeAudioSettings(loadAudioSettings());
 const lastPlayMs = new Map();
 const loopActive = new Set();
 const loopPlayers = new Map();
 const sfxPools = new Map();
 let musicPlayer = null;
+let musicPaused = false;
 const SFX_POOL_LIMIT = 4;
 const webAudio = {
   supported: WEB_AUDIO_SUPPORTED,
@@ -77,7 +85,13 @@ const webAudio = {
   loopSources: new Map(),
   musicId: null,
   musicSource: null,
+  musicSourceGain: null,
+  musicSourceStartedAtSec: 0,
+  musicSourceDurationSec: 0,
   musicSourceId: null,
+  pendingMusicId: null,
+  pendingMusicTimer: 0,
+  musicRequestToken: 0,
   failed: false,
   unlocked: false,
 };
@@ -88,11 +102,11 @@ export function getAudioSettings() {
 }
 
 export function setAudioSettings(partial) {
-  const next = {
-    music: clampPercent(partial?.music ?? settings.music),
-    sfx: clampPercent(partial?.sfx ?? settings.sfx),
-    mute: Boolean(partial?.mute ?? settings.mute),
-  };
+  const next = normalizeAudioSettings({
+    music: partial?.music ?? settings.music,
+    sfx: partial?.sfx ?? settings.sfx,
+    mute: partial?.mute ?? settings.mute,
+  });
   settings = next;
   saveAudioSettings(next);
   const appState = getAppState();
@@ -118,12 +132,11 @@ export function setLoop(id, active) {
   setLoopHtml(id, active);
 }
 
-export function playMusic(id) {
-  if (useWebAudio()) {
-    playMusicWeb(id);
+export function playMusic(id, options = {}) {
+  if (!useWebAudio()) {
     return;
   }
-  playMusicHtml(id);
+  playMusicWeb(id, options);
 }
 
 export function stopMusic() {
@@ -140,6 +153,69 @@ export function preloadAudio() {
     return;
   }
   preloadAudioHtml();
+}
+
+export function setMusicPaused(paused) {
+  musicPaused = Boolean(paused);
+  if (useWebAudio()) {
+    if (musicPaused) {
+      clearPendingMusicTimer();
+    }
+    const context = webAudio.context;
+    if (!context) {
+      return;
+    }
+    if (musicPaused) {
+      if (webAudio.musicGain) {
+        webAudio.musicGain.gain.value = 0;
+      }
+      if (context.state === "running") {
+        context.suspend().catch(() => {});
+      }
+      return;
+    }
+    if (context.state === "suspended") {
+      context.resume().catch(() => {});
+    }
+    if (webAudio.musicGain) {
+      webAudio.musicGain.gain.value = getMusicVolume();
+    }
+    if (webAudio.pendingMusicId) {
+      schedulePendingMusicSwitch();
+    }
+    if (webAudio.musicId && !webAudio.musicSource && !settings.mute && settings.music > 0) {
+      const meta = MUSIC[webAudio.musicId];
+      if (meta?.src) {
+        startWebMusic(webAudio.musicId, meta.src);
+      }
+    }
+    return;
+  }
+  if (!musicPlayer?.audio) {
+    return;
+  }
+  if (musicPaused) {
+    musicPlayer.audio.pause();
+  } else if (!settings.mute && settings.music > 0) {
+    musicPlayer.audio.play().catch(() => {});
+  }
+}
+
+export function ensureAudioUnlocked() {
+  if (!useWebAudio()) {
+    return;
+  }
+  const context = ensureWebAudioContext();
+  if (!context) {
+    return;
+  }
+  if (context.state === "suspended") {
+    context.resume().catch(() => {});
+  }
+  if (!webAudio.unlocked && context.state === "running") {
+    unlockWebAudio(context);
+    webAudio.unlocked = true;
+  }
 }
 
 export function getAudioAssets() {
@@ -242,20 +318,6 @@ function preloadAudioHtml() {
       loopPlayers.set(id, loopAudio);
     }
   }
-  for (const [id, meta] of Object.entries(MUSIC)) {
-    if (!meta?.src) {
-      continue;
-    }
-    if (!musicPlayer || musicPlayer.id !== id) {
-      const audio = createAudio(meta.src, true);
-      audio.load();
-      if (!musicPlayer) {
-        musicPlayer = { id, audio };
-      }
-    } else if (musicPlayer.audio) {
-      musicPlayer.audio.load();
-    }
-  }
   applyHtmlVolumes();
 }
 
@@ -268,7 +330,7 @@ function getSfxVolume() {
 }
 
 function getMusicVolume() {
-  return settings.mute ? 0 : clampPercent(settings.music) / 100;
+  return settings.mute || musicPaused ? 0 : clampPercent(settings.music) / 100;
 }
 
 function clampPercent(value) {
@@ -276,6 +338,19 @@ function clampPercent(value) {
     return 0;
   }
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function normalizeMusicPercent(value) {
+  const clamped = clampPercent(value);
+  return clamped <= MUSIC_ZERO_SNAP_PERCENT ? 0 : clamped;
+}
+
+function normalizeAudioSettings(value) {
+  return {
+    music: normalizeMusicPercent(value?.music),
+    sfx: clampPercent(value?.sfx),
+    mute: Boolean(value?.mute),
+  };
 }
 
 function hasSettingsDiff(prev, next) {
@@ -390,19 +465,8 @@ function bindWebAudioUnlock() {
   const pointerOptions = { capture: true, passive: true };
   const keyOptions = { capture: true };
   const unlock = () => {
-    if (!useWebAudio()) {
-      return;
-    }
-    const context = ensureWebAudioContext();
-    if (!context) {
-      return;
-    }
-    if (context.state === "suspended") {
-      context.resume().catch(() => {});
-    }
-    if (!webAudio.unlocked && context.state === "running") {
-      unlockWebAudio(context);
-      webAudio.unlocked = true;
+    ensureAudioUnlocked();
+    if (webAudio.unlocked) {
       window.removeEventListener("pointerdown", unlock, pointerOptions);
       window.removeEventListener("touchend", unlock, pointerOptions);
       window.removeEventListener("mousedown", unlock, pointerOptions);
@@ -554,6 +618,17 @@ function startWebSfx(buffer) {
   if (!context || !webAudio.sfxGain) {
     return;
   }
+  if (context.state !== "running") {
+    context
+      .resume()
+      .then(() => {
+        if (canPlaySfx()) {
+          startWebSfx(buffer);
+        }
+      })
+      .catch(() => {});
+    return;
+  }
   const source = context.createBufferSource();
   source.buffer = buffer;
   source.connect(webAudio.sfxGain);
@@ -600,6 +675,17 @@ function startWebLoop(id) {
   if (!context || !webAudio.sfxGain) {
     return;
   }
+  if (context.state !== "running") {
+    context
+      .resume()
+      .then(() => {
+        if (loopActive.has(id) && canPlaySfx()) {
+          startWebLoop(id);
+        }
+      })
+      .catch(() => {});
+    return;
+  }
   const source = context.createBufferSource();
   source.buffer = buffer;
   source.loop = true;
@@ -621,73 +707,291 @@ function stopWebLoop(id) {
   webAudio.loopSources.delete(id);
 }
 
-function playMusicWeb(id) {
-  const meta = MUSIC[id];
+function playMusicWeb(id, options = {}) {
+  const resolvedId = resolveMusicId(id);
+  const meta = MUSIC[resolvedId];
   if (!meta?.src) {
     return;
   }
-  webAudio.musicId = id;
+  const restartFromStart = Boolean(options?.restartFromStart);
+  const deferUntilLoopEnd = Boolean(options?.deferUntilLoopEnd);
+  webAudio.musicId = resolvedId;
+  if (musicPaused) {
+    return;
+  }
   if (settings.mute || settings.music <= 0) {
+    clearPendingMusicSwitch();
     stopWebMusicSource();
     return;
   }
-  if (webAudio.musicSource && webAudio.musicSourceId === id) {
+  if (restartFromStart) {
+    clearPendingMusicSwitch();
+    startWebMusic(resolvedId, meta.src, { restartFromStart: true });
     return;
   }
-  startWebMusic(id, meta.src);
+  if (webAudio.musicSource && webAudio.musicSourceId === resolvedId) {
+    clearPendingMusicSwitch();
+    return;
+  }
+  if (deferUntilLoopEnd && webAudio.musicSource && webAudio.musicSourceId) {
+    queueMusicSwitchAtLoopEnd(resolvedId);
+    return;
+  }
+  clearPendingMusicSwitch();
+  startWebMusic(resolvedId, meta.src);
 }
 
-function startWebMusic(id, src) {
+function startWebMusic(id, src, options = {}) {
+  const restartFromStart = Boolean(options?.restartFromStart);
+  const crossfadeSec = Number.isFinite(options?.crossfadeSec)
+    ? Math.max(0, options.crossfadeSec)
+    : 0;
+  if (restartFromStart && crossfadeSec <= 0) {
+    stopWebMusicSource();
+  }
+  const requestToken = ++webAudio.musicRequestToken;
   const buffer = webAudio.musicBuffers.get(id);
   if (buffer) {
-    startWebMusicSource(buffer);
+    startWebMusicSource(id, buffer, { crossfadeSec, requestToken });
     return;
   }
   loadWebAudioBuffer(id, src, webAudio.musicBuffers, webAudio.musicLoads)
     .then((loaded) => {
-      if (!loaded || webAudio.musicId !== id) {
+      if (!loaded || webAudio.musicId !== id || requestToken !== webAudio.musicRequestToken) {
         return;
       }
       if (settings.mute || settings.music <= 0) {
         return;
       }
-      startWebMusicSource(loaded);
+      startWebMusicSource(id, loaded, { crossfadeSec, requestToken });
     })
     .catch(() => {});
 }
 
-function startWebMusicSource(buffer) {
+function startWebMusicSource(id, buffer, options = {}) {
   const context = ensureWebAudioContext();
   if (!context || !webAudio.musicGain) {
     return;
   }
-  stopWebMusicSource();
-  const source = context.createBufferSource();
-  source.buffer = buffer;
-  source.loop = true;
-  source.connect(webAudio.musicGain);
-  source.start(0);
-  webAudio.musicSource = source;
-  webAudio.musicSourceId = webAudio.musicId;
+  const requestToken = options?.requestToken;
+  if (requestToken && requestToken !== webAudio.musicRequestToken) {
+    return;
+  }
+  if (musicPaused || settings.mute || settings.music <= 0) {
+    return;
+  }
+  if (context.state !== "running") {
+    context
+      .resume()
+      .then(() => {
+        if (!musicPaused && !settings.mute && settings.music > 0) {
+          startWebMusicSource(id, buffer, options);
+        }
+      })
+      .catch(() => {});
+    return;
+  }
+  const crossfadeSec = Number.isFinite(options?.crossfadeSec)
+    ? Math.max(0, options.crossfadeSec)
+    : 0;
+  if (!webAudio.musicSource || crossfadeSec <= 0) {
+    stopWebMusicSource();
+    const next = createWebMusicSource(context, buffer, 1);
+    if (!next) {
+      return;
+    }
+    webAudio.musicSource = next.source;
+    webAudio.musicSourceGain = next.gain;
+    webAudio.musicSourceStartedAtSec = next.startedAtSec;
+    webAudio.musicSourceDurationSec = next.durationSec;
+    webAudio.musicSourceId = id;
+    return;
+  }
+
+  const currentSource = webAudio.musicSource;
+  const currentGain = webAudio.musicSourceGain;
+  const next = createWebMusicSource(context, buffer, 0);
+  if (!next) {
+    return;
+  }
+  webAudio.musicSource = next.source;
+  webAudio.musicSourceGain = next.gain;
+  webAudio.musicSourceStartedAtSec = next.startedAtSec;
+  webAudio.musicSourceDurationSec = next.durationSec;
+  webAudio.musicSourceId = id;
+
+  const now = context.currentTime;
+  next.gain.gain.cancelScheduledValues(now);
+  next.gain.gain.setValueAtTime(0, now);
+  next.gain.gain.linearRampToValueAtTime(1, now + crossfadeSec);
+  if (currentGain) {
+    currentGain.gain.cancelScheduledValues(now);
+    currentGain.gain.setValueAtTime(currentGain.gain.value, now);
+    currentGain.gain.linearRampToValueAtTime(0, now + crossfadeSec);
+  }
+  safeStopMusicNode(currentSource, now + crossfadeSec + 0.05);
 }
 
 function stopMusicWeb() {
   webAudio.musicId = null;
+  clearPendingMusicSwitch();
   stopWebMusicSource();
 }
 
 function stopWebMusicSource() {
   const source = webAudio.musicSource;
+  const gain = webAudio.musicSourceGain;
+  if (!source) {
+    webAudio.musicSourceGain = null;
+    webAudio.musicSourceStartedAtSec = 0;
+    webAudio.musicSourceDurationSec = 0;
+    return;
+  }
+  safeStopMusicNode(source, 0);
+  if (gain) {
+    try {
+      gain.disconnect();
+    } catch (error) {
+    }
+  }
+  webAudio.musicSource = null;
+  webAudio.musicSourceGain = null;
+  webAudio.musicSourceStartedAtSec = 0;
+  webAudio.musicSourceDurationSec = 0;
+  webAudio.musicSourceId = null;
+}
+
+function resolveMusicId(id) {
+  if (MUSIC[id]) {
+    return id;
+  }
+  return "bgm_loop_1";
+}
+
+function queueMusicSwitchAtLoopEnd(id) {
+  if (!id || !MUSIC[id]) {
+    return;
+  }
+  if (!webAudio.musicSource || !webAudio.musicSourceId) {
+    clearPendingMusicSwitch();
+    const meta = MUSIC[id];
+    if (meta?.src) {
+      startWebMusic(id, meta.src);
+    }
+    return;
+  }
+  if (webAudio.musicSourceId === id) {
+    clearPendingMusicSwitch();
+    return;
+  }
+  webAudio.pendingMusicId = id;
+  schedulePendingMusicSwitch();
+}
+
+function clearPendingMusicTimer() {
+  if (!webAudio.pendingMusicTimer) {
+    return;
+  }
+  clearTimeout(webAudio.pendingMusicTimer);
+  webAudio.pendingMusicTimer = 0;
+}
+
+function clearPendingMusicSwitch() {
+  clearPendingMusicTimer();
+  webAudio.pendingMusicId = null;
+}
+
+function schedulePendingMusicSwitch() {
+  clearPendingMusicTimer();
+  if (
+    !webAudio.pendingMusicId ||
+    !webAudio.musicSource ||
+    !webAudio.musicSourceId ||
+    webAudio.pendingMusicId === webAudio.musicSourceId ||
+    musicPaused
+  ) {
+    return;
+  }
+  const context = ensureWebAudioContext();
+  if (!context || context.state !== "running") {
+    return;
+  }
+  const duration = webAudio.musicSourceDurationSec;
+  const startedAt = webAudio.musicSourceStartedAtSec;
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(startedAt)) {
+    executePendingMusicSwitch();
+    return;
+  }
+  const elapsed = Math.max(0, context.currentTime - startedAt);
+  const loopPos = elapsed % duration;
+  const remainingSec = Math.max(0, duration - loopPos);
+  webAudio.pendingMusicTimer = setTimeout(() => {
+    webAudio.pendingMusicTimer = 0;
+    executePendingMusicSwitch();
+  }, Math.max(0, Math.round(remainingSec * 1000)));
+}
+
+function executePendingMusicSwitch() {
+  if (musicPaused || !webAudio.pendingMusicId) {
+    return;
+  }
+  const nextId = webAudio.pendingMusicId;
+  if (nextId === webAudio.musicSourceId) {
+    clearPendingMusicSwitch();
+    return;
+  }
+  const meta = MUSIC[nextId];
+  if (!meta?.src) {
+    clearPendingMusicSwitch();
+    return;
+  }
+  clearPendingMusicTimer();
+  webAudio.musicId = nextId;
+  startWebMusic(nextId, meta.src, { crossfadeSec: MUSIC_CROSSFADE_SEC });
+  webAudio.pendingMusicId = null;
+}
+
+function createWebMusicSource(context, buffer, initialGain = 1) {
+  if (!context || !buffer || !webAudio.musicGain) {
+    return null;
+  }
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  source.loop = true;
+  gain.gain.value = initialGain;
+  source.connect(gain);
+  gain.connect(webAudio.musicGain);
+  source.start(0);
+  return {
+    source,
+    gain,
+    startedAtSec: context.currentTime,
+    durationSec: Number.isFinite(buffer.duration) ? buffer.duration : 0,
+  };
+}
+
+function safeStopMusicNode(source, whenSec = 0) {
   if (!source) {
     return;
   }
   try {
-    source.stop(0);
+    source.stop(whenSec);
   } catch (error) {
   }
-  source.disconnect();
-  webAudio.musicSource = null;
-  webAudio.musicSourceId = null;
+  try {
+    source.onended = () => {
+      try {
+        source.disconnect();
+      } catch (disconnectError) {
+      }
+    };
+  } catch (error) {
+    try {
+      source.disconnect();
+    } catch (disconnectError) {
+    }
+  }
 }
 
 function applyWebVolumes() {
@@ -708,6 +1012,9 @@ function applyWebVolumes() {
     for (const id of loopActive) {
       startWebLoop(id);
     }
+  }
+  if (musicPaused) {
+    return;
   }
   if (settings.mute || settings.music <= 0) {
     stopWebMusicSource();

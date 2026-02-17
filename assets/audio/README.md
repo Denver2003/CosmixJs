@@ -28,8 +28,20 @@ Round1 bonus retune candidates: `assets/audio/staging/v1/bonus_retune_round1/log
 - `assets/audio/sfx/combo_mega.wav` — озвучка мега‑комбо.
 - `assets/audio/sfx/combo_cosmo.wav` — озвучка космо‑комбо.
 - `assets/audio/sfx/level_up.wav` — новый уровень.
-- `assets/audio/sfx/cosmo_level_up.wav` — повышение множителя космометра.
+- `assets/audio/sfx/cosmo_level_up.wav` — повышение множителя космометра (только при росте вверх, throttle 7s).
 
 ## BGM
 
-- `assets/audio/bgm/bgm_main_loop.ogg` — основная луп‑музыка (без изменений в SFX-only проходе 2026-02-16).
+- Source track: `assets/audio/bgm/Cosmix music.mp3`.
+- Runtime loops (level bands):
+  - `assets/audio/bgm/bgm_loop_1.ogg` for levels `1..4`
+  - `assets/audio/bgm/bgm_loop_2.ogg` for levels `5..8`
+  - `assets/audio/bgm/bgm_loop_3.ogg` for levels `9..12`
+  - `assets/audio/bgm/bgm_loop_4.ogg` for levels `13+`
+- Legacy alias id `bgm_main_loop` points to `bgm_loop_1`.
+- Runtime backend policy: BGM воспроизводится только через WebAudio buffer (без HTMLAudio fallback для музыки).
+- Switch behavior: переход между level-bands ставится на конец текущего loop и выполняется с crossfade `2.0s`.
+- Pause behavior: при pause/focus-loss музыка мгновенно замолкает и при resume продолжается с текущего места.
+- Start behavior: музыка запускается уже в shell/menu (loop_1); первый старт игры из меню не перезапускает loop.
+- Restart behavior: retry/restart всегда сбрасывает BGM на `bgm_loop_1` с начала.
+- BGM prep report: `assets/audio/staging/v1/logs/BGM_LOOP_PREP_REPORT.md`.

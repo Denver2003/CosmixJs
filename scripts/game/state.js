@@ -79,6 +79,7 @@ export function createGameState() {
     cosmoColorTo: null,
     cosmoColorBlendStartMs: 0,
     cosmoPopups: [],
+    cosmoLevelUpLastSfxMs: -Infinity,
     comboStreak: 0,
     comboLastAtMs: 0,
     comboPopups: [],
