@@ -7,6 +7,8 @@ Processing: loudness target `~ -16 LUFS`, true peak `<= -1.0 dBTP`, target-durat
 Manifest: `assets/audio/generation_manifest.json`.
 Soft-pass notes (A/B): `assets/audio/staging/v1/logs/SFX_SOFT_PASS_NOTES.md`.
 Kill-line warning throttle notes: `assets/audio/staging/v1/logs/KILL_WARNING_THROTTLE_NOTES.md`.
+Round1 bonus retune candidates: `assets/audio/staging/v1/bonus_retune_round1/logs/ROUND1_OPTIONS.md`.
+`bonus_coin_pick.wav` restored raw from previous main commit `1ab99df` (2026-02-17).
 
 - `assets/audio/sfx/drop_whoosh.wav` — сброс/падение фигуры.
 - `assets/audio/sfx/impact_first.wav` — первый удар после падения (единожды на фигуру).

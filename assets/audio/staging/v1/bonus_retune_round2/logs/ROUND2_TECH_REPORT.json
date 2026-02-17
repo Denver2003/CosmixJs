@@ -1,0 +1,22 @@
+{
+  "round": "bonus_retune_round2",
+  "generatedAt": "2026-02-17T07:40:33Z",
+  "targets": {"bonus_hail_fall":0.82,"bonus_instant_pick":0.64,"bonus_points_pick":0.34},
+  "items": [
+    {"event":"bonus_hail_fall","variant":"v1","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_hail_fall_v1.wav","durationSec":0.820000,"maxVolumeDb":-6.1},
+    {"event":"bonus_hail_fall","variant":"v2","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_hail_fall_v2.wav","durationSec":0.820000,"maxVolumeDb":-5.1},
+    {"event":"bonus_hail_fall","variant":"v3","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_hail_fall_v3.wav","durationSec":0.820000,"maxVolumeDb":-2.6},
+    {"event":"bonus_hail_fall","variant":"v4","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_hail_fall_v4.wav","durationSec":0.820000,"maxVolumeDb":-1.0},
+    {"event":"bonus_hail_fall","variant":"v5","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_hail_fall_v5.wav","durationSec":0.820000,"maxVolumeDb":-4.6},
+    {"event":"bonus_instant_pick","variant":"v1","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_instant_pick_v1.wav","durationSec":0.640000,"maxVolumeDb":-1.0},
+    {"event":"bonus_instant_pick","variant":"v2","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_instant_pick_v2.wav","durationSec":0.640000,"maxVolumeDb":-1.0},
+    {"event":"bonus_instant_pick","variant":"v3","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_instant_pick_v3.wav","durationSec":0.640000,"maxVolumeDb":-1.0},
+    {"event":"bonus_instant_pick","variant":"v4","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_instant_pick_v4.wav","durationSec":0.640000,"maxVolumeDb":-1.0},
+    {"event":"bonus_instant_pick","variant":"v5","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_instant_pick_v5.wav","durationSec":0.640000,"maxVolumeDb":-9.2},
+    {"event":"bonus_points_pick","variant":"v1","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_points_pick_v1.wav","durationSec":0.340000,"maxVolumeDb":-1.0},
+    {"event":"bonus_points_pick","variant":"v2","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_points_pick_v2.wav","durationSec":0.340000,"maxVolumeDb":-1.0},
+    {"event":"bonus_points_pick","variant":"v3","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_points_pick_v3.wav","durationSec":0.340000,"maxVolumeDb":-1.0},
+    {"event":"bonus_points_pick","variant":"v4","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_points_pick_v4.wav","durationSec":0.340000,"maxVolumeDb":-1.0},
+    {"event":"bonus_points_pick","variant":"v5","file":"assets/audio/staging/v1/bonus_retune_round2/variants/bonus_points_pick_v5.wav","durationSec":0.340000,"maxVolumeDb":-1.0}
+  ]
+}
