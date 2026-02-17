@@ -1,4 +1,4 @@
-import { KILL_DURATION_MS, KILL_OFFSET } from "../config.js";
+import { KILL_DURATION_MS, KILL_OFFSET, KILL_WARNING_DELAY_MS } from "../config.js";
 import { playSfx, setLoop } from "../audio/index.js";
 
 const { Composite } = Matter;
@@ -7,6 +7,10 @@ export function updateKillLine(state, getGlassRect, deltaMs) {
   const { top } = getGlassRect();
   const killY = top + KILL_OFFSET;
   if (state.killGraceUntil && state.engine?.timing?.timestamp < state.killGraceUntil) {
+    if (state.killWarningActive) {
+      setLoop("laser_warning_loop", false);
+      state.killWarningActive = false;
+    }
     state.killTouchMs = 0;
     return;
   }
@@ -34,7 +38,11 @@ export function updateKillLine(state, getGlassRect, deltaMs) {
     state.killTouchMs = 0;
   }
 
-  if (touchingKill && !state.killWarningActive) {
+  if (
+    touchingKill &&
+    state.killTouchMs >= KILL_WARNING_DELAY_MS &&
+    !state.killWarningActive
+  ) {
     state.killWarningActive = true;
     setLoop("laser_warning_loop", true);
   } else if (!touchingKill && state.killWarningActive) {
@@ -44,6 +52,7 @@ export function updateKillLine(state, getGlassRect, deltaMs) {
 
   if (state.killTouchMs >= KILL_DURATION_MS) {
     setLoop("laser_warning_loop", false);
+    state.killWarningActive = false;
     playSfx("laser_timeout_hit");
     if (typeof window !== "undefined" && window.__setGameOver) {
       window.__setGameOver();

@@ -1,11 +1,11 @@
 # PLAN_EPIC_AUDIO_REPLACEMENT_ELEVENLABS — Full Audio Replacement via ElevenLabs
 
 - [x] Шаг 1: Подготовить production-спеку аудио (style guide, duration targets, loudness targets, anti-spam и loop-правила) и зафиксировать таблицу `event -> file -> prompt -> duration/role`.
-- [ ] Шаг 2: Сгенерировать v1 пакет через MCP ElevenLabs (`text_to_sound_effects` для 19 SFX, `compose_music` для 1 BGM) в staging-папку без перезаписи production.
-- [ ] Шаг 3: Выполнить техобработку v1 (конвертация/нормализация/подрезка loop), сохранить текущие форматы (`.wav` SFX, `.ogg` BGM).
-- [ ] Шаг 4: Интегрировать v1 в `assets/audio/*` и выполнить локальный smoke по ключевым сценариям.
-- [ ] Шаг 5: Сделать целевую v2-регенерацию проблемных звуков, повторить обработку и smoke-test.
-- [ ] Шаг 6: Выполнить cleanup лишних аудиофайлов, добавить generation manifest, обновить `assets/audio/README.md` и `PROJECT.md`.
+- [x] Шаг 2: Сгенерировать v1 пакет через local MCP `generate_sfx_batch` для 19 SFX в staging-папку (`assets/audio/staging/v1/sfx_raw`) без перезаписи BGM.
+- [x] Шаг 3: Выполнить техобработку SFX-only v1 (`.wav`): loudness/peak нормализация, trim/fade, проверка loop-кандидата, сохранить результаты в `assets/audio/staging/v1/sfx_processed`.
+- [x] Шаг 4: Интегрировать обработанные SFX в `assets/audio/sfx/*.wav` и выполнить локальный smoke (runtime coverage + ffprobe валидность).
+- [x] Шаг 5: Сделать целевую v2-регенерацию shortlist проблемных SFX, повторить обработку и smoke-test.
+- [x] Шаг 6: Выполнить cleanup/логирование генерации, добавить `assets/audio/generation_manifest.json`, обновить `assets/audio/README.md` и `PROJECT.md`.
 
 ## Status notes
 
@@ -13,3 +13,5 @@
   - SFX generation: `401 detected_unusual_activity`.
   - BGM generation: `402 limited_access` (Music API requires paid plan).
 - Detailed log: `assets/audio/staging/v1/logs/STEP2_BLOCKER.md`.
+- On 2026-02-16 execution path switched to local-sfx MCP for SFX generation due ElevenLabs API blockers.
+- This pass is SFX-only by decision; `assets/audio/bgm/bgm_main_loop.ogg` is deferred and unchanged.

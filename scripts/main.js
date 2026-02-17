@@ -36,6 +36,7 @@ import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
 import { syncSdkUser } from "./sdk/auth.js";
 import { loadIapCatalog, syncIapPurchases } from "./shop/iap.js";
 import { getShopProgress } from "./shop/progression.js";
+import { ensureAudioUnlocked, playMusic } from "./audio/index.js";
 
 const { Engine, Render } = Matter;
 
@@ -154,6 +155,7 @@ async function bootstrap() {
   });
   game.setViewScale(viewport.getState().scale);
   game.setViewSize(viewport.getState().width, viewport.getState().height);
+  playMusic("bgm_loop_1");
 
   gameStarted = false;
   shell = createShell({
@@ -275,6 +277,7 @@ async function bootstrap() {
     moved: false,
   };
   canvas.addEventListener("pointerdown", (event) => {
+    ensureAudioUnlocked();
     const rect = canvasRect();
     const scaleX = render.options.width / rect.width;
     const scaleY = render.options.height / rect.height;
@@ -348,6 +351,14 @@ async function bootstrap() {
       event.preventDefault();
       event.stopPropagation();
     }
+  });
+  window.addEventListener("touchend", ensureAudioUnlocked, {
+    capture: true,
+    passive: true,
+  });
+  window.addEventListener("mousedown", ensureAudioUnlocked, {
+    capture: true,
+    passive: true,
   });
   canvas.addEventListener("pointercancel", (event) => {
     if (!shopDrag.active || shopDrag.pointerId !== event.pointerId) {

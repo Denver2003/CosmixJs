@@ -1,0 +1,30 @@
+{
+  "round": "round5",
+  "generatedAt": "2026-02-17T06:18:49Z",
+  "generator": "local-sfx (no preset)",
+  "payloadFile": "/tmp/round5_payload.json",
+  "levelUpFiles": [
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v1.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v2.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v3.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v4.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v5.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v6.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v7.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v8.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v9.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/level_up_options/level_up_v10.wav"
+  ],
+  "gameOverFiles": [
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v1.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v2.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v3.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v4.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v5.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v6.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v7.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v8.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v9.wav",
+    "assets/audio/staging/v1/levelup_gameover_round5/game_over_options/game_over_v10.wav"
+  ]
+}

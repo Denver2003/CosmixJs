@@ -1,4 +1,4 @@
-import { playSfx } from "../audio/index.js";
+import { playSfx, setMusicPaused } from "../audio/index.js";
 
 const MODES = {
   SHELL: "shell",
@@ -25,11 +25,13 @@ export function createGameStateMachine(state, runner) {
       state.pausedReason = reason || "manual";
       state.pausedAtMs = getNowMs();
       state.pausedResumeMs = resumeDelayMs ? getNowMs() + resumeDelayMs : 0;
+      setMusicPaused(true);
     } else {
       state.paused = false;
       state.pausedReason = null;
       state.pausedAtMs = 0;
       state.pausedResumeMs = 0;
+      setMusicPaused(false);
     }
 
     if (runner) {

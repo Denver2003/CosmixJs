@@ -40,7 +40,7 @@ export function drawLines(state, render, getGlassRect) {
   ctx.save();
   ctx.globalCompositeOperation = "destination-over";
   drawGlassFrame(ctx, getGlassRect, render, getFrameShake(state));
-  drawBackground(ctx, render, getGlassRect, state.engine.timing.timestamp);
+  drawBackground(ctx, render, getGlassRect, state.engine.timing.timestamp, state.level);
   ctx.save();
   ctx.beginPath();
   ctx.rect(left, top, GLASS_WIDTH, GLASS_HEIGHT);

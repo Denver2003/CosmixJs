@@ -38,6 +38,7 @@ export const SHAPE_SPRITE_SCALE = 2;
 export const YANDEX_LEADERBOARD_ID = "main";
 export const CLOUD_SAVE_THROTTLE_MS = 10000;
 export const KILL_DURATION_MS = 10000;
+export const KILL_WARNING_DELAY_MS = 3000;
 export const CHAIN_MIN = 4;
 export const CHAIN_DURATION_MS = 1800;
 export const CHAIN_GRACE_MS = 250;
@@ -76,12 +77,14 @@ export const PREVIEW_DELAY_MS = 200;
 export const DEBUG_OVERLAY = false;
 
 export const COSMO_ENERGY_GAIN = 4;
+export const COSMO_ENERGY_GAIN_HAIL_MULTIPLIER = 2;
 export const COSMO_ENERGY_DECAY = 2;
 export const COSMO_ENERGY_MAX = 100;
 export const COSMO_ENERGY_MAX_INTERNAL = 125;
 export const COSMO_ENERGY_L2 = 35;
 export const COSMO_ENERGY_L3 = 70;
 export const COSMO_ENERGY_L5 = 100;
+export const COSMO_LEVEL_UP_SFX_THROTTLE_MS = 7000;
 
 export const BUBBLE_SPAWN_CHANCE = 0.1;
 export const BUBBLE_MIN_RADIUS = 25;
@@ -125,6 +128,13 @@ export const BACKGROUND_STAR_TWINKLE_MIN = 0.08;
 export const BACKGROUND_STAR_TWINKLE_MAX = 0.25;
 export const BACKGROUND_STAR_TWINKLE_SPEED_MIN = 0.6;
 export const BACKGROUND_STAR_TWINKLE_SPEED_MAX = 1.6;
+export const BACKGROUND_LEVEL_SPEED_STEP = 0.06;
+export const BACKGROUND_LEVEL_SPEED_MAX_MULT = 2.2;
+export const BACKGROUND_LEVEL_BRIGHTNESS_STEP = 0.02;
+export const BACKGROUND_LEVEL_BRIGHTNESS_MAX_BOOST = 0.35;
+export const BACKGROUND_ORBIT_MAX_RADIUS_PX = 18;
+export const BACKGROUND_ORBIT_TARGET_LEVEL = 16;
+export const BACKGROUND_ORBIT_SPEED_RAD = 0.1;
 
 export const HAIL_RESPAWN_POINTS = 10;
 export const HAIL_EXTRA_COUNT = 3;

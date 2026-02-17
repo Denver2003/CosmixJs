@@ -33,6 +33,19 @@ import { setAppState } from "../shell/app_state.js";
 
 const { Events } = Matter;
 
+function getBgmTrackByLevel(level) {
+  if (level <= 4) {
+    return "bgm_loop_1";
+  }
+  if (level <= 8) {
+    return "bgm_loop_2";
+  }
+  if (level <= 12) {
+    return "bgm_loop_3";
+  }
+  return "bgm_loop_4";
+}
+
 export function createGame({ engine, world, render, runner, getGlassRect }) {
   const state = createGameState();
   state.engine = engine;
@@ -73,7 +86,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       return;
     }
     const deltaMs = engine.timing.lastDelta;
-    updateBackgroundStars(deltaMs);
+    updateBackgroundStars(deltaMs, state.level);
     updateCosmometer(state, deltaMs);
     const prevMultiplier = state.gameMultiplier;
     updateCosmometerMultiplier(state, engine.timing.timestamp);
@@ -120,6 +133,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
         applyLevelUpReward(state, prevToNextLevel);
         spawnLevelUpPopup(state, getGlassRect, state.level);
         playSfx("level_up");
+        playMusic(getBgmTrackByLevel(state.level), { deferUntilLoopEnd: true });
       }
     }
     updatePreview(state, engine.timing.timestamp);
@@ -179,7 +193,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     }
     mode.startGame();
     preloadAudio();
-    playMusic("bgm_main_loop");
+    playMusic("bgm_loop_1");
     resetTutorialForRun(state);
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
@@ -225,7 +239,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     applyShopToGameState(state);
     mode.startGame();
     preloadAudio();
-    playMusic("bgm_main_loop");
+    playMusic("bgm_loop_1", { restartFromStart: true });
     resetTutorialForRun(state);
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
