@@ -29,6 +29,8 @@ const BACKGROUND_SRC = "./assets/backgrounds/space_bg_placeholder.png";
 let backgroundImage = null;
 let backgroundPromise = null;
 let starField = null;
+let visualLevel = 1;
+const LEVEL_SMOOTHING_PER_SEC = 3.5;
 
 function getBackgroundImage() {
   if (backgroundImage) {
@@ -94,7 +96,10 @@ function ensureStarField() {
 export function updateBackgroundStars(deltaMs, level = 1) {
   const stars = ensureStarField();
   const dt = Math.max(0, deltaMs) / 1000;
-  const speedMult = getBackgroundSpeedMultiplier(level);
+  const targetLevel = Math.max(1, Number.isFinite(level) ? level : 1);
+  const blend = 1 - Math.exp(-LEVEL_SMOOTHING_PER_SEC * dt);
+  visualLevel = visualLevel + (targetLevel - visualLevel) * blend;
+  const speedMult = getBackgroundSpeedMultiplier(visualLevel);
   for (const star of stars) {
     star.y += star.drift * speedMult * dt;
     star.x += star.driftX * speedMult * dt;
@@ -132,7 +137,7 @@ export function drawBackground(ctx, render, getGlassRect, nowMs, level = 1) {
     ctx.beginPath();
     ctx.rect(x, y, drawWidth, drawHeight);
     ctx.clip();
-    drawStars(ctx, x, y, drawWidth, drawHeight, nowMs, scale, level);
+    drawStars(ctx, x, y, drawWidth, drawHeight, nowMs, scale, visualLevel);
     ctx.restore();
     ctx.drawImage(image, x, y, drawWidth, drawHeight);
   }
@@ -143,9 +148,6 @@ function drawStars(ctx, x, y, width, height, nowMs, scale, level) {
   const stars = ensureStarField();
   const time = (nowMs ?? 0) / 1000;
   const orbitRatio = getOrbitLevelRatio(level);
-  const rotation = time * BACKGROUND_ORBIT_SPEED_RAD * orbitRatio;
-  const centerX = x + width / 2;
-  const centerY = y + height / 2;
   const brightnessBoost = getBrightnessBoost(level);
   const radiusSpan = Math.max(0.0001, BACKGROUND_STAR_MAX_RADIUS - BACKGROUND_STAR_MIN_RADIUS);
   for (const star of stars) {
@@ -158,20 +160,14 @@ function drawStars(ctx, x, y, width, height, nowMs, scale, level) {
     const radius = star.radius * scale;
     const baseX = x + star.x * width;
     const baseY = y + star.y * height;
-    const relX = baseX - centerX;
-    const relY = baseY - centerY;
-    const cos = Math.cos(rotation);
-    const sin = Math.sin(rotation);
-    const rotatedX = centerX + relX * cos - relY * sin;
-    const rotatedY = centerY + relX * sin + relY * cos;
     const normRadius = (star.radius - BACKGROUND_STAR_MIN_RADIUS) / radiusSpan;
     const orbitRadius =
       BACKGROUND_ORBIT_MAX_RADIUS_PX * orbitRatio * (0.35 + 0.65 * Math.max(0, Math.min(1, normRadius)));
     const microAngle = star.phase + time * BACKGROUND_ORBIT_SPEED_RAD;
     const microX = Math.cos(microAngle) * orbitRadius;
     const microY = Math.sin(microAngle) * orbitRadius;
-    const sx = baseX + (rotatedX - baseX) * orbitRatio + microX;
-    const sy = baseY + (rotatedY - baseY) * orbitRatio + microY;
+    const sx = baseX + microX;
+    const sy = baseY + microY;
     ctx.beginPath();
     ctx.arc(sx, sy, radius, 0, Math.PI * 2);
     ctx.fill();
