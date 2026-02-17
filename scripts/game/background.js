@@ -2,8 +2,15 @@ import {
   BACKGROUND_STAR_ALPHA_MAX,
   BACKGROUND_STAR_ALPHA_MIN,
   BACKGROUND_STAR_COUNT,
+  BACKGROUND_LEVEL_BRIGHTNESS_MAX_BOOST,
+  BACKGROUND_LEVEL_BRIGHTNESS_STEP,
+  BACKGROUND_LEVEL_SPEED_MAX_MULT,
+  BACKGROUND_LEVEL_SPEED_STEP,
   BACKGROUND_STAR_MAX_RADIUS,
   BACKGROUND_STAR_MIN_RADIUS,
+  BACKGROUND_ORBIT_MAX_RADIUS_PX,
+  BACKGROUND_ORBIT_SPEED_RAD,
+  BACKGROUND_ORBIT_TARGET_LEVEL,
   BACKGROUND_STAR_SPEED_MAX,
   BACKGROUND_STAR_SPEED_MIN,
   BACKGROUND_STAR_SPEED_X_MAX,
@@ -84,23 +91,26 @@ function ensureStarField() {
   return starField;
 }
 
-export function updateBackgroundStars(deltaMs) {
+export function updateBackgroundStars(deltaMs, level = 1) {
   const stars = ensureStarField();
   const dt = Math.max(0, deltaMs) / 1000;
+  const speedMult = getBackgroundSpeedMultiplier(level);
   for (const star of stars) {
-    star.y += star.drift * dt;
-    star.x += star.driftX * dt;
+    star.y += star.drift * speedMult * dt;
+    star.x += star.driftX * speedMult * dt;
     if (star.y > 1.05) {
       star.y = -0.05;
       star.x = Math.random();
     }
     if (star.x > 1.05) {
       star.x = -0.05;
+    } else if (star.x < -0.05) {
+      star.x = 1.05;
     }
   }
 }
 
-export function drawBackground(ctx, render, getGlassRect, nowMs) {
+export function drawBackground(ctx, render, getGlassRect, nowMs, level = 1) {
   const image = getBackgroundImage();
   const glass = getGlassRect();
   const targetTop = render.bounds.min.y;
@@ -122,30 +132,70 @@ export function drawBackground(ctx, render, getGlassRect, nowMs) {
     ctx.beginPath();
     ctx.rect(x, y, drawWidth, drawHeight);
     ctx.clip();
-    drawStars(ctx, x, y, drawWidth, drawHeight, nowMs, scale);
+    drawStars(ctx, x, y, drawWidth, drawHeight, nowMs, scale, level);
     ctx.restore();
     ctx.drawImage(image, x, y, drawWidth, drawHeight);
   }
   ctx.restore();
 }
 
-function drawStars(ctx, x, y, width, height, nowMs, scale) {
+function drawStars(ctx, x, y, width, height, nowMs, scale, level) {
   const stars = ensureStarField();
   const time = (nowMs ?? 0) / 1000;
+  const orbitRatio = getOrbitLevelRatio(level);
+  const rotation = time * BACKGROUND_ORBIT_SPEED_RAD * orbitRatio;
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  const brightnessBoost = getBrightnessBoost(level);
+  const radiusSpan = Math.max(0.0001, BACKGROUND_STAR_MAX_RADIUS - BACKGROUND_STAR_MIN_RADIUS);
   for (const star of stars) {
     const twinkle = star.twinkleEnabled
       ? star.baseAlpha +
         Math.sin(time * star.twinkleSpeed + star.phase) * star.twinkleAmp
       : star.baseAlpha;
-    const alpha = Math.max(0.05, Math.min(1, twinkle));
+    const alpha = Math.max(0.05, Math.min(1, twinkle * (1 + brightnessBoost)));
     ctx.fillStyle = `rgba(230, 240, 255, ${alpha.toFixed(3)})`;
     const radius = star.radius * scale;
-    const sx = x + star.x * width;
-    const sy = y + star.y * height;
+    const baseX = x + star.x * width;
+    const baseY = y + star.y * height;
+    const relX = baseX - centerX;
+    const relY = baseY - centerY;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    const rotatedX = centerX + relX * cos - relY * sin;
+    const rotatedY = centerY + relX * sin + relY * cos;
+    const normRadius = (star.radius - BACKGROUND_STAR_MIN_RADIUS) / radiusSpan;
+    const orbitRadius =
+      BACKGROUND_ORBIT_MAX_RADIUS_PX * orbitRatio * (0.35 + 0.65 * Math.max(0, Math.min(1, normRadius)));
+    const microAngle = star.phase + time * BACKGROUND_ORBIT_SPEED_RAD;
+    const microX = Math.cos(microAngle) * orbitRadius;
+    const microY = Math.sin(microAngle) * orbitRadius;
+    const sx = baseX + (rotatedX - baseX) * orbitRatio + microX;
+    const sy = baseY + (rotatedY - baseY) * orbitRatio + microY;
     ctx.beginPath();
     ctx.arc(sx, sy, radius, 0, Math.PI * 2);
     ctx.fill();
   }
+}
+
+function getBackgroundSpeedMultiplier(level) {
+  const safeLevel = Math.max(1, Number.isFinite(level) ? level : 1);
+  const mult = 1 + (safeLevel - 1) * BACKGROUND_LEVEL_SPEED_STEP;
+  return Math.min(BACKGROUND_LEVEL_SPEED_MAX_MULT, mult);
+}
+
+function getBrightnessBoost(level) {
+  const safeLevel = Math.max(1, Number.isFinite(level) ? level : 1);
+  return Math.min(
+    BACKGROUND_LEVEL_BRIGHTNESS_MAX_BOOST,
+    (safeLevel - 1) * BACKGROUND_LEVEL_BRIGHTNESS_STEP
+  );
+}
+
+function getOrbitLevelRatio(level) {
+  const safeLevel = Math.max(1, Number.isFinite(level) ? level : 1);
+  const denom = Math.max(1, BACKGROUND_ORBIT_TARGET_LEVEL - 1);
+  return Math.max(0, Math.min(1, (safeLevel - 1) / denom));
 }
 
 function randRange(min, max) {

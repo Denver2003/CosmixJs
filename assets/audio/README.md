@@ -29,6 +29,7 @@ Round1 bonus retune candidates: `assets/audio/staging/v1/bonus_retune_round1/log
 - `assets/audio/sfx/combo_cosmo.wav` — озвучка космо‑комбо.
 - `assets/audio/sfx/level_up.wav` — новый уровень.
 - `assets/audio/sfx/cosmo_level_up.wav` — повышение множителя космометра (только при росте вверх, throttle 7s).
+- Gameplay note: каждый hail-drop теперь добавляет `x2` энергии космометра относительно обычного drop.
 
 ## BGM
 

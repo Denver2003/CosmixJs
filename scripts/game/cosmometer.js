@@ -18,9 +18,17 @@ const COSMO_COLOR_LEVELS = {
 };
 
 export function addEnergyOnDrop(state) {
+  addEnergy(state, COSMO_ENERGY_GAIN);
+}
+
+export function addEnergy(state, amount) {
+  const delta = Number.isFinite(amount) ? amount : 0;
+  if (delta <= 0) {
+    return;
+  }
   state.energy = Math.min(
     COSMO_ENERGY_MAX_INTERNAL,
-    state.energy + COSMO_ENERGY_GAIN
+    state.energy + delta
   );
 }
 

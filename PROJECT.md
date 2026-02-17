@@ -54,7 +54,7 @@
   - Chain shimmer: when a chain reaches 4+, a white shimmer band runs left→right across each figure with 0.2s stagger; each figure has `4.5s` cooldown; duration `0.45s`; band/alpha reduced for performance.
 - **Combo system**: each collapse opens a 4s window for the next; streak-based multiplier capped at x5 (Combo/Super/Mega/Cosmo).
 - **Combo popup**: combo label bursts from collapse center to glass center, blinks on peak (1–4), then floats up and fades; stacked vertically when overlapping.
-- **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups.
+- **Cosmometer**: energy increases on each drop (internal max 125, visual scale 0–100); energy decays faster at higher charge (x1→x3), thresholds drive game multiplier (x1/x2/x3/x5) and HUD thermometer with color transitions and level popups. Hail bonus drops now add x2 energy per spawned figure vs a regular drop.
 - **Bubbles**: spawn chance uses legacy tables (count+combo); rewards roll on spawn with per-type cooldowns that start when the bubble appears; consumable bubble rewards (touch/gun) are capped per run (1 base, 2 at bonus upgrade level 4+, 3 at level 7); bubbles pop on tap with VFX + reward icons.
 - **Bonuses**: instant Hail drops random shapes from top spawn points; Color Grenade collapses all figures of a color and counts as a normal chain (combo/score/FX); consumables (Touch-to-Kill, Machine Gun) are stored, activate from right panel, show cooldown radial fill, and apply chain removal rules.
   - Bonus icons show key hints (`1`/`2`) when keyboard control is active and the bonus is ready.
@@ -75,7 +75,7 @@
 - **State machine**: gameplay modes are explicit (shell/gameplay/paused/gameover) to prevent desync; leaving game screens moves to shell mode and stops the runner; pause/game over overlays sync with state.
 - **App shell scaffolding**: Shell/Overlay UI layers, screen router, and Back/ESC handling (currently defaulting to Game screen).
 - **Canvas shell UI**: Home/Shop/Settings/Leaderboards now render in canvas; DOM layers are hidden.
-- **Background layer**: placeholder space background image is drawn behind the glass, scaled to the full view height, with a light twinkling star field.
+- **Background layer**: placeholder space background image is drawn behind the glass, scaled to the full view height, with a twinkling star field that scales with level: stars move faster and brighter as level rises, and gain smooth orbit-like rotation around the scene center (cosmic swirl).
 - **Glass frame overlay**: PNG frame (`assets/levelUI/glass_frame.png`) is drawn over the glass for visual alignment checks.
 - **HUD layout (prototype)**: top HUD (Score/Coins/Pause) uses RussoOne; level progress bar uses level color with translucent stroke/fill.
 - **Score/Coins HUD**: live score display; coins and best score persist between sessions (game over saves the current absolute coin balance; coins earned before a rewarded continue remain with the player; best score stays).

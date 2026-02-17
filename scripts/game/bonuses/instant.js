@@ -1,4 +1,6 @@
 import {
+  COSMO_ENERGY_GAIN,
+  COSMO_ENERGY_GAIN_HAIL_MULTIPLIER,
   GLASS_HEIGHT,
   GLASS_WIDTH,
   HAIL_ANGULAR_SPEED,
@@ -10,7 +12,7 @@ import {
 import { createRandomSpec, createShape } from "../../shapes.js";
 import { applyLevelProgress } from "../state.js";
 import { startBurst } from "../chains/effects.js";
-import { addEnergyOnDrop, updateCosmometerMultiplier } from "../cosmometer.js";
+import { addEnergy, updateCosmometerMultiplier } from "../cosmometer.js";
 import { recordCombo } from "../combo.js";
 import { applyChainRewards, applyLevelUpReward } from "../rewards.js";
 import { spawnScoreParticles } from "../score_particles.js";
@@ -49,7 +51,7 @@ export function triggerHail(state, getGlassRect) {
       (Math.random() - 0.5) * HAIL_ANGULAR_SPEED * 2
     );
     World.add(state.world, body);
-    addEnergyOnDrop(state);
+    addEnergy(state, COSMO_ENERGY_GAIN * COSMO_ENERGY_GAIN_HAIL_MULTIPLIER);
     spawned += 1;
   }
   updateCosmometerMultiplier(state, state.engine.timing.timestamp);

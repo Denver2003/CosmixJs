@@ -86,7 +86,7 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       return;
     }
     const deltaMs = engine.timing.lastDelta;
-    updateBackgroundStars(deltaMs);
+    updateBackgroundStars(deltaMs, state.level);
     updateCosmometer(state, deltaMs);
     const prevMultiplier = state.gameMultiplier;
     updateCosmometerMultiplier(state, engine.timing.timestamp);
