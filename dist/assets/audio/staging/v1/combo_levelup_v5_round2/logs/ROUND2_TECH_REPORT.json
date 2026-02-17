@@ -1,0 +1,191 @@
+{
+  "combos": {
+    "v1": {
+      "combo_basic": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_super": {
+        "durationSec": 0.42,
+        "lufs": -16.05,
+        "truePeakDbtp": -3.46,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_mega": {
+        "durationSec": 0.5,
+        "lufs": -15.93,
+        "truePeakDbtp": -1.1,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_cosmo": {
+        "durationSec": 0.6,
+        "lufs": -15.95,
+        "truePeakDbtp": -1.26,
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    "v2": {
+      "combo_basic": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_super": {
+        "durationSec": 0.42,
+        "lufs": -15.95,
+        "truePeakDbtp": -2.3,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_mega": {
+        "durationSec": 0.5,
+        "lufs": -16.04,
+        "truePeakDbtp": -1.41,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_cosmo": {
+        "durationSec": 0.6,
+        "lufs": -15.99,
+        "truePeakDbtp": -1.51,
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    "v3": {
+      "combo_basic": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_super": {
+        "durationSec": 0.42,
+        "lufs": -15.95,
+        "truePeakDbtp": -1.05,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_mega": {
+        "durationSec": 0.5,
+        "lufs": -16.0,
+        "truePeakDbtp": -2.64,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_cosmo": {
+        "durationSec": 0.6,
+        "lufs": -16.0,
+        "truePeakDbtp": -1.79,
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    "v4": {
+      "combo_basic": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_super": {
+        "durationSec": 0.42,
+        "lufs": -15.95,
+        "truePeakDbtp": -2.55,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_mega": {
+        "durationSec": 0.5,
+        "lufs": -16.0,
+        "truePeakDbtp": -1.69,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_cosmo": {
+        "durationSec": 0.6,
+        "lufs": -16.51,
+        "truePeakDbtp": -1.0,
+        "durationOk": true,
+        "peakOk": true
+      }
+    },
+    "v5": {
+      "combo_basic": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_super": {
+        "durationSec": 0.42,
+        "lufs": -16.05,
+        "truePeakDbtp": -1.04,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_mega": {
+        "durationSec": 0.5,
+        "lufs": -15.98,
+        "truePeakDbtp": -2.41,
+        "durationOk": true,
+        "peakOk": true
+      },
+      "combo_cosmo": {
+        "durationSec": 0.6,
+        "lufs": -16.01,
+        "truePeakDbtp": -1.73,
+        "durationOk": true,
+        "peakOk": true
+      }
+    }
+  },
+  "level_up": {
+    "v1": {
+      "durationSec": 0.7,
+      "lufs": -16.49,
+      "truePeakDbtp": -7.56,
+      "durationOk": true,
+      "peakOk": true
+    },
+    "v2": {
+      "durationSec": 0.7,
+      "lufs": -17.32,
+      "truePeakDbtp": -4.41,
+      "durationOk": true,
+      "peakOk": true
+    },
+    "v3": {
+      "durationSec": 0.7,
+      "lufs": -32.8,
+      "truePeakDbtp": -1.04,
+      "durationOk": true,
+      "peakOk": true
+    },
+    "v4": {
+      "durationSec": 0.7,
+      "lufs": -19.85,
+      "truePeakDbtp": -3.23,
+      "durationOk": true,
+      "peakOk": true
+    },
+    "v5": {
+      "durationSec": 0.7,
+      "lufs": -17.36,
+      "truePeakDbtp": -4.35,
+      "durationOk": true,
+      "peakOk": true
+    }
+  }
+}

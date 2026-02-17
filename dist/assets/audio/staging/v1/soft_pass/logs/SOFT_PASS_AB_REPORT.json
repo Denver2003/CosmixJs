@@ -1,0 +1,120 @@
+{
+  "generatedAtUtc": "2026-02-16T11:49:40Z",
+  "highBandCutHz": 2500,
+  "acceptanceRule": "accept if durationOk && peakOk && softerOk",
+  "rows": [
+    {
+      "eventId": "impact_first",
+      "before": {
+        "durationSec": 0.2,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "highBandRatio": 0.042573
+      },
+      "after": {
+        "durationSec": 0.2,
+        "lufs": null,
+        "truePeakDbtp": -1.01,
+        "highBandRatio": 0.000173
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true,
+        "softerOk": true,
+        "accept": true
+      }
+    },
+    {
+      "eventId": "drop_whoosh",
+      "before": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "highBandRatio": 0.001157
+      },
+      "after": {
+        "durationSec": 0.35,
+        "lufs": null,
+        "truePeakDbtp": -1.14,
+        "highBandRatio": 0.000843
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true,
+        "softerOk": true,
+        "accept": true
+      }
+    },
+    {
+      "eventId": "bonus_bubble_pop",
+      "before": {
+        "durationSec": 0.18,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "highBandRatio": 0.010871
+      },
+      "after": {
+        "durationSec": 0.18,
+        "lufs": null,
+        "truePeakDbtp": -1.02,
+        "highBandRatio": 0.001634
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true,
+        "softerOk": true,
+        "accept": true
+      }
+    },
+    {
+      "eventId": "bonus_coin_pick",
+      "before": {
+        "durationSec": 0.16,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "highBandRatio": 0.414833
+      },
+      "after": {
+        "durationSec": 0.16,
+        "lufs": null,
+        "truePeakDbtp": -2.71,
+        "highBandRatio": 0.048486
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true,
+        "softerOk": true,
+        "accept": true
+      }
+    },
+    {
+      "eventId": "bonus_points_pick",
+      "before": {
+        "durationSec": 0.18,
+        "lufs": null,
+        "truePeakDbtp": -1.0,
+        "highBandRatio": 0.000586
+      },
+      "after": {
+        "durationSec": 0.18,
+        "lufs": null,
+        "truePeakDbtp": -4.6,
+        "highBandRatio": 0.000585
+      },
+      "checks": {
+        "durationOk": true,
+        "peakOk": true,
+        "softerOk": true,
+        "accept": true
+      }
+    }
+  ],
+  "acceptedEvents": [
+    "impact_first",
+    "drop_whoosh",
+    "bonus_bubble_pop",
+    "bonus_coin_pick",
+    "bonus_points_pick"
+  ],
+  "rejectedEvents": []
+}
