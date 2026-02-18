@@ -34,13 +34,26 @@ Round1 bonus retune candidates: `assets/audio/staging/v1/bonus_retune_round1/log
 ## BGM
 
 - Source track: `assets/audio/bgm/Cosmix music.mp3`.
+- Optimization pass (2026-02-18): runtime loops were re-encoded with Vorbis quality target `q=3` using ffmpeg native `vorbis` encoder.
+  - Note: on this ffmpeg build, stable encode required resampling BGM loops to `44.1kHz` (`-ar 44100`, stereo preserved).
+  - Rollback policy: per-file rollback from pre-pass backups if artifacts are detected.
 - Runtime loops (level bands):
   - `assets/audio/bgm/bgm_loop_1.ogg` for levels `1..4`
   - `assets/audio/bgm/bgm_loop_2.ogg` for levels `5..8`
   - `assets/audio/bgm/bgm_loop_3.ogg` for levels `9..12`
   - `assets/audio/bgm/bgm_loop_4.ogg` for levels `13+`
+- BGM loop metrics after optimization:
+  - `bgm_loop_1.ogg` — `683,663` bytes, `56.288s`, `97,166 bps`, `44,100 Hz`, stereo
+  - `bgm_loop_2.ogg` — `2,704,858` bytes, `124.476s`, `173,839 bps`, `44,100 Hz`, stereo
+  - `bgm_loop_3.ogg` — `1,202,937` bytes, `53.719s`, `179,143 bps`, `44,100 Hz`, stereo
+  - `bgm_loop_4.ogg` — `615,046` bytes, `39.098s`, `125,846 bps`, `44,100 Hz`, stereo
+  - Total `assets/audio/bgm` size: `~5.0 MB` (down from `~6.2 MB`, about `-19%`).
 - Legacy alias id `bgm_main_loop` points to `bgm_loop_1`.
 - Runtime backend policy: BGM воспроизводится только через WebAudio buffer (без HTMLAudio fallback для музыки).
+- BGM load strategy (startup optimization):
+  - Startup preload includes only `bgm_loop_1` for first-play responsiveness.
+  - After run start, `bgm_loop_2..4` are prefetched in background into WebAudio music buffers.
+  - BGM switch/crossfade behavior is unchanged.
 - Switch behavior: переход между level-bands ставится на конец текущего loop и выполняется с crossfade `2.0s`.
 - Pause behavior: при pause/focus-loss музыка мгновенно замолкает и при resume продолжается с текущего места.
 - Start behavior: музыка запускается уже в shell/menu (loop_1); первый старт игры из меню не перезапускает loop.

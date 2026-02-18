@@ -25,7 +25,7 @@ import { updateRewardFloaters } from "./reward_floaters.js";
 import { resetTutorialForRun, updateTutorial } from "./tutorial.js";
 import { GLASS_WIDTH, IMPACT_FLASH_DURATION_MS, SPAWN_OFFSET } from "../config.js";
 import { updateBackgroundStars } from "./background.js";
-import { playMusic, playSfx, preloadAudio } from "../audio/index.js";
+import { playMusic, playSfx, preloadAudio, prefetchMusic } from "../audio/index.js";
 import { submitLeaderboardScore } from "../leaderboards/index.js";
 import { queueCloudSave } from "../cloud/index.js";
 import { buildCloudPayload } from "../cloud/state.js";
@@ -192,8 +192,9 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
       state.gameOverMenuTimer = 0;
     }
     mode.startGame();
-    preloadAudio();
+    preloadAudio({ musicIds: ["bgm_loop_1"] });
     playMusic("bgm_loop_1");
+    prefetchMusic(["bgm_loop_2", "bgm_loop_3", "bgm_loop_4"]);
     resetTutorialForRun(state);
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);
@@ -238,8 +239,9 @@ export function createGame({ engine, world, render, runner, getGlassRect }) {
     Object.assign(state, fresh, preserved);
     applyShopToGameState(state);
     mode.startGame();
-    preloadAudio();
+    preloadAudio({ musicIds: ["bgm_loop_1"] });
     playMusic("bgm_loop_1", { restartFromStart: true });
+    prefetchMusic(["bgm_loop_2", "bgm_loop_3", "bgm_loop_4"]);
     resetTutorialForRun(state);
     state.spawnBlockResumeAt = 0;
     spawnBlock(state, getSpawnPoint);

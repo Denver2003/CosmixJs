@@ -147,12 +147,28 @@ export function stopMusic() {
   stopMusicHtml();
 }
 
-export function preloadAudio() {
+export function preloadAudio(options = {}) {
   if (useWebAudio()) {
-    preloadWebAudio();
+    preloadWebAudio(options);
     return;
   }
   preloadAudioHtml();
+}
+
+export function prefetchMusic(ids = []) {
+  if (!useWebAudio()) {
+    return;
+  }
+  const musicIds = resolveMusicIdsForPreload({ musicIds: ids });
+  for (const id of musicIds) {
+    const meta = MUSIC[id];
+    if (!meta?.src) {
+      continue;
+    }
+    loadWebAudioBuffer(id, meta.src, webAudio.musicBuffers, webAudio.musicLoads).catch(
+      () => null
+    );
+  }
 }
 
 export function setMusicPaused(paused) {
@@ -555,7 +571,7 @@ function loadWebAudioBuffer(id, src, cache, pending) {
   return request;
 }
 
-function preloadWebAudio() {
+function preloadWebAudio(options = {}) {
   const context = ensureWebAudioContext();
   if (!context) {
     return;
@@ -571,7 +587,9 @@ function preloadWebAudio() {
       )
     );
   }
-  for (const [id, meta] of Object.entries(MUSIC)) {
+  const musicIds = resolveMusicIdsForPreload(options);
+  for (const id of musicIds) {
+    const meta = MUSIC[id];
     if (!meta?.src) {
       continue;
     }
@@ -585,6 +603,15 @@ function preloadWebAudio() {
     Promise.all(tasks).catch(() => {});
   }
   applyWebVolumes();
+}
+
+function resolveMusicIdsForPreload(options = {}) {
+  const requested = Array.isArray(options?.musicIds) ? options.musicIds : null;
+  const allMusicIds = Object.keys(MUSIC);
+  if (!requested) {
+    return allMusicIds;
+  }
+  return requested.filter((id) => Boolean(MUSIC[id]));
 }
 
 function playSfxWeb(id) {

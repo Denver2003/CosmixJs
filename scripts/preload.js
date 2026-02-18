@@ -50,9 +50,10 @@ export function getPreloadManifest() {
     }
   }
   const { sfx, music } = getAudioAssets();
+  const startupMusicSrc = music?.bgm_loop_1?.src || null;
   const audioSrcs = [
     ...Object.values(sfx || {}).map((entry) => entry?.src).filter(Boolean),
-    ...Object.values(music || {}).map((entry) => entry?.src).filter(Boolean),
+    ...[startupMusicSrc].filter(Boolean),
   ];
 
   return {
