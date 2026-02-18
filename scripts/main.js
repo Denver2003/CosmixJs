@@ -36,7 +36,7 @@ import { applyCloudPayload, buildCloudPayload } from "./cloud/state.js";
 import { syncSdkUser } from "./sdk/auth.js";
 import { loadIapCatalog, syncIapPurchases } from "./shop/iap.js";
 import { getShopProgress } from "./shop/progression.js";
-import { ensureAudioUnlocked, playMusic } from "./audio/index.js";
+import { ensureAudioUnlocked, playMusic, setMusicPaused } from "./audio/index.js";
 
 const { Engine, Render } = Matter;
 
@@ -52,6 +52,10 @@ let game = null;
 let shell = null;
 let gameStarted = false;
 const AUTO_RESUME_DELAY_MS = 1000;
+let focusMusicPaused = false;
+let focusResumeTimer = 0;
+let focusWatchdogTimer = 0;
+let lastWindowActive = true;
 
 setSdkCallbacks({
   onPause: () => {
@@ -471,17 +475,13 @@ async function bootstrap() {
   window.addEventListener("resize", handleResize);
   window.visualViewport?.addEventListener("resize", handleResize);
   window.visualViewport?.addEventListener("scroll", handleResize);
-  window.addEventListener("blur", () => {
-    clearAutoResumeTimer();
-    game.setPaused(true, "focus");
-  });
-  window.addEventListener("focus", scheduleAutoResume);
+  window.addEventListener("blur", handleFocusLoss);
+  window.addEventListener("focus", handleFocusGain);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      clearAutoResumeTimer();
-      game.setPaused(true, "focus");
+      handleFocusLoss();
     } else {
-      scheduleAutoResume();
+      handleFocusGain();
     }
   });
 
@@ -507,6 +507,7 @@ async function bootstrap() {
   });
 
   window.openPauseMenu = openPauseMenu;
+  startFocusWatchdog();
   Matter.Events.on(engine, "afterUpdate", () => {
     game.tickAutoResume();
   });
@@ -758,6 +759,48 @@ function scheduleAutoResume() {
   }, AUTO_RESUME_DELAY_MS);
 }
 
+function handleFocusLoss() {
+  lastWindowActive = false;
+  clearAutoResumeTimer();
+  game.setPaused(true, "focus");
+  pauseMusicForFocus();
+}
+
+function handleFocusGain() {
+  lastWindowActive = true;
+  scheduleAutoResume();
+  resumeMusicForFocusWithDelay();
+}
+
+function pauseMusicForFocus() {
+  clearFocusResumeTimer();
+  focusMusicPaused = true;
+  setMusicPaused(true);
+}
+
+function resumeMusicForFocusWithDelay() {
+  if (!focusMusicPaused) {
+    return;
+  }
+  if (!isWindowActive()) {
+    clearFocusResumeTimer();
+    return;
+  }
+  clearFocusResumeTimer();
+  focusResumeTimer = window.setTimeout(() => {
+    focusResumeTimer = 0;
+    if (!focusMusicPaused || !isWindowActive()) {
+      return;
+    }
+    const pauseInfo = game?.getPauseInfo?.();
+    if (pauseInfo?.paused && pauseInfo.reason !== "focus") {
+      return;
+    }
+    focusMusicPaused = false;
+    setMusicPaused(false);
+  }, AUTO_RESUME_DELAY_MS);
+}
+
 function startFixedRunner(engineInstance, runnerState) {
   let lastTime = null;
   let accumulator = 0;
@@ -812,10 +855,35 @@ function isWindowActive() {
   return true;
 }
 
+function syncWindowFocusState() {
+  const active = isWindowActive();
+  if (active === lastWindowActive) {
+    return;
+  }
+  lastWindowActive = active;
+  if (active) {
+    handleFocusGain();
+  } else {
+    handleFocusLoss();
+  }
+}
+
+function startFocusWatchdog() {
+  window.clearInterval(focusWatchdogTimer);
+  lastWindowActive = isWindowActive();
+  focusWatchdogTimer = window.setInterval(syncWindowFocusState, 250);
+}
+
 function clearAutoResumeTimer() {
   window.clearTimeout(scheduleAutoResume.resumeTimer);
   scheduleAutoResume.resumeTimer = 0;
+  clearFocusResumeTimer();
   if (game?.state?.pausedReason === "focus") {
     game.state.pausedResumeMs = 0;
   }
+}
+
+function clearFocusResumeTimer() {
+  window.clearTimeout(focusResumeTimer);
+  focusResumeTimer = 0;
 }
