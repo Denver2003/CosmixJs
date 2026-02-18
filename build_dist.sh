@@ -21,6 +21,10 @@ copy_path = os.path.join(root, "assets", "audio", copy_name)
 if os.path.isdir(copy_path):
     shutil.rmtree(copy_path)
 
+audio_readme = os.path.join(root, "assets", "audio", "README.md")
+if os.path.isfile(audio_readme):
+    os.remove(audio_readme)
+
 for dirpath, _, filenames in os.walk(root):
     for name in filenames:
         if name == ".DS_Store":

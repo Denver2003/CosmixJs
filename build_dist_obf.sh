@@ -43,6 +43,10 @@ copy_path = dist / "assets" / "audio" / copy_name
 if copy_path.is_dir():
     shutil.rmtree(copy_path)
 
+audio_readme = dist / "assets" / "audio" / "README.md"
+if audio_readme.is_file():
+    audio_readme.unlink()
+
 for dirpath, _, filenames in os.walk(dist):
     for name in filenames:
         if name == ".DS_Store":
