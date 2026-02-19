@@ -53,6 +53,7 @@ let shell = null;
 let gameStarted = false;
 const AUTO_RESUME_DELAY_MS = 1000;
 let focusMusicPaused = false;
+let adMusicPaused = false;
 let focusResumeTimer = 0;
 let focusWatchdogTimer = 0;
 let lastWindowActive = true;
@@ -461,13 +462,34 @@ async function bootstrap() {
 
   setAdCallbacks({
     onOpen: () => {
+      adMusicPaused = true;
       game.setPaused(true, "ad");
+      setMusicPaused(true);
     },
     onClose: () => {
       const info = game.getPauseInfo?.();
       if (info?.paused && info.reason === "ad") {
         game.setPaused(false, "ad");
       }
+      if (!adMusicPaused) {
+        return;
+      }
+      adMusicPaused = false;
+      const pauseInfo = game.getPauseInfo?.();
+      const blockedByPause =
+        pauseInfo?.paused &&
+        pauseInfo.reason &&
+        pauseInfo.reason !== "focus";
+      if (
+        !isWindowActive() ||
+        focusMusicPaused ||
+        blockedByPause ||
+        (pauseInfo?.paused && pauseInfo.reason === "focus")
+      ) {
+        setMusicPaused(true);
+        return;
+      }
+      setMusicPaused(false);
     },
   });
   notifyGameReady().catch(() => {});
