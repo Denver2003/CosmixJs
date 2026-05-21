@@ -41,8 +41,8 @@ import {
 } from "../game/storage.js";
 import { addTotalSpentCoins } from "../ads/runtime.js";
 import { resetTutorialForRun } from "../game/tutorial.js";
-import { queueCloudSave } from "../cloud/index.js";
-import { buildCloudPayload } from "../cloud/state.js";
+import { loadCloudState, queueCloudSave } from "../cloud/index.js";
+import { applyCloudPayload, buildCloudPayload } from "../cloud/state.js";
 import { requestAuthorization } from "../sdk/auth.js";
 import { ensureIapCatalog, purchaseIapItem } from "../shop/iap.js";
 import { IAP_PRODUCTS } from "../shop/iap_config.js";
@@ -393,6 +393,7 @@ const leaderboardsState = {
   requested: false,
 };
 const shopActions = [];
+let shopPurchaseInFlight = false;
 const UPGRADE_TITLE_KEYS = {
   [UPGRADE_TYPES.SCORE_MULTIPLIER]: "label.score_multiplier",
   [UPGRADE_TYPES.COIN_MULTIPLIER]: "label.coin_multiplier",
@@ -923,73 +924,107 @@ function buildShopSections({ progress, inventory, coins, skippers, allowIap, iap
   return sections;
 }
 
-function handleShopAction(action) {
+async function handleShopAction(action) {
   if (action.disabled) {
     return;
   }
-  const appState = getAppState();
-  const progress = getShopProgress();
-  const inventory = loadBonusInventory();
-  let coins = appState.coins ?? 0;
 
-  if (action.kind === "upgrade") {
-    const result = tryBuyUpgrade(progress, action.id, coins);
-    if (!result.ok) {
-      return;
-    }
-    coins = result.coins;
-    addTotalSpentCoins(result.price || 0);
-    const nextProgress = updateShopProgress({
-      upgrades: progress.upgrades,
-      removeAds: progress.removeAds,
-    });
-    saveCoins(coins);
-    setAppState({ coins });
-    applyShopStateToGame({ coins, progress: nextProgress, inventory });
-    queueCloudSave(buildCloudPayload(), { force: true });
+  const requiresPurchaseSync =
+    action.kind === "upgrade" || action.kind === "item" || action.kind === "iap";
+  if (requiresPurchaseSync && shopPurchaseInFlight) {
     return;
   }
 
-  if (action.kind === "item") {
-    const result = tryBuyItem(progress, action.id, coins, inventory);
-    if (!result.ok) {
-      return;
-    }
-    coins = result.coins;
-    addTotalSpentCoins(result.item?.cost || 0);
-    saveCoins(coins);
-    setAppState({ coins });
-    if (result.inventory) {
-      saveBonusInventory(result.inventory);
-      applyShopStateToGame({ coins, progress, inventory: result.inventory });
-    }
-    queueCloudSave(buildCloudPayload(), { force: true });
-    return;
+  if (requiresPurchaseSync) {
+    shopPurchaseInFlight = true;
   }
 
-  if (action.kind === "iap") {
-    purchaseIapItem(action.id);
-  }
-
-  if (action.kind === "reward") {
-    const coinLevel = progress?.upgrades?.[UPGRADE_TYPES.COIN_MULTIPLIER] ?? 0;
-    const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
-    const status = getShopRewardStatus(Date.now(), moneyCoef);
-    if (!status.available) {
-      return;
+  try {
+    if (requiresPurchaseSync) {
+      await syncCloudBeforeShopAction();
     }
-    playRewardedOrSkipper().then((result) => {
+
+    const appState = getAppState();
+    const progress = getShopProgress();
+    const inventory = loadBonusInventory();
+    let coins = appState.coins ?? 0;
+
+    if (action.kind === "upgrade") {
+      const result = tryBuyUpgrade(progress, action.id, coins);
       if (!result.ok) {
         return;
       }
-      const now = Date.now();
-      applyShopReward(now);
-      coins += status.reward;
+      coins = result.coins;
+      addTotalSpentCoins(result.price || 0);
+      const nextProgress = updateShopProgress({
+        upgrades: progress.upgrades,
+        removeAds: progress.removeAds,
+      });
       saveCoins(coins);
       setAppState({ coins });
-      applyShopStateToGame({ coins, progress, inventory });
-      queueCloudSave(buildCloudPayload());
-    });
+      applyShopStateToGame({ coins, progress: nextProgress, inventory });
+      queueCloudSave(buildCloudPayload(), { force: true });
+      return;
+    }
+
+    if (action.kind === "item") {
+      const result = tryBuyItem(progress, action.id, coins, inventory);
+      if (!result.ok) {
+        return;
+      }
+      coins = result.coins;
+      addTotalSpentCoins(result.item?.cost || 0);
+      saveCoins(coins);
+      setAppState({ coins });
+      if (result.inventory) {
+        saveBonusInventory(result.inventory);
+        applyShopStateToGame({ coins, progress, inventory: result.inventory });
+      }
+      queueCloudSave(buildCloudPayload(), { force: true });
+      return;
+    }
+
+    if (action.kind === "iap") {
+      await purchaseIapItem(action.id);
+      return;
+    }
+
+    if (action.kind === "reward") {
+      const coinLevel = progress?.upgrades?.[UPGRADE_TYPES.COIN_MULTIPLIER] ?? 0;
+      const moneyCoef = COIN_MULTIPLIER_LEVELS[coinLevel] ?? 1;
+      const status = getShopRewardStatus(Date.now(), moneyCoef);
+      if (!status.available) {
+        return;
+      }
+      playRewardedOrSkipper().then((result) => {
+        if (!result.ok) {
+          return;
+        }
+        const now = Date.now();
+        applyShopReward(now);
+        coins += status.reward;
+        saveCoins(coins);
+        setAppState({ coins });
+        applyShopStateToGame({ coins, progress, inventory });
+        queueCloudSave(buildCloudPayload());
+      });
+    }
+  } catch (error) {
+    return;
+  } finally {
+    if (requiresPurchaseSync) {
+      shopPurchaseInFlight = false;
+    }
+  }
+}
+
+async function syncCloudBeforeShopAction() {
+  try {
+    const cloudPayload = await loadCloudState();
+    applyCloudPayload(cloudPayload);
+    return true;
+  } catch (error) {
+    return false;
   }
 }
 
